@@ -108,6 +108,24 @@ describe("sentiment", () => {
   it("neutral text ~ 0", () => {
     expect(Math.abs(scoreSentiment("the meeting is on tuesday at the office").score)).toBeLessThan(0.1);
   });
+  it("negation does not leak across a sentence boundary", () => {
+    // "not existential. Genuinely good move." — the second sentence is positive
+    const s = scoreSentiment("Manageable, not existential. Genuinely good move in my book.").score;
+    expect(s).toBeGreaterThan(0);
+  });
+  it("affirmative slang stays positive", () => {
+    // "no notes" is praise; the stray 'no' must not flip the following 'Solid'
+    const s = scoreSentiment("genuinely loving the update, it fixed the one thing I complained about, no notes Solid decision, no notes.").score;
+    expect(s).toBeGreaterThan(0.3);
+  });
+  it("negated negatives read positive", () => {
+    expect(scoreSentiment("Acme Cloud literally never crashes for me").score).toBeGreaterThan(0.2);
+    expect(scoreSentiment("it feels like a ripoff").score).toBeLessThan(-0.3);
+  });
+  it("community doom phrases are negative", () => {
+    expect(scoreSentiment("this pricing is a straight cash grab").score).toBeLessThan(-0.3);
+    expect(scoreSentiment("classic rug pull, glad I exported").score).toBeLessThan(-0.3);
+  });
   it("attributes mentions to entities", () => {
     const entities: Entity[] = [
       { id: "e_1", worldId: "w", name: "Acme Cloud", type: "org", description: "", salience: 0.9, anchors: [], motives: [] },

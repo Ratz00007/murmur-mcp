@@ -8,6 +8,7 @@
 import type { Entity, EscalationChain, Persona, Post, World } from "./types.js";
 import type { Storage } from "./store/storage.js";
 import { engagementPeaks, postSentiment, timeline, type TimelineRow } from "./aggregate.js";
+import { scoreSentiment } from "./sentiment.js";
 import { clamp, round2Safe, truncate } from "./util/text.js";
 
 export interface ReportQuote {
@@ -18,6 +19,9 @@ export interface ReportQuote {
   round: number;
   body: string;
   sentiment: number;
+  /** Sentence-level sentiment toward the report's focus entity (set when the
+ * post actually names the focus; whole-post sentiment otherwise). */
+  attrSentiment?: number;
   engagement: number;
   kind: string;
 }
@@ -54,7 +58,45 @@ function engagementOf(p: Post): number {
   return p.metrics.likes + 2 * p.metrics.reposts + p.metrics.upvotes - p.metrics.downvotes;
 }
 
-function quoteOf(p: Post, handles: Map<string, string>, names: Map<string, string>): ReportQuote {
+/** Escape a literal string for embedding inside a RegExp. */
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Sentence-local sentiment attributed to a specific entity. The unit is the
+ * sentence that names the entity plus up to two following sentences (where
+ * pronouns and punchlines live), scored as one text blob — but sentences that
+ * name a DIFFERENT entity are excluded, so praise for a competitor never
+ * leaks into the focus entity's score. Falls back to the post-level score
+ * when no sentence names the entity.
+ */
+export function attributedSentiment(post: Post, entity: Entity, otherNames: string[] = []): number {
+  const re = new RegExp(`(^|[^A-Za-z0-9])${escapeRe(entity.name)}($|[^A-Za-z0-9])`, "i");
+  const others = otherNames
+    .filter((n) => n !== entity.name)
+    .map((n) => new RegExp(`(^|[^A-Za-z0-9])${escapeRe(n)}($|[^A-Za-z0-9])`, "i"));
+  const sentences = post.body.split(/(?<=[.!?)\u2026])\s+/);
+  const anchors = new Set<number>();
+  sentences.forEach((s, i) => {
+    if (re.test(s)) anchors.add(i);
+  });
+  if (anchors.size === 0) return postSentiment(post);
+  const include = new Set<number>(anchors);
+  for (const i of anchors) {
+    for (const d of [1, 2]) {
+      const j = i + d;
+      if (j < sentences.length && !anchors.has(j) && !others.some((ore) => ore.test(sentences[j]))) include.add(j);
+    }
+  }
+  const text = [...include]
+    .sort((a, b) => a - b)
+    .map((i) => sentences[i])
+    .join(" ");
+  return round2Safe(scoreSentiment(text).score);
+}
+
+function quoteOf(p: Post, handles: Map<string, string>, names: Map<string, string>, attr?: number): ReportQuote {
   return {
     id: p.id,
     by: handles.get(p.personaId) ?? p.personaId,
@@ -63,13 +105,24 @@ function quoteOf(p: Post, handles: Map<string, string>, names: Map<string, strin
     round: p.round,
     body: truncate(p.body, 220),
     sentiment: round2Safe(postSentiment(p)),
+    ...(attr !== undefined ? { attrSentiment: attr } : {}),
     engagement: engagementOf(p),
     kind: p.kind,
   };
 }
 
+/** Names of every entity except the focus — used to keep text about OTHER
+ * entities out of the focus entity's attribution window. */
+function otherEntityNames(storage: Storage, world: World, focus: Entity | null): string[] {
+  if (!focus) return [];
+  return storage
+    .listEntities(world.id)
+    .filter((e) => e.id !== focus.id)
+    .map((e) => e.name);
+}
+
 /** Cluster personas by stance toward the focus entity: supporters / opponents / undecided. */
-export function factionAnalysis(storage: Storage, world: World, focus: Entity | null): FactionAnalysis {
+export function factionAnalysis(storage: Storage, world: World, focus: Entity | null, exclude?: Set<string>): FactionAnalysis {
   const personas = storage.listPersonas(world.id);
   const posts = storage.listPosts(world.id, { limit: 100000 }).filter((p) => p.kind !== "repost");
   const handles = new Map(personas.map((p) => [p.id, p.handle]));
@@ -101,23 +154,42 @@ export function factionAnalysis(storage: Storage, world: World, focus: Entity | 
       })
       .sort((a, b) => b.engagement - a.engagement || a.handle.localeCompare(b.handle))
       .slice(0, 3);
-    const usedAuthors = new Set<string>();
-    const quotes = own
+    // Faction showcase quotes: prefer posts that actually NAME the focus
+    // entity and whose attributed sentiment matches the camp (supporters quote
+    // praise, opponents quote grievance). Repetition with other sections is
+    // tolerated before admitting posts that never mention the focus at all.
+    const sign = key === "supporters" ? 1 : key === "opponents" ? -1 : 0;
+    const others = otherEntityNames(storage, world, focus);
+    const attr = (p: Post) => (focus ? attributedSentiment(p, focus, others) : postSentiment(p));
+    const mentionsFocus = (p: Post) => !focus || p.mentions.some((m) => m.entityId === focus.id);
+    const signMatch = (p: Post) => (sign === 0 ? Math.abs(attr(p)) <= 0.25 : sign * attr(p) > 0.15);
+    const byEngagement = own
       .slice()
-      .sort((a, b) => engagementOf(b) - engagementOf(a) || a.id.localeCompare(b.id, undefined, { numeric: true }))
-      .filter((p) => {
-        if (usedAuthors.has(p.personaId)) return false;
+      .sort((a, b) => engagementOf(b) - engagementOf(a) || a.id.localeCompare(b.id, undefined, { numeric: true }));
+    const usedAuthors = new Set<string>();
+    const chosen: Post[] = [];
+    const claim = (pool: Post[], needMention: boolean, needSign: boolean) => {
+      for (const p of pool) {
+        if (chosen.length >= 2) break;
+        if (needMention && !mentionsFocus(p)) continue;
+        if (needSign && !signMatch(p)) continue;
+        if (usedAuthors.has(p.personaId) || chosen.includes(p)) continue;
         usedAuthors.add(p.personaId);
-        return true;
-      })
-      .slice(0, 2)
-      .map((p) => quoteOf(p, handles, names));
+        chosen.push(p);
+      }
+    };
+    const fresh = byEngagement.filter((p) => !exclude?.has(p.id));
+    claim(fresh, true, true);
+    claim(fresh, true, false);
+    claim(byEngagement, true, true);
+    claim(byEngagement, true, false);
+    claim(fresh, false, true);
+    claim(byEngagement, false, false); // last resort: better an off-topic quote than none
+    const quotes = chosen.map((p) => quoteOf(p, handles, names, mentionsFocus(p) ? attr(p) : undefined));
     const sentimentByRound: { round: number; value: number }[] = [];
     if (focus) {
       for (let r = 1; r <= world.round; r++) {
-        const scores = own
-          .filter((p) => p.round === r && p.mentions.some((m) => m.entityId === focus.id))
-          .flatMap((p) => p.mentions.filter((m) => m.entityId === focus.id).map((m) => m.score));
+        const scores = own.filter((p) => p.round === r && mentionsFocus(p)).map((p) => attr(p));
         if (scores.length > 0) sentimentByRound.push({ round: r, value: round2Safe(scores.reduce((a, b) => a + b, 0) / scores.length) });
       }
     }
@@ -185,20 +257,25 @@ export function crossPlatform(storage: Storage, world: World, entities: Entity[]
     twitterEscalations: chains.filter((c) => rootPlatform(c) === "twitter").length,
     redditEscalations: chains.filter((c) => rootPlatform(c) === "reddit").length,
   };
-  const rows: CrossPlatformRow[] = entities.slice(0, 5).map((e) => {
-    const tw = byPlat.twitter.filter((p) => p.mentions.some((m) => m.entityId === e.id)).map((p) => postSentiment(p));
-    const rd = byPlat.reddit.filter((p) => p.mentions.some((m) => m.entityId === e.id)).map((p) => postSentiment(p));
-    const twm = tw.length ? round2Safe(tw.reduce((a, b) => a + b, 0) / tw.length) : null;
-    const rdm = rd.length ? round2Safe(rd.reduce((a, b) => a + b, 0) / rd.length) : null;
-    return {
-      entity: e.name,
-      twitter: twm,
-      reddit: rdm,
-      divergence: twm !== null && rdm !== null ? round2Safe(Math.abs(twm - rdm)) : 0,
-      twPosts: tw.length,
-      rdPosts: rd.length,
-    };
-  });
+  const rows: CrossPlatformRow[] = entities
+    .map((e) => {
+      const tw = byPlat.twitter.filter((p) => p.mentions.some((m) => m.entityId === e.id)).map((p) => postSentiment(p));
+      const rd = byPlat.reddit.filter((p) => p.mentions.some((m) => m.entityId === e.id)).map((p) => postSentiment(p));
+      const twm = tw.length ? round2Safe(tw.reduce((a, b) => a + b, 0) / tw.length) : null;
+      const rdm = rd.length ? round2Safe(rd.reduce((a, b) => a + b, 0) / rd.length) : null;
+      return {
+        entity: e.name,
+        twitter: twm,
+        reddit: rdm,
+        divergence: twm !== null && rdm !== null ? round2Safe(Math.abs(twm - rdm)) : 0,
+        twPosts: tw.length,
+        rdPosts: rd.length,
+      };
+    })
+    // only entities the crowd actually discussed, biggest platform split first
+    .filter((r) => r.twPosts + r.rdPosts > 0)
+    .sort((a, b) => b.divergence - a.divergence || a.entity.localeCompare(b.entity))
+    .slice(0, 5);
   const withBoth = rows.filter((r) => r.twitter !== null && r.reddit !== null);
   const maxDivergence = withBoth.length
     ? withBoth.reduce((a, b) => (b.divergence > a.value ? { entity: b.entity, value: b.divergence } : a), { entity: withBoth[0].entity, value: withBoth[0].divergence })
@@ -268,12 +345,13 @@ export function startStances(storage: Storage, world: World, entityName: string)
   return starts;
 }
 
-export function personaArcs(storage: Storage, world: World, focus: Entity | null, limit = 3): PersonaArc[] {
+export function personaArcs(storage: Storage, world: World, focus: Entity | null, limit = 3, exclude?: Set<string>): PersonaArc[] {
   const personas = storage.listPersonas(world.id);
   const posts = storage.listPosts(world.id, { limit: 100000 }).filter((p) => p.kind !== "repost");
   const handles = new Map(personas.map((p) => [p.id, p.handle]));
   const names = new Map(personas.map((p) => [p.id, p.name]));
   const focusName = focus?.name ?? "";
+  const others = otherEntityNames(storage, world, focus);
   const starts = focus ? startStances(storage, world, focusName) : new Map<string, number>();
   const arcs: PersonaArc[] = personas.map((p) => {
     const own = posts.filter((x) => x.personaId === p.id);
@@ -281,9 +359,17 @@ export function personaArcs(storage: Storage, world: World, focus: Entity | null
     const start = starts.get(p.id) ?? end;
     const delta = round2Safe(end - start);
     const aboutFocus = focus ? own.filter((x) => x.mentions.some((m) => m.entityId === focus.id)) : [];
-    const best = (aboutFocus.length > 0 ? aboutFocus : own)
-      .slice()
-      .sort((a, b) => engagementOf(b) - engagementOf(a) || a.id.localeCompare(b.id, undefined, { numeric: true }))[0];
+    const pool = aboutFocus.length > 0 ? aboutFocus : own;
+    // signature quote: the persona's best post about the focus that is not
+    // already quoted elsewhere; fall back to their best post overall
+    const best =
+      pool
+        .slice()
+        .filter((x) => !exclude?.has(x.id))
+        .sort((a, b) => engagementOf(b) - engagementOf(a) || a.id.localeCompare(b.id, undefined, { numeric: true }))[0] ??
+      pool
+        .slice()
+        .sort((a, b) => engagementOf(b) - engagementOf(a) || a.id.localeCompare(b.id, undefined, { numeric: true }))[0];
     const arcLabel = focus
       ? delta <= -0.12
         ? `soured on ${focusName}`
@@ -308,7 +394,7 @@ export function personaArcs(storage: Storage, world: World, focus: Entity | null
       focusEnd: round2Safe(end),
       delta,
       arcLabel,
-      signatureQuote: best ? quoteOf(best, handles, names) : null,
+      signatureQuote: best ? quoteOf(best, handles, names, focus && best.mentions.some((m) => m.entityId === focus.id) ? attributedSentiment(best, focus, others) : undefined) : null,
     };
   });
   return arcs
@@ -329,31 +415,54 @@ export interface QuoteBank {
   mixed: ReportQuote[];
 }
 
-export function quoteBank(storage: Storage, world: World, perBucket = 3): QuoteBank {
+/**
+ * Quote bank for the report's "what the crowd said" section. Quotes are
+ * classified and selected by their sentence-level sentiment TOWARD the focus
+ * entity, and every selected post must actually name the focus — a post
+ * praising a competitor never shows up as a champion of the focus. Better a
+ * short list than a misattributed one. Posts already quoted elsewhere are
+ * reused only when the bucket would otherwise be too thin to show.
+ */
+export function quoteBank(storage: Storage, world: World, focus: Entity | null, perBucket = 3, exclude?: Set<string>): QuoteBank {
   const personas = storage.listPersonas(world.id);
   const handles = new Map(personas.map((p) => [p.id, p.handle]));
   const names = new Map(personas.map((p) => [p.id, p.name]));
+  const others = otherEntityNames(storage, world, focus);
   const posts = storage
     .listPosts(world.id, { limit: 100000 })
     .filter((p) => p.kind !== "repost" && p.body.length > 0)
-    .map((p) => ({ p, s: postSentiment(p), e: engagementOf(p) }));
-  const take = (filter: (s: number) => boolean) => {
+    .filter((p) => !focus || p.mentions.some((x) => x.entityId === focus.id))
+    .map((p) => ({
+      p,
+      a: focus ? attributedSentiment(p, focus, others) : postSentiment(p),
+      e: engagementOf(p),
+    }));
+  const take = (filter: (a: number) => boolean) => {
+    const inBucket = posts
+      .filter((x) => filter(x.a))
+      .sort((a, b) => b.e - a.e || a.p.id.localeCompare(b.p.id, undefined, { numeric: true }));
     const used = new Set<string>();
-    return posts
-      .filter((x) => filter(x.s))
-      .sort((a, b) => b.e - a.e || a.p.id.localeCompare(b.p.id, undefined, { numeric: true }))
-      .filter((x) => {
-        if (used.has(x.p.personaId)) return false;
-        used.add(x.p.personaId);
-        return true;
-      })
-      .slice(0, perBucket)
-      .map((x) => quoteOf(x.p, handles, names));
+    const chosen: typeof posts = [];
+    for (const x of inBucket) {
+      if (chosen.length >= perBucket) break;
+      if (exclude?.has(x.p.id)) continue;
+      if (used.has(x.p.personaId)) continue;
+      used.add(x.p.personaId);
+      chosen.push(x);
+    }
+    for (const x of inBucket) {
+      // top-up: tolerate repetition with other sections, never misattribution
+      if (chosen.length >= perBucket) break;
+      if (chosen.includes(x) || used.has(x.p.personaId)) continue;
+      used.add(x.p.personaId);
+      chosen.push(x);
+    }
+    return chosen.map((x) => quoteOf(x.p, handles, names, x.a));
   };
   return {
-    positive: take((s) => s >= 0.3),
-    negative: take((s) => s <= -0.3),
-    mixed: take((s) => Math.abs(s) < 0.3),
+    positive: take((a) => a >= 0.3),
+    negative: take((a) => a <= -0.3),
+    mixed: take((a) => Math.abs(a) < 0.3),
   };
 }
 
@@ -533,16 +642,20 @@ export function entityTrends(
   limit = 6
 ): EntityTrend[] {
   const posts = storage.listPosts(world.id, { limit: 100000 });
-  return entities.slice(0, limit).map((e) => {
-    const c = curve(e);
-    const mentioning = posts.filter((p) => p.mentions.some((m) => m.entityId === e.id));
-    const perRound = new Map<number, number>();
-    for (const p of mentioning) perRound.set(p.round, (perRound.get(p.round) ?? 0) + 1);
-    const peakRound = perRound.size > 0 ? [...perRound.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0] : null;
-    const first = c.length > 0 ? c[0].value : null;
-    const last = c.length > 0 ? c[c.length - 1].value : null;
-    const delta = first !== null && last !== null ? round2Safe(last - first) : null;
-    const direction = delta === null ? "untracked" : delta > 0.05 ? "up" : delta < -0.05 ? "down" : "flat";
-    return { entity: e.name, type: e.type, first, last, delta, volume: mentioning.length, peakRound, direction };
-  });
+  return entities
+    .map((e): EntityTrend => {
+      const c = curve(e);
+      const mentioning = posts.filter((p) => p.mentions.some((m) => m.entityId === e.id));
+      const perRound = new Map<number, number>();
+      for (const p of mentioning) perRound.set(p.round, (perRound.get(p.round) ?? 0) + 1);
+      const peakRound = perRound.size > 0 ? [...perRound.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0] : null;
+      const first = c.length > 0 ? c[0].value : null;
+      const last = c.length > 0 ? c[c.length - 1].value : null;
+      const delta = first !== null && last !== null ? round2Safe(last - first) : null;
+      const direction = delta === null ? "untracked" : delta > 0.05 ? "up" : delta < -0.05 ? "down" : "flat";
+      return { entity: e.name, type: e.type, first, last, delta, volume: mentioning.length, peakRound, direction };
+    })
+    // entities the crowd never mentioned carry no trend — keep them out of the table
+    .filter((t) => t.volume > 0)
+    .slice(0, limit);
 }

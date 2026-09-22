@@ -19,6 +19,7 @@ import { engagementPeaks, leaderboards, sentimentCurve, timeline, topPostsByEnga
 import {
   amplification,
   allEscalations,
+  attributedSentiment,
   controversyIndex,
   crossPlatform,
   entityTrends,
@@ -116,7 +117,7 @@ export function buildReportTask(storage: Storage, world: World, focus: string | 
   const projection = focusCurve.length >= 2 ? projectCurve(focusCurve, 2) : null;
   const mom = momentum(rows);
   const moments = narrativeTimeline(storage, world, 8);
-  const quotes = quoteBank(storage, world, 3);
+  const quotes = quoteBank(storage, world, focusEntity, 3);
   const amp = amplification(storage, world);
   const chains = allEscalations(storage, world).sort((a, b) => b.severity - a.severity || a.rootId.localeCompare(b.rootId));
 
@@ -153,14 +154,17 @@ export function buildReportTask(storage: Storage, world: World, focus: string | 
     movers: collectMovers(storage, world).slice(0, 8),
   };
 
-  // Evidence quotes: strongest |sentiment| posts per top entity
+  // Evidence quotes: strongest |sentiment toward the entity| posts per top
+  // entity — sentence-attributed, so a post praising a competitor while
+  // conceding about this entity scores only the concession here
   const evidence = topEntities.slice(0, 4).map((e) => {
+    const others = entities.filter((x) => x.id !== e.id).map((x) => x.name);
     const posts = storage
       .listPosts(world.id, { limit: 100000 })
       .filter((p) => p.mentions.some((m) => m.entityId === e.id) && p.kind !== "repost")
-      .sort((a, b) => Math.abs(postSentiment(b)) - Math.abs(postSentiment(a)) || a.id.localeCompare(b.id))
+      .sort((a, b) => Math.abs(attributedSentiment(b, e, others)) - Math.abs(attributedSentiment(a, e, others)) || a.id.localeCompare(b.id))
       .slice(0, 3)
-      .map((p) => ({ id: p.id, by: handles.get(p.personaId) ?? p.personaId, plat: p.platform === "twitter" ? "tw" : "rd", sentiment: round2Safe(postSentiment(p)), engagement: p.metrics.likes + 2 * p.metrics.reposts + p.metrics.upvotes - p.metrics.downvotes, body: truncate(p.body, 200) }));
+      .map((p) => ({ id: p.id, by: handles.get(p.personaId) ?? p.personaId, plat: p.platform === "twitter" ? "tw" : "rd", sentiment: attributedSentiment(p, e, others), engagement: p.metrics.likes + 2 * p.metrics.reposts + p.metrics.upvotes - p.metrics.downvotes, body: truncate(p.body, 200) }));
     return { entity: e.name, posts };
   });
 
@@ -324,8 +328,12 @@ function fmt(v: number | null | undefined): string {
   return v === null || v === undefined ? "—" : (v > 0 ? "+" : "") + v.toFixed(2);
 }
 
-function quoteLine(q: { id: string; by: string; round: number; plat: string; body: string; sentiment: number; engagement?: number }): string {
-  return `> **${q.id}** · ${q.by} · ${q.plat === "tw" ? "twitter" : "reddit"} · round ${q.round} · sentiment ${fmt(q.sentiment)}${q.engagement !== undefined ? ` · engagement ${q.engagement}` : ""}\n>\n> ${truncate(q.body, 220).replace(/\n+/g, " ")}`;
+function quoteLine(q: { id: string; by: string; round: number; plat: string; body: string; sentiment: number; attrSentiment?: number; engagement?: number }, focusName?: string): string {
+  const sent =
+    focusName && q.attrSentiment !== undefined
+      ? `sentiment toward ${focusName} ${fmt(q.attrSentiment)}`
+      : `sentiment ${fmt(q.sentiment)}`;
+  return `> **${q.id}** · ${q.by} · ${q.plat === "tw" ? "twitter" : "reddit"} · round ${q.round} · ${sent}${q.engagement !== undefined ? ` · engagement ${q.engagement}` : ""}\n>\n> ${truncate(q.body, 220).replace(/\n+/g, " ")}`;
 }
 
 export function renderReportMarkdown(storage: Storage, world: World, report: ReportRecord): string {
@@ -347,18 +355,25 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
     [...entities].filter((e) => orgish(e)).sort((a, b) => mentionCount(b.id) - mentionCount(a.id) || b.salience - a.salience)[0] ??
     [...entities].sort((a, b) => mentionCount(b.id) - mentionCount(a.id) || b.salience - a.salience)[0] ??
     null;
-  const factions = factionAnalysis(storage, world, focusEntity);
+  const mom = momentum(rows);
+  const moments = narrativeTimeline(storage, world, 8);
+  // quote ownership: the flagship "crowd said" section claims its quotes
+  // first, faction cards draw next, and the spotlight takes what is left —
+  // every section shows fresh voices, and every crowd-said quote provably
+  // names the focus entity
+  const quotes = quoteBank(storage, world, focusEntity, 3);
+  const quotedIds = new Set<string>();
+  for (const bucket of [quotes.positive, quotes.negative, quotes.mixed]) for (const q of bucket) quotedIds.add(q.id);
+  const factions = factionAnalysis(storage, world, focusEntity, quotedIds);
+  for (const f of factions.factions) for (const q of f.quotes) quotedIds.add(q.id);
+  const arcs = personaArcs(storage, world, focusEntity, 3, quotedIds);
   const controversy = controversyIndex(storage, world, factions);
   const cross = crossPlatform(storage, world, entities);
   const trends = entityTrends(storage, world, entities, (e) => sentimentCurve(storage, world, e), 6);
   const focusCurve = focusEntity ? sentimentCurve(storage, world, focusEntity) : [];
   const projection = focusCurve.length >= 2 ? projectCurve(focusCurve, 2) : null;
-  const mom = momentum(rows);
-  const moments = narrativeTimeline(storage, world, 8);
-  const quotes = quoteBank(storage, world, 3);
   const amp = amplification(storage, world);
   const chains = allEscalations(storage, world).sort((a, b) => b.severity - a.severity || a.rootId.localeCompare(b.rootId));
-  const arcs = personaArcs(storage, world, focusEntity, 3);
   const topBoard = leaderboards(storage, world, 8);
   const totalPosts = posts.filter((p) => p.kind !== "repost").length;
   const totalEng = rows.reduce((a, r) => a + r.engagement, 0);
@@ -422,10 +437,10 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
   L.push("");
   L.push("### Entities under watch");
   L.push("");
-  L.push("| Entity | Type | Salience | Motive |");
-  L.push("|---|---|---|---|");
+  L.push("| Entity | Type | Salience | Mentions | Motive |");
+  L.push("|---|---|---|---|---|");
   for (const e of entities.slice(0, 8)) {
-    L.push(`| ${e.name} | ${e.type} | ${e.salience.toFixed(2)} | ${truncate(e.motives[0] ?? "—", 90)} |`);
+    L.push(`| ${e.name} | ${e.type} | ${e.salience.toFixed(2)} | ${mentionCount(e.id)} | ${truncate(e.motives[0] ?? "—", 90)} |`);
   }
   L.push("");
   const mix = new Map<string, { count: number; plats: Set<string> }>();
@@ -514,13 +529,13 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
   );
   L.push("");
   if (quotes.positive.length > 0 || quotes.negative.length > 0 || quotes.mixed.length > 0) {
-    L.push("### What the crowd actually said");
+    L.push(`### What the crowd actually said${focusEntity ? ` about ${focusEntity.name}` : ""}`);
     L.push("");
     if (quotes.positive.length > 0) {
       L.push("**Champions said**");
       L.push("");
       for (const q of quotes.positive) {
-        L.push(quoteLine(q));
+        L.push(quoteLine(q, focusEntity?.name));
         L.push("");
       }
     }
@@ -528,7 +543,7 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
       L.push("**Critics said**");
       L.push("");
       for (const q of quotes.negative) {
-        L.push(quoteLine(q));
+        L.push(quoteLine(q, focusEntity?.name));
         L.push("");
       }
     }
@@ -536,7 +551,7 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
       L.push("**On the fence**");
       L.push("");
       for (const q of quotes.mixed) {
-        L.push(quoteLine(q));
+        L.push(quoteLine(q, focusEntity?.name));
         L.push("");
       }
     }
@@ -569,7 +584,7 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
       L.push("");
     }
     for (const q of f.quotes) {
-      L.push(quoteLine(q));
+      L.push(quoteLine(q, focusEntity ? factions.focusEntity : undefined));
       L.push("");
     }
     if (f.sentimentByRound.length >= 2) {
@@ -623,7 +638,7 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
       L.push(`after  ${stanceBar(a.focusEnd)}`);
       L.push("```");
       if (a.signatureQuote) {
-        L.push(quoteLine(a.signatureQuote));
+        L.push(quoteLine(a.signatureQuote, focusEntity?.name));
       }
       L.push("");
     }
@@ -757,9 +772,9 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
   L.push("");
 
   // ---- appendix B ---------------------------------------------------------------------------------------
+  L.push("## Appendix B — Escalation Chains");
+  L.push("");
   if (chains.length > 0) {
-    L.push("## Appendix B — Escalation Chains");
-    L.push("");
     L.push("Reply/comment threads where sentiment intensified as the thread deepened — each step is a real post.");
     L.push("");
     for (const c of chains.slice(0, 4)) {
@@ -774,6 +789,9 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
       }
       L.push("");
     }
+  } else {
+    L.push("No escalation chains formed this run — disagreement stayed at post level instead of threading into reply spirals. That caps how fast either camp can recruit: intensity has nowhere to compound.");
+    L.push("");
   }
 
   // ---- appendix C ------------------------------------------------------------------------------------------

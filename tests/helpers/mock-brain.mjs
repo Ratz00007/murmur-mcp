@@ -180,22 +180,37 @@ export function completeOntology(task) {
     if (candidates.length >= TARGET) break;
     addWord(w);
   }
-  // proper-noun phrases are almost always companies/products; reserve "event"
-  // for deeper, rarer phrases so main actors stay stance-eligible
-  const properTypes = ["org", "product", "org", "product", "org", "event", "product", "org"];
-  const derivedTypes = ["topic", "idea", "topic", "event", "idea"];
+  // classify by name shape: a pricing plan or policy is a topic the crowd
+  // argues about, not an organization that announces things; only brand-shaped
+  // names (suffix cues like "Labs", "Cloud", "Inc") become orgs. This keeps
+  // news templates from rendering "Pricing Release announces..." nonsense.
+  const ORG_SHAPE = /(labs?|cloud|inc|corp|llc|technolog(y|ies)|systems?|software|studios?|group|solutions|networks?|media|works|hardware|devices|ai)$/i;
+  const ABSTRACT = /(pricing|price|plan|tier|subscription|billing|payment|refund|amnesty|grandfather|policy|backlash|narrative|adoption|migration|lock-?in|limit|quota|uptime|sla|reliability|observability|export|community|customer|user|free|changelog|faq|guide|page|support|onboard|seat|renewal)/i;
+  const classify = (name, isProper, i) => {
+    if (ORG_SHAPE.test(name)) return "org";
+    if (ABSTRACT.test(name)) return "topic";
+    if (isProper) return i % 2 === 0 ? "product" : "org"; // brand-shaped proper nouns
+    return ["topic", "idea", "topic", "idea", "topic"][i % 5];
+  };
+  const motiveFor = (name, type) => {
+    const r = rng(`m:${name}`);
+    if (type === "org") return `${name} wants to ${pick(r, ["grow adoption", "protect revenue", "avoid backlash", "shape the narrative", "keep users loyal", "move fast without breaking trust"])}`;
+    if (type === "product") return `${name} needs to ${pick(r, ["prove its value fast", "keep its reliability record", "convert curious users", "earn renewal pricing", "outbuild the alternative"])}`;
+    if (type === "idea") return `the crowd reads ${name} as ${pick(r, ["a fairness test", "a trust decision", "value versus lock-in", "a switching-cost question"])}`;
+    return `the debate around ${name} turns on ${pick(r, ["value versus lock-in", "who pays for reliability", "fairness to early users", "short-term pain against long-term trust"])}`;
+  };
   const sentences = allText.split(/(?<=[.!?])\s+/);
   const entities = candidates.slice(0, 14).map((name, i) => {
     const re = new RegExp(`(^|[^A-Za-z0-9])${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^A-Za-z0-9])`, "i");
     const anchors = sentences.filter((s) => re.test(s)).slice(0, 2).map((s) => s.trim().slice(0, 220));
-    const type = i < properCount ? properTypes[i % properTypes.length] : derivedTypes[(i - properCount) % derivedTypes.length];
+    const type = classify(name, i < properCount, i);
     return {
       name,
       type,
       description: `${name} appears repeatedly across the source material and shapes the scenario.`,
       salience: Math.round((0.9 - i * 0.045) * 100) / 100,
       anchors,
-      motives: [`${name} wants to ${pick(rng(`m:${name}`), ["grow adoption", "protect revenue", "avoid backlash", "shape the narrative", "keep users loyal", "move fast without breaking trust"])}`],
+      motives: [motiveFor(name, type)],
     };
   });
   return { entities };
@@ -513,6 +528,16 @@ export function completeReportTask(task) {
   if (r1c) {
     const alignedPosts = r1c.posts.filter((p) => (majorityNeg ? (p.sentiment || 0) < 0 : (p.sentiment || 0) > 0));
     const strongest = (alignedPosts.length > 0 ? alignedPosts : r1c.posts).slice().sort((a, b) => Math.abs(b.sentiment) - Math.abs(a.sentiment))[0];
+    // evidence ids must match the risk's polarity: a backlash risk never
+    // cites a glowing endorsement as its evidence — fill the third slot with
+    // aligned posts only, or leave it at two rather than break polarity
+    const alignedSorted = (alignedPosts.length > 0 ? alignedPosts : r1c.posts)
+      .slice()
+      .sort((a, b) => Math.abs(b.sentiment) - Math.abs(a.sentiment) || String(a.id).localeCompare(String(b.id)));
+    let r1Ids = alignedSorted.slice(0, 3).map((x) => x.id);
+    if (r1Ids.length < 2) {
+      r1Ids = [...alignedSorted, ...r1c.posts.filter((p) => !alignedSorted.includes(p))].slice(0, 3).map((x) => x.id);
+    }
     const negative = (strongest.sentiment || 0) < 0;
     const sev = Math.abs(strongest.sentiment || 0) > 0.45 && (opp ? opp.size : 0) >= Math.max(2, ((sup && sup.size) || 0)) ? "high" : Math.abs(strongest.sentiment || 0) > 0.3 ? "medium" : "low";
     const r1Count = negative ? (opp && opp.size) || 0 : (sup && sup.size) || 0;
@@ -527,7 +552,7 @@ export function completeReportTask(task) {
       trigger: negative
         ? `The same complaint phrased identically in 2+ independent threads — that is the moment a grievance becomes a movement.`
         : `Champion posts out-earning critical posts by 3:1 for two consecutive cycles — that is complacency fuel.`,
-      postIds: postIdsFrom(r1c.posts, 3),
+      postIds: r1Ids,
     });
   }
   // R2: escalation contagion
@@ -546,7 +571,15 @@ export function completeReportTask(task) {
   // R3: platform split (or complacency fallback)
   const div = cross.maxDivergence;
   if (div && div.value >= 0.15) {
-    const ids = topPosts.filter((p) => p.id).slice(0, 2).map((p) => p.id);
+    // evidence: posts about the entity the platforms actually disagree on,
+    // one per venue where possible — not the run's generic top posts
+    const divPosts = (((evidence.find((e) => e.entity === div.entity) || {}).posts) || [])
+      .slice()
+      .sort((a, b) => Math.abs(b.sentiment) - Math.abs(a.sentiment) || String(a.id).localeCompare(String(b.id)));
+    const twPick = divPosts.find((p) => p.plat === "tw");
+    const rdPick = divPosts.find((p) => p.plat === "rd" && p.id !== (twPick || {}).id);
+    let ids = twPick && rdPick ? [twPick.id, rdPick.id] : divPosts.slice(0, 2).map((p) => p.id);
+    if (ids.length < 2) ids = ids.concat(topPosts.slice(0, 2).map((p) => p.id)).filter((x, i, a) => a.indexOf(x) === i).slice(0, 2);
     risks.push({
       title: `Platform-split narrative on ${div.entity}`,
       rationale: `The same story is landing differently by venue: ${div.entity} reads ${n2((cross.rows || []).find((x) => x.entity === div.entity)?.twitter)} on Twitter versus ${n2((cross.rows || []).find((x) => x.entity === div.entity)?.reddit)} on Reddit (divergence ${Number(div.value).toFixed(2)}). Cross-posted screenshots let the angrier venue set the frame for both, and the calmer venue's arguments never catch up — the run's escalation chains concentrated where the heat was.`,
@@ -571,7 +604,9 @@ export function completeReportTask(task) {
   while (risks.length < 3) {
     const p = topPosts[risks.length] || topPosts[0];
     if (!p) break;
-    const ids = [p.id, ...fallbackIds(3)].filter((x, i, a) => a.indexOf(x) === i).slice(0, 3);
+    // the anchor plus what else was hot in its round — a cohort, not random top posts
+    const sameRound = topPosts.filter((x) => x.round === p.round && x.id !== p.id).slice(0, 2).map((x) => x.id);
+    const ids = [p.id, ...sameRound, ...fallbackIds(3)].filter((x, i, a) => a.indexOf(x) === i).slice(0, 3);
     risks.push({
       title: `Unmuted cluster around ${p.by}'s ${p.plat === "tw" ? "tweet" : "post"}`,
       rationale: `Post ${p.id} (round ${p.round}, sentiment ${n2(p.sentiment)}, engagement ${p.engagement}) keeps resurfacing in feeds across the run. High-salience anchors like this survive their news cycle and quietly set baselines for every later conversation about the same topic.`,
@@ -595,7 +630,7 @@ export function completeReportTask(task) {
     `The simulated crowd is ${controversy.label} (controversy ${controversy.score}/100): ${sup ? sup.size : 0} supporters against ${opp ? opp.size : 0} opponents around ${focusName}, with ${und ? und.size : 0} personas still undecided — the persuadable middle is ${pct(und ? und.share : 0)} of the population. ` +
     `Sentiment toward ${focusName} ended ${n2(focusTrend.last)} (from ${n2(focusTrend.first)}, ${directionWord}); engagement is ${mom.trend} at ${mom.pct > 0 ? "+" : ""}${pct(mom.pct).replace("%", "")}% between halves of the run. ` +
     `${amp.viralPosts.length > 0 ? `${amp.viralPosts.length} post${amp.viralPosts.length === 1 ? "" : "s"} crossed the virality threshold and organic bystanders contributed ${pct(amp.organicEngagementShare)} of all engagement — the crowd is amplifying itself without prompting. ` : `No post crossed the virality threshold — reach stayed inside the follow graph, which limits how far any single frame can travel. `}` +
-    `The strongest signal in the run is ${risks[0] ? risks[0].title.toLowerCase() : "the sentiment cluster"}; the risk register below details what to do about it before this plays out in public.`;
+    `The strongest signal in the run is ${risks[0] ? risks[0].title.charAt(0).toLowerCase() + risks[0].title.slice(1) : "the sentiment cluster"}; the risk register below details what to do about it before this plays out in public.`;
 
   const keyFindings = [
     `The population split ${sup ? sup.size : 0}/${opp ? opp.size : 0}/${und ? und.size : 0} (support/oppose/undecided) — polarization ${Math.round(polarization * 100)}/100, controversy ${controversy.score}/100 (${controversy.label}).`,
