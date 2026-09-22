@@ -1,0 +1,33 @@
+{
+  "name": "murmur-monorepo",
+  "private": true,
+  "version": "1.0.0-rc.1",
+  "description": "Murmur — social-simulation engine for coding agents. Zero API keys; inference rides your existing coding subscription via MCP.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": { "node": ">=20.0.0" },
+  "workspaces": [
+    "packages/engine",
+    "packages/prompts",
+    "packages/adapters",
+    "packages/templates",
+    "packages/server"
+  ],
+  "scripts": {
+    "build": "npm run build -w @murmur/engine && npm run build -w @murmur/prompts && npm run build -w @murmur/adapters && npm run build -w @murmur/templates && npm run build -w murmur-mcp",
+    "typecheck": "npm run build:libs && tsc -p packages/engine/tsconfig.json && tsc -p packages/server/tsconfig.json",
+    "build:libs": "npm run build -w @murmur/engine && npm run build -w @murmur/prompts && npm run build -w @murmur/adapters && npm run build -w @murmur/templates",
+    "test": "vitest run --project unit --project golden",
+    "test:e2e": "npm run build && vitest run --project e2e",
+    "test:all": "npm run build && vitest run",
+    "cleanroom": "npm run build && node tests/cleanroom/gate.mjs",
+    "demo": "npm run build && node tests/cleanroom/demo-run.mjs",
+    "clean": "node -e \"require('node:fs').rmSync('packages/engine/dist',{recursive:true,force:true});require('node:fs').rmSync('packages/prompts/dist',{recursive:true,force:true});require('node:fs').rmSync('packages/adapters/dist',{recursive:true,force:true});require('node:fs').rmSync('packages/templates/dist',{recursive:true,force:true});require('node:fs').rmSync('packages/server/dist',{recursive:true,force:true})\""
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.0.0"
+  }
+}

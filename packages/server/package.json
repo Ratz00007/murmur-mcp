@@ -1,0 +1,45 @@
+{
+  "name": "murmur-mcp",
+  "version": "1.0.0-rc.1",
+  "description": "Murmur — social-simulation MCP server for coding agents. Predict how communities react to your product, policy or story — powered by the coding subscription you already pay for. Zero API keys.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "murmur-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "claude-code",
+    "codex",
+    "social-simulation",
+    "agent-based-modeling",
+    "prediction",
+    "market-research"
+  ],
+  "scripts": {
+    "build": "tsup"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "better-sqlite3": "^12.2.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@murmur/adapters": "1.0.0-rc.1",
+    "@murmur/engine": "1.0.0-rc.1",
+    "@murmur/prompts": "1.0.0-rc.1",
+    "@murmur/templates": "1.0.0-rc.1",
+    "@types/better-sqlite3": "^7.6.12"
+  }
+}

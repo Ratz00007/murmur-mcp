@@ -1,0 +1,19 @@
+{
+  "name": "@murmur/adapters",
+  "version": "1.0.0-rc.1",
+  "private": true,
+  "description": "Per-client install snippets, config templates and detection fixtures for MCP clients",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  }
+}
