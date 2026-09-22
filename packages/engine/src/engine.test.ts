@@ -8,6 +8,7 @@ import { estTokens, truncate, slugify, stanceBar, splitSentences, topKeywords } 
 import { scoreSentiment, entityMentions } from "./sentiment.js";
 import { extractPdfText } from "./ingest/pdf.js";
 import { coverageStats, makeDigest } from "./ingest/digest.js";
+import { renderReportHtml } from "./report-html.js";
 import { Storage, openDatabase } from "./store/storage.js";
 import type { Entity } from "./types.js";
 
@@ -173,6 +174,85 @@ describe("digest", () => {
     const c = coverageStats([]);
     expect(c.seeds).toBe(0);
     expect(c.notes.join(" ")).toContain("No seeds");
+  });
+});
+
+describe("report html dashboard", () => {
+  const build = () => {
+    const dir = tmp();
+    const db = new Storage(openDatabase(path.join(dir, "murmur.db")));
+    const world = db.createWorld({ name: "Pricing Reaction", seed: "html-test" });
+    const mk = (name: string, type: Entity["type"], salience: number): Entity => ({
+      id: "", worldId: world.id, name, type, description: "d", salience, anchors: ["a"], motives: ["m"],
+    });
+    db.insertEntities(world.id, [mk("Acme Cloud", "org", 0.9), mk("Nimbus Labs", "org", 0.7), mk("Pricing", "topic", 0.6)]);
+    const ents = db.listEntities(world.id);
+    const personas = db.insertPersonas(world.id, [0, 1, 2, 3, 4].map((i) => ({
+      name: `P${i}`, handle: `@p${i}`, archetype: i % 2 ? "critic" : "power user", bio: `bio ${i}`,
+      traits: { openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, emotionalStability: 0.5 },
+      stances: { [ents[0].id]: i % 2 ? -0.6 : 0.6 }, platform: "both", activity: 0.8, communityIds: [], follows: [],
+    })));
+    for (let r = 1; r <= 3; r++) {
+      personas.forEach((p, i) => {
+        const e = ents[Math.floor(i / 3)]; // 0,0,0,1,1 — most posts about the focus
+        const positive = i % 2 === 1;
+        db.insertPost({
+          worldId: world.id, round: r, personaId: p.id, platform: i % 2 ? "reddit" : "twitter", kind: "post", parentId: null,
+          threadId: "", communityId: null, title: null,
+          body: positive ? `${e.name} honestly great update, fixed the thing <>&" it just works` : `${e.name} feels like a ripoff and a cash grab`,
+          metrics: { likes: r, reposts: 0, upvotes: 1, downvotes: 0, impressions: 10 },
+          mentions: [{ entityId: e.id, score: positive ? 0.4 : -0.5 }], origin: "generated",
+        });
+      });
+    }
+    const record = db.insertReport(world.id, {
+      version: 1,
+      focus: "reaction to Acme Cloud pricing",
+      path: "",
+      narrative: {
+        executiveSummary: "The crowd split over the pricing change with strong language on both sides.",
+        keyFindings: ["Polarization hardened early", "Critics dominated Reddit"],
+        trajectory: "Sentiment drifts down absent a response; the projection slopes negative.",
+        risks: [{ title: "Backlash hardening", rationale: "Critical posts keep resurfacing across rounds.", severity: "high", likelihood: "medium", mitigation: "Publish the migration guide", trigger: "Same complaint in 2+ threads", postIds: ["po_1", "po_3"] }],
+        recommendations: [{ title: "Arm champions", action: "Ship a proof-point brief", expectedImpact: "Higher positive share" }],
+        confidence: { strongSignals: ["Split camps"], contested: ["Free tier reading"] },
+        limitations: ["Small population"],
+      },
+    });
+    db.updateWorld(world.id, { round: 3 });
+    return { db, world: db.getWorld(world.slug)!, record };
+  };
+  it("renders a complete, self-contained dashboard with no external references", () => {
+    const { db, world, record } = build();
+    const html = renderReportHtml(db, world, record);
+    // structure: every section present
+    for (const needle of ["<!doctype html>", "MURMUR", "Executive Summary", "Market Reaction", "Faction Map", "Platform Divergence", "Persona Spotlight", "Trajectory Forecast", "Risk Register", "Recommendations", "Confidence", "Appendix A", "Appendix B", "Appendix C", "Appendix D", "Appendix E", "<svg", "personas"]) {
+      expect(html).toContain(needle);
+    }
+    // charts and cards
+    expect(html).toContain("<polyline");
+    expect(html).toContain("Champions said");
+    expect(html).toContain("Critics said");
+    expect(html).toContain("sev-high");
+    expect(html).toContain("po_1");
+    // zero-egress promise holds for the artifact itself: no URLs, no scripts, no external loads
+    expect(html).not.toMatch(/https?:\/\//);
+    expect(html).not.toContain("<script");
+    expect(html).not.toContain("<link");
+    expect(html).not.toContain("xmlns");
+    // injected content is escaped
+    expect(html).not.toContain("<>&");
+    expect(html).toContain("&lt;&gt;&amp;");
+    db.close();
+  });
+  it("is deterministic — same run, same bytes", () => {
+    const a = build();
+    const b = build();
+    const ha = renderReportHtml(a.db, a.world, a.record);
+    const hb = renderReportHtml(b.db, b.world, b.record);
+    expect(ha).toBe(hb);
+    a.db.close();
+    b.db.close();
   });
 });
 

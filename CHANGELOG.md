@@ -4,6 +4,8 @@
 
 First stable release: the complete five-stage pipeline, Host-Powered Inference, zero API keys.
 
+- **HTML dashboard (new since rc.1)**: `report_export` now takes `format: "md" | "html" | "both"` — the report ships as a self-contained dark-theme dashboard (inline CSS + SVG: sentiment lines, faction donut, platform-divergence tracks, trajectory projection with dashed extrapolation, engagement bars; KPI cards, quote banks, risk register with severity pills, persona before/after stance bars, timeline, collapsible appendices). Zero JavaScript, zero external requests, print stylesheet — safe to commit, share or print. The `.md` and `.html` render from one shared `collectReportData()` computation, so they can never disagree on a number.
+
 - **Report pipeline (new since rc.1)**: analyst-grade prediction reports — deep analytics layer (factions with per-round sentiment, persona arcs with before/after stance, quote bank, controversy index, cross-platform divergence, momentum, least-squares trajectory projection, amplification, narrative timeline), sentence-level sentiment attribution toward the focus entity (praise for a competitor never leaks into the focus entity's score), quote ownership across sections (crowd-said → faction cards → spotlight — no repetition), polarity-aligned risk evidence (a backlash risk never cites an endorsement), early-warning triggers with mitigation and expected impact, and 5 appendices (round stats, escalation chains, amplification, post index, methodology & reproducibility).
 - **Sentiment scorer v2 (new since rc.1)**: sentence-aware negation (never leaks across a sentence boundary), window-1 negation scope (affirmative slang like "no notes Solid decision" stays positive; "never crashes for me" reads positive), and an expanded inflection + community lexicon (loving/fixed/complained/reliability/anger/cash grab/rug pull/price hike/data loss/…).
 - **Publish readiness (new since rc.1)**: release workflow (npm publish gated on the full test + cleanroom matrix, with provenance), package metadata (repository/homepage/bugs), LICENSE + NOTICE shipped in the npm tarball.
@@ -11,7 +13,7 @@ First stable release: the complete five-stage pipeline, Host-Powered Inference, 
 - **Server** (`murmur-mcp`): 29 MCP tools, 3 resources, 4 prompt playbooks, stdio transport, stderr-only logging, sampling as an opt-in accelerator (`use_sampling`), CLI (`serve` default, `doctor`, `init`, `templates`, `version`).
 - **Adapters** (`@murmur/adapters`): install snippets + config templates for the 10-client launch matrix, with detection.
 - **Templates** (`@murmur/templates`): scenario packs — launch, policy, crisis, finance, fiction.
-- **Tests**: 46 tests — unit (rng determinism, sentiment incl. negation/slang regressions, PDF, storage roundtrips, platform mechanics, submit validation), golden runs (byte-identical replay, F1–F6 acceptance, injection-shift effect, crash resume), real MCP client↔server e2e over stdio, and the cleanroom release gate (no egress, no keys, clean dependency closure, time-to-first-world, workspace isolation).
+- **Tests**: 48 tests — unit (rng determinism, sentiment incl. negation/slang regressions, PDF, storage roundtrips, platform mechanics, submit validation), golden runs (byte-identical replay, F1–F6 acceptance, injection-shift effect, crash resume), real MCP client↔server e2e over stdio, and the cleanroom release gate (no egress, no keys, clean dependency closure, time-to-first-world, workspace isolation).
 
 ## 1.0.0-rc.1 — 2026-09-22
 

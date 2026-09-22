@@ -75,6 +75,10 @@ export class Workspace {
     return path.join(this.murmurDir, "reports", slug, `report-${version}.md`);
   }
 
+  reportHtmlPath(slug: string, version: number): string {
+    return path.join(this.murmurDir, "reports", slug, `report-${version}.html`);
+  }
+
   artifactPath(slug: string, name: string): string {
     return path.join(this.worldDir(slug), "artifacts", name);
   }

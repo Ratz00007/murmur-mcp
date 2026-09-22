@@ -336,15 +336,45 @@ function quoteLine(q: { id: string; by: string; round: number; plat: string; bod
   return `> **${q.id}** · ${q.by} · ${q.plat === "tw" ? "twitter" : "reddit"} · round ${q.round} · ${sent}${q.engagement !== undefined ? ` · engagement ${q.engagement}` : ""}\n>\n> ${truncate(q.body, 220).replace(/\n+/g, " ")}`;
 }
 
-export function renderReportMarkdown(storage: Storage, world: World, report: ReportRecord): string {
+/** Everything both renderers (Markdown + HTML dashboard) compute from a
+ * recorded run — a single source of truth so the .md and the .html can never
+ * disagree on a number, a quote or a faction split. */
+export interface ReportData {
+  entities: Entity[];
+  personas: Persona[];
+  posts: Post[];
+  handles: Map<string, string>;
+  rows: ReturnType<typeof timeline>;
+  mentionCount: (id: string) => number;
+  focusEntity: Entity | null;
+  mom: MomentumAnalysis;
+  moments: TimelineMoment[];
+  quotes: QuoteBank;
+  factions: FactionAnalysis;
+  arcs: ReturnType<typeof personaArcs>;
+  controversy: ControversyAnalysis;
+  cross: CrossPlatformAnalysis;
+  trends: EntityTrend[];
+  focusCurve: { round: number; value: number }[];
+  projection: Projection | null;
+  amp: AmplificationInfo;
+  chains: ReturnType<typeof allEscalations>;
+  topBoard: ReturnType<typeof leaderboards>;
+  charted: Entity[];
+  totalPosts: number;
+  totalEng: number;
+  dominant: EntityTrend | null;
+  injections: { round: number; text: string }[];
+  date: string;
+}
+
+export function collectReportData(storage: Storage, world: World, report: ReportRecord): ReportData {
   const entities = [...storage.listEntities(world.id)].sort((a, b) => b.salience - a.salience || a.id.localeCompare(b.id));
   const personas = storage.listPersonas(world.id);
   const posts = storage.listPosts(world.id, { limit: 100000 });
   const handles = new Map(personas.map((p) => [p.id, `${p.name} (${p.handle})`]));
   const rows = timeline(storage, world);
-  const d = report.narrative;
 
-  // ---- analytics (deterministic) -------------------------------------------
   const mentionCount = (id: string) => posts.filter((p) => p.mentions.some((m) => m.entityId === id)).length;
   const orgish = (e: Entity) => e.type === "org" || e.type === "product" || e.type === "person";
   const wbMatch = (haystack: string, name: string) =>
@@ -380,6 +410,34 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
   const dominant = trends.slice().sort((a, b) => b.volume - a.volume)[0];
   const injections = storage.listEvents(world.id, { type: "injection" }).sort((a, b) => a.round - b.round);
   const date = (report.createdAt || world.createdAt).slice(0, 10);
+  // chart the entities that actually have sentiment history: the focus entity
+  // first, then the most-discussed ones (salience order often has no curve)
+  const chartCandidates = [
+    ...(focusEntity ? [focusEntity] : []),
+    ...[...entities].sort((a, b) => mentionCount(b.id) - mentionCount(a.id) || b.salience - a.salience),
+  ];
+  const charted: Entity[] = [];
+  for (const e of chartCandidates) {
+    if (charted.length >= 3) break;
+    if (charted.some((x) => x.id === e.id)) continue;
+    if (sentimentCurve(storage, world, e).length >= 2) charted.push(e);
+  }
+  return {
+    entities, personas, posts, handles, rows, mentionCount, focusEntity, mom, moments,
+    quotes, factions, arcs, controversy, cross, trends, focusCurve, projection, amp,
+    chains, topBoard, charted, totalPosts, totalEng, dominant,
+    injections: injections.map((ev) => ({ round: ev.round, text: String((ev.payload as { text?: string })?.text ?? "") })),
+    date,
+  };
+}
+
+export function renderReportMarkdown(storage: Storage, world: World, report: ReportRecord): string {
+  const {
+    entities, personas, posts, handles, rows, mentionCount, focusEntity, mom, moments,
+    quotes, factions, arcs, controversy, cross, trends, focusCurve, projection, amp,
+    chains, topBoard, charted, totalPosts, totalEng, dominant, injections, date,
+  } = collectReportData(storage, world, report);
+  const d = report.narrative;
 
   const L: string[] = [];
 
@@ -464,7 +522,7 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
     L.push("| Round | Event |");
     L.push("|---|---|");
     for (const ev of injections) {
-      L.push(`| ${ev.round} | ${truncate(String(ev.payload.text ?? ""), 160)} |`);
+      L.push(`| ${ev.round} | ${truncate(ev.text, 160)} |`);
     }
     L.push("");
   }
@@ -481,18 +539,6 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
   // ---- 4. market reaction ----------------------------------------------------------
   L.push("## 4. Market Reaction");
   L.push("");
-  // chart the entities that actually have sentiment history: the focus entity
-  // first, then the most-discussed ones (salience order often has no curve)
-  const chartCandidates = [
-    ...(focusEntity ? [focusEntity] : []),
-    ...[...entities].sort((a, b) => mentionCount(b.id) - mentionCount(a.id) || b.salience - a.salience),
-  ];
-  const charted: Entity[] = [];
-  for (const e of chartCandidates) {
-    if (charted.length >= 3) break;
-    if (charted.some((x) => x.id === e.id)) continue;
-    if (sentimentCurve(storage, world, e).length >= 2) charted.push(e);
-  }
   if (charted.length > 0) {
     const curves = charted.map((e) => ({ e, c: sentimentCurve(storage, world, e) }));
     const xaxis = Array.from({ length: world.round }, (_, i) => i + 1);

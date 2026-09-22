@@ -80,6 +80,7 @@ That's it. The prompt is a playbook: your agent drives all 29 tools in order, sh
 - **`.murmur/murmur.db`** — the whole world in SQLite (10 tables: worlds, seeds, entities, relations, personas, memories, posts, events, reports, generations). Portable by copying the directory; resumable at any stage boundary after a crash.
 - **`.murmur/{world}/graph.mmd`** — the ontology graph as Mermaid (typed relations: alliance / opposition / influence / ownership, with tension scores).
 - **`.murmur/reports/{world}/report-N.md`** — versioned prediction reports: Mermaid `xychart` sentiment curves, stance-migration bars, escalation chains, persona leaderboards, deterministic statistics appendix and a post index. Reports regenerate, never mutate — diff two scenarios line by line.
+- **`.murmur/reports/{world}/report-N.html`** — the same report as a self-contained dashboard (`report_export` with `format: "md" | "html" | "both"`): inline CSS + SVG charts (sentiment lines, faction donut, platform-divergence bars, trajectory projection), KPI cards, quote banks, risk register — zero JavaScript, zero external requests, safe to commit or share. It shares one engine computation with the `.md`, so the two can never disagree on a number.
 - **`.murmur/{world}/interviews.jsonl` + `qa.jsonl`** — logged deep-interaction dialogues.
 - **`.murmur/{world}/audit.jsonl`** — the audit trail of every plan/submit exchange.
 

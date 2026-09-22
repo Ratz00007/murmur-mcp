@@ -1,7 +1,7 @@
 /** Report tools: report_plan, report_submit, report_export. */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { buildReportTask, renderReportMarkdown, storeReport, validateReportDraft } from "@murmur/engine";
+import { buildReportTask, renderReportHtml, renderReportMarkdown, storeReport, validateReportDraft } from "@murmur/engine";
 import { coerceJson, type ServerContext } from "../session.js";
 
 export function registerReportTools(server: McpServer, ctx: ServerContext): void {
@@ -79,33 +79,49 @@ export function registerReportTools(server: McpServer, ctx: ServerContext): void
 
   server.tool(
     "report_export",
-    "Write the versioned report as Markdown + Mermaid into .murmur/reports/{world}/report-N.md — in-repo, diffable, renderable on any git forge. " +
+    "Write the versioned report into .murmur/reports/{world}/ — Markdown+Mermaid (diffable, renders on any git forge) and/or a self-contained HTML dashboard (inline CSS+SVG, no external requests; open it in a browser). " +
       "Reports regenerate (never mutate), so two scenarios can be diffed line by line.",
     {
       world: z.string().optional().describe("World id/slug (default: active world)"),
       version: z.number().int().min(1).optional().describe("Report version (default: latest)"),
-      format: z.enum(["md"]).optional().describe("Output format (v1 ships Markdown)"),
+      format: z.enum(["md", "html", "both"]).optional().describe("Output format: md (default), html dashboard, or both"),
     },
-    async ({ world, version }) => {
+    async ({ world, version, format }) => {
       try {
         const w = ctx.resolveWorld(world);
         const record = version ? ctx.storage.reportByVersion(w.id, version) : ctx.storage.latestReport(w.id);
         if (!record) throw new Error("no stored report — run report_plan / report_submit first");
-        const md = renderReportMarkdown(ctx.storage, w, record);
-        const file = ctx.workspace.reportPath(w.slug, record.version);
-        ctx.workspace.writeAtomic(file, md);
-        // record the in-repo path on the stored report
-        ctx.storage.db
-          .prepare("UPDATE reports SET path=? WHERE id=?")
-          .run(ctx.workspace.rel(file), record.id);
-        ctx.audit(w, { op: "report_export", version: record.version, path: ctx.workspace.rel(file) });
+        const fmt = format ?? "md";
+        const written: { path: string; bytes: number }[] = [];
+        let mdPath: string | null = null;
+        let htmlPath: string | null = null;
+        if (fmt === "md" || fmt === "both") {
+          const md = renderReportMarkdown(ctx.storage, w, record);
+          const file = ctx.workspace.reportPath(w.slug, record.version);
+          ctx.workspace.writeAtomic(file, md);
+          ctx.storage.db.prepare("UPDATE reports SET path=? WHERE id=?").run(ctx.workspace.rel(file), record.id);
+          written.push({ path: ctx.workspace.rel(file), bytes: Buffer.byteLength(md, "utf8") });
+          mdPath = ctx.workspace.rel(file);
+        }
+        if (fmt === "html" || fmt === "both") {
+          const html = renderReportHtml(ctx.storage, w, record);
+          const file = ctx.workspace.reportHtmlPath(w.slug, record.version);
+          ctx.workspace.writeAtomic(file, html);
+          written.push({ path: ctx.workspace.rel(file), bytes: Buffer.byteLength(html, "utf8") });
+          htmlPath = ctx.workspace.rel(file);
+        }
+        ctx.audit(w, { op: "report_export", version: record.version, format: fmt, files: written.map((x) => x.path) });
         return ctx.reply(
           {
             ok: true,
-            path: ctx.workspace.rel(file),
             version: record.version,
-            bytes: Buffer.byteLength(md, "utf8"),
-            next: "open the report, then interview_agent / report_agent_ask to interrogate the world behind it",
+            files: written,
+            ...(htmlPath
+              ? { open: htmlPath, hint: `open ${htmlPath} in a browser — the dashboard shares every number with the .md report (same engine computation)` }
+              : {}),
+            next: htmlPath
+              ? `open the dashboard (${htmlPath}) and the report${mdPath ? ` (${mdPath})` : ""}, then interview_agent / report_agent_ask to interrogate the world behind them`
+              : `open the report${mdPath ? ` (${mdPath})` : ""}, then interview_agent / report_agent_ask to interrogate the world behind it`,
           },
           w
         );

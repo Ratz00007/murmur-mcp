@@ -4,6 +4,7 @@
 
 First stable release.
 
+- **HTML dashboard**: `report_export` gains `format: "md" | "html" | "both"` — a self-contained dark-theme dashboard (inline CSS + SVG charts, KPI cards, quote banks, risk register) written next to the Markdown report. Zero JavaScript, zero external requests; shares one engine computation with the `.md`.
 - Analyst-grade prediction reports: faction analysis, persona arcs, attributed quote bank, controversy index, cross-platform divergence, momentum and trajectory projection, amplification and narrative timeline, risk register with early-warning triggers, and 5 evidence appendices.
 - Sentence-level sentiment attribution toward the focus entity — praise for a competitor never leaks into the focus entity's score.
 - Sentiment scorer v2: sentence-aware negation, community-slang safe ("no notes" stays praise, "never crashes" reads positive), expanded inflection lexicon.

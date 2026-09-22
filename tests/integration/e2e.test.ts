@@ -141,15 +141,24 @@ describe("MCP server end-to-end", () => {
       const draft = completeReportTask(rTask);
       const submitted = await call("report_submit", { task_id: rTask.id, draft });
       expect(submitted.version as number).toBe(1);
-      const exported = await call("report_export", {});
-      const reportFile = path.join(cwd, String(exported.path));
-      expect(fs.existsSync(reportFile)).toBe(true);
-      const md = fs.readFileSync(reportFile, "utf8");
+      const exported = await call("report_export", { format: "both" });
+      const files = exported.files as { path: string; bytes: number }[];
+      expect(files.length).toBe(2);
+      const mdFile = path.join(cwd, files.find((f) => f.path.endsWith(".md"))!.path);
+      const htmlFile = path.join(cwd, files.find((f) => f.path.endsWith(".html"))!.path);
+      expect(fs.existsSync(mdFile)).toBe(true);
+      expect(fs.existsSync(htmlFile)).toBe(true);
+      const md = fs.readFileSync(mdFile, "utf8");
       expect(md).toContain("# Murmur Prediction Report");
       expect(md).toContain("xychart-beta");
       expect(md).toContain("## At a Glance");
       expect(md).toContain("## 9. Risk Register");
       expect(md).toContain("## 5. Faction Map");
+      const html = fs.readFileSync(htmlFile, "utf8");
+      expect(html).toContain("<!doctype html>");
+      expect(html).toContain("Risk Register");
+      expect(html).toContain("<svg");
+      expect(html).not.toMatch(/https?:\/\//);
 
       // deep interaction (F7)
       const interview = await call("interview_agent", { persona: firstPersona, question: "Why do you feel this way about the pricing change?" });

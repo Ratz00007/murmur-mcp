@@ -77,8 +77,11 @@ export {
   validateReportDraft,
   storeReport,
   renderReportMarkdown,
+  collectReportData,
   REPORT_INSTRUCTIONS,
+  type ReportData,
 } from "./report.js";
+export { renderReportHtml } from "./report-html.js";
 export {
   buildInterviewPack,
   buildAskPack,
