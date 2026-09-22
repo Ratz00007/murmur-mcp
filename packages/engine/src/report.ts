@@ -244,7 +244,7 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
   // Stance migration bars
   const movers = storage
     .listEvents(world.id, { type: "round_stats" })
-    .flatMap((e) => ((e.payload.stats as { topMovers?: { persona: string; entity: string; from: number; to: number }[] })?.topMovers ?? []));
+    .flatMap((e) => ((e.payload.stats as { topMovers?: { personaId: string; entity: string; from: number; to: number }[] })?.topMovers ?? []));
   if (movers.length > 0) {
     L.push("## Stance Migration");
     L.push("");
@@ -252,7 +252,7 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
     L.push("|---|---|---|---|---|");
     const byId = new Map(personas.map((p) => [p.id, p.handle]));
     for (const m of movers.slice(0, 10)) {
-      L.push(`| ${byId.get(m.persona) ?? m.persona} | ${m.entity} | ${m.from.toFixed(2)} | ${m.to.toFixed(2)} | ${stanceBar(m.to)} |`);
+      L.push(`| ${byId.get(m.personaId) ?? m.personaId} | ${m.entity} | ${m.from.toFixed(2)} | ${m.to.toFixed(2)} | ${stanceBar(m.to)} |`);
     }
     L.push("");
   }
