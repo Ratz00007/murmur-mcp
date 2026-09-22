@@ -393,14 +393,27 @@ export interface ReportRisk {
   title: string;
   rationale: string;
   severity: "high" | "medium" | "low";
+  likelihood?: "high" | "medium" | "low";
+  mitigation?: string;
+  trigger?: string;
   postIds: string[];
 }
 
+export interface ReportRecommendation {
+  title: string;
+  action: string;
+  expectedImpact: string;
+}
+
 export interface ReportDraft {
+  scenarioRecap?: string;
   executiveSummary: string;
+  keyFindings?: string[];
   trajectory: string;
   risks: ReportRisk[];
+  recommendations?: ReportRecommendation[];
   confidence: { strongSignals: string[]; contested: string[] };
+  limitations?: string[];
 }
 
 export interface ReportRecord {

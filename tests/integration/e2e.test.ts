@@ -147,7 +147,9 @@ describe("MCP server end-to-end", () => {
       const md = fs.readFileSync(reportFile, "utf8");
       expect(md).toContain("# Murmur Prediction Report");
       expect(md).toContain("xychart-beta");
-      expect(md).toContain("## Named Risks");
+      expect(md).toContain("## At a Glance");
+      expect(md).toContain("## 9. Risk Register");
+      expect(md).toContain("## 5. Faction Map");
 
       // deep interaction (F7)
       const interview = await call("interview_agent", { persona: firstPersona, question: "Why do you feel this way about the pricing change?" });

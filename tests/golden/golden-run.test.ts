@@ -51,9 +51,14 @@ describe("golden run", () => {
       expect(fs.existsSync(run.reportPath)).toBe(true);
       expect(run.markdown).toContain("# Murmur Prediction Report");
       expect(run.markdown).toContain("```mermaid");
-      expect(run.markdown).toContain("## Named Risks");
-      expect(run.markdown).toContain("## Appendix A — Deterministic Statistics");
-      expect(run.markdown).toContain("## Confidence");
+      expect(run.markdown).toContain("## At a Glance");
+      expect(run.markdown).toContain("## 9. Risk Register");
+      expect(run.markdown).toContain("## 5. Faction Map");
+      expect(run.markdown).toContain("## 10. Recommendations");
+      expect(run.markdown).toContain("## Appendix A — Round-by-Round Statistics");
+      expect(run.markdown).toContain("## 11. Confidence & Limitations");
+      expect(run.markdown).toContain("xychart-beta");
+      expect(run.markdown).toContain("Mitigation —");
       // every round recorded stats
       for (let r = 1; r <= 5; r++) {
         expect(engine.roundSummary(run.storage, run.world, r)).not.toBeNull();

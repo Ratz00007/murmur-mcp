@@ -47,6 +47,7 @@ describe("rng determinism", () => {
       "sim/batch.ts",
       "sim/ingest.ts",
       "aggregate.ts",
+      "analytics.ts",
       "sentiment.ts",
       "ontology.ts",
       "graph.ts",

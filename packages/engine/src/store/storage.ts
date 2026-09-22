@@ -209,7 +209,7 @@ function reportFromRow(r: Row): ReportRecord {
     worldId: S(r.world_id),
     version: N(r.version),
     focus: S(r.focus),
-    narrative: J<ReportDraft>(r.narrative, { executiveSummary: "", trajectory: "", risks: [], confidence: { strongSignals: [], contested: [] } }),
+    narrative: J<ReportDraft>(r.narrative, { executiveSummary: "", trajectory: "", risks: [], confidence: { strongSignals: [], contested: [] }, recommendations: [], keyFindings: [], limitations: [] }),
     path: S(r.path),
     createdAt: S(r.created_at),
   };

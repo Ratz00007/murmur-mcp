@@ -61,6 +61,18 @@ export {
   mean,
 } from "./aggregate.js";
 export {
+  factionAnalysis,
+  controversyIndex,
+  crossPlatform,
+  entityTrends,
+  personaArcs,
+  quoteBank,
+  narrativeTimeline,
+  momentum,
+  projectCurve,
+  amplification,
+} from "./analytics.js";
+export {
   buildReportTask,
   validateReportDraft,
   storeReport,

@@ -7,8 +7,8 @@ import { coerceJson, type ServerContext } from "../session.js";
 export function registerReportTools(server: McpServer, ctx: ServerContext): void {
   server.tool(
     "report_plan",
-    "Stage 6 · PLAN: compose the report-drafting task — deterministic statistics (sentiment curves, escalations, stance migration, peaks, leaderboards) " +
-      "plus an evidence pack of the strongest posts. Draft the narrative from that evidence and return it via report_submit.",
+    "Stage 6 · PLAN: compose the report-drafting task — deterministic analytics (sentiment curves + projection, factions, controversy index, platform divergence, escalation chains, quote bank, timeline moments) " +
+      "plus an evidence pack of the strongest posts. Draft the senior-analyst narrative from that evidence and return it via report_submit.",
     {
       world: z.string().optional().describe("World id/slug (default: active world)"),
       focus: z.string().max(200).optional().describe("Optional focus for the report, e.g. 'developer reaction to the pricing change'"),
@@ -22,7 +22,7 @@ export function registerReportTools(server: McpServer, ctx: ServerContext): void
           {
             ok: true,
             taskId: task.id,
-            how: "Draft executiveSummary, trajectory, exactly 3 risks (each citing 1-3 post ids from the evidence pack) and confidence. Then call report_submit with this task_id and your draft.",
+            how: "Draft scenarioRecap, executiveSummary (100-170 words), 3-5 keyFindings, trajectory, exactly 3 risks (each with severity, likelihood, mitigation, trigger, citing 2-3 post ids), 2-4 recommendations, confidence and limitations. Then call report_submit with this task_id and your draft.",
             task,
             next: "report_submit",
           },
@@ -39,7 +39,7 @@ export function registerReportTools(server: McpServer, ctx: ServerContext): void
     "Stage 6 · SUBMIT: validate the narrative (sections, severities, post-id citations must exist), version and store it. Invalid fields are itemized for surgical retry.",
     {
       task_id: z.string().describe("Task id from report_plan"),
-      draft: z.unknown().describe("Your draft: {executiveSummary, trajectory, risks: [{title, rationale, severity, postIds}], confidence: {strongSignals, contested}}"),
+      draft: z.unknown().describe("Your draft: {scenarioRecap, executiveSummary, keyFindings, trajectory, risks: [{title, rationale, severity, likelihood, mitigation, trigger, postIds}], recommendations: [{title, action, expectedImpact}], confidence: {strongSignals, contested}, limitations}"),
     },
     async ({ task_id, draft }) => {
       try {
