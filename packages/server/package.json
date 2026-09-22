@@ -1,6 +1,6 @@
 {
   "name": "murmur-mcp",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0",
   "description": "Murmur — social-simulation MCP server for coding agents. Predict how communities react to your product, policy or story — powered by the coding subscription you already pay for. Zero API keys.",
   "license": "Apache-2.0",
   "type": "module",
@@ -11,8 +11,16 @@
     "dist",
     "README.md",
     "LICENSE",
+    "NOTICE",
     "CHANGELOG.md"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/murmur-mcp/murmur-mcp.git"
+  },
+  "homepage": "https://github.com/murmur-mcp/murmur-mcp#readme",
+  "bugs": "https://github.com/murmur-mcp/murmur-mcp/issues",
+  "author": "Murmur contributors",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -36,10 +44,10 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@murmur/adapters": "1.0.0-rc.1",
-    "@murmur/engine": "1.0.0-rc.1",
-    "@murmur/prompts": "1.0.0-rc.1",
-    "@murmur/templates": "1.0.0-rc.1",
+    "@murmur/adapters": "1.0.0",
+    "@murmur/engine": "1.0.0",
+    "@murmur/prompts": "1.0.0",
+    "@murmur/templates": "1.0.0",
     "@types/better-sqlite3": "^7.6.12"
   }
 }

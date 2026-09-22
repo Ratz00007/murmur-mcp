@@ -1,6 +1,6 @@
 {
   "name": "@murmur/adapters",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0",
   "private": true,
   "description": "Per-client install snippets, config templates and detection fixtures for MCP clients",
   "license": "Apache-2.0",

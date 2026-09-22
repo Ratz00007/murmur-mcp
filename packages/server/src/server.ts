@@ -1,4 +1,5 @@
 /** Server assembly: McpServer + tools + resources + prompts + sampling bridge. */
+import { createRequire } from "node:module";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ServerContext } from "./session.js";
 import { registerTools, TOOL_COUNT } from "./tools/index.js";
@@ -6,7 +7,20 @@ import { registerResources } from "./resources.js";
 import { registerPrompts } from "./prompts.js";
 
 export const SERVER_NAME = "murmur-mcp";
-export const SERVER_VERSION = "1.0.0-rc.1";
+
+// Read the version from the package.json that ships next to this file (both
+// src/ and dist/ sit one level below the package root), so the CLI, the MCP
+// handshake and npm can never disagree. Falls back loudly if unresolvable.
+function readVersion(): string {
+  try {
+    const pkg = createRequire(import.meta.url)("../package.json") as { version?: string };
+    if (pkg.version) return pkg.version;
+  } catch {
+    /* fall through */
+  }
+  return "0.0.0";
+}
+export const SERVER_VERSION = readVersion();
 
 export function buildServer(ctx: ServerContext): McpServer {
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });

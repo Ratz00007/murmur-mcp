@@ -7,8 +7,8 @@ export function registerPrompts(server: McpServer): void {
   for (const p of PROMPTS) {
     const shape: Record<string, z.ZodTypeAny> = {};
     for (const a of p.args) {
-      let t = z.string().max(2000).describe(a.description);
-      if (!a.required) t = t.optional() as z.ZodString;
+      let t: z.ZodTypeAny = z.string().max(2000).describe(a.description);
+      if (!a.required) t = t.optional();
       shape[a.name] = t;
     }
     server.prompt(

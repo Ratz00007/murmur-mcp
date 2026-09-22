@@ -1,6 +1,6 @@
 {
   "name": "@murmur/engine",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0",
   "private": true,
   "description": "Deterministic, LLM-free social-simulation engine (pure core + SQLite storage adapter)",
   "license": "Apache-2.0",

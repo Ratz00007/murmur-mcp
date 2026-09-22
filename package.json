@@ -1,7 +1,7 @@
 {
   "name": "murmur-monorepo",
   "private": true,
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0",
   "description": "Murmur — social-simulation engine for coding agents. Zero API keys; inference rides your existing coding subscription via MCP.",
   "license": "Apache-2.0",
   "type": "module",

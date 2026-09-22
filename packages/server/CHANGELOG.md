@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.0 — 2026-09-23
+
+First stable release.
+
+- Analyst-grade prediction reports: faction analysis, persona arcs, attributed quote bank, controversy index, cross-platform divergence, momentum and trajectory projection, amplification and narrative timeline, risk register with early-warning triggers, and 5 evidence appendices.
+- Sentence-level sentiment attribution toward the focus entity — praise for a competitor never leaks into the focus entity's score.
+- Sentiment scorer v2: sentence-aware negation, community-slang safe ("no notes" stays praise, "never crashes" reads positive), expanded inflection lexicon.
+- Release workflow: npm publish gated on the full test + cleanroom matrix, with provenance.
+
 ## 1.0.0-rc.1 — 2026-09-22
 
 First release candidate: the complete five-stage pipeline, Host-Powered Inference, zero API keys.

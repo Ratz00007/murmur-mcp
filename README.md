@@ -53,7 +53,7 @@ One command per client (Node ≥ 20):
 
 Every snippet is also printed by `npx murmur-mcp doctor` (which also checks Node, the SQLite native module and your workspace) and `npx murmur-mcp init --client <id>`.
 
-> Until the package is published, install from the repo: `npm i -g ./murmur-mcp-1.0.0-rc.1.tgz` then use `murmur-mcp` as the command (or point `command` at `node …/packages/server/dist/index.js`).
+> Installing from source (before the first `npm publish`): `npm i -g ./murmur-mcp-1.0.0.tgz` then use `murmur-mcp` as the command (or point `command` at `node …/packages/server/dist/index.js`).
 
 ## Quickstart (2 minutes, no keys)
 

@@ -1,0 +1,45 @@
+name: Release
+
+# Publishes murmur-mcp to npm when a GitHub release is published (or on
+# demand). Publishes are gated behind the full CI matrix: the release is only
+# shipped if unit + golden + e2e tests and the cleanroom gate are green.
+#
+# One-time setup:
+#   1. Set the NPM_TOKEN secret (automation access token from npmjs.com).
+#   2. Point `repository`/`homepage`/`bugs` in packages/server/package.json
+#      at the real GitHub repo (they ship in the npm metadata).
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run test:e2e
+      - run: npm run cleanroom
+      - name: Pack
+        run: npm pack --pack-destination release-artifacts -w murmur-mcp
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: release-artifacts/*.tgz
+      - name: Publish to npm
+        run: npm publish --access public --provenance -w murmur-mcp
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
