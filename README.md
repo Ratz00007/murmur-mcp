@@ -64,6 +64,7 @@ editor**, before the announcement goes out.
 murmur-complete-v1.0.0/
 ├── README.md                  ← this file
 ├── PROJECT-WORKLOG.md         ← the full build journal (9 tasks, every design decision)
+├── .github/                   ← CI (Node 20/22/24) + npm release automation + issue templates
 ├── murmur/                    ← the monorepo — RUNNABLE (source + built dist + git history)
 │   ├── packages/engine/       ← deterministic swarm engine: analytics, reports, HTML dashboard
 │   ├── packages/server/       ← murmur-mcp: 29 MCP tools, CLI (serve/doctor/init/templates)
@@ -72,8 +73,7 @@ murmur-complete-v1.0.0/
 │   ├── packages/templates/    ← 5 scenario packs (launch/policy/crisis/finance/fiction)
 │   ├── tests/                 ← unit · golden byte-replay · e2e over stdio · cleanroom gate
 │   ├── docs/Murmur-PRD-Technical-Plan-v1.0.pdf   ← the original 24-page product/tech plan
-│   ├── examples/              ← paste-ready sample inputs (pricing page, FAQ, changelog)
-│   └── .github/workflows/     ← CI (Node 20/22/24) + npm release automation
+│   └── examples/              ← paste-ready sample inputs (pricing page, FAQ, changelog)
 ├── murmur-demo/               ← a finished demo run you can open right now
 │   ├── DEMO-TRANSCRIPT.md     ← narrated 34-tool-call session, start to report
 │   ├── examples/              ← the inputs the demo ingested

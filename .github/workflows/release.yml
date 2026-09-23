@@ -6,13 +6,17 @@ name: Release
 #
 # One-time setup:
 #   1. Set the NPM_TOKEN secret (automation access token from npmjs.com).
-#   2. Point `repository`/`homepage`/`bugs` in packages/server/package.json
+#   2. Point `repository`/`homepage`/`bugs` in murmur/packages/server/package.json
 #      at the real GitHub repo (they ship in the npm metadata).
 
 on:
   release:
     types: [published]
   workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: murmur
 
 jobs:
   publish:
@@ -26,6 +30,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: murmur/package-lock.json
           registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm run build
@@ -38,7 +43,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: npm-package
-          path: release-artifacts/*.tgz
+          path: murmur/release-artifacts/*.tgz
       - name: Publish to npm
         run: npm publish --access public --provenance -w murmur-mcp
         env:

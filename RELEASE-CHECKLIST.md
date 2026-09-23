@@ -44,7 +44,7 @@ If you publish under a different org/repo, update: the badge URLs at the top of
 `github.com/Ratz00007/murmur-mcp`).
 
 - [ ] Repo pushed
-- [ ] CI green on GitHub (workflow: `murmur/.github/workflows/ci.yml`)
+- [ ] CI green on GitHub (workflow: `.github/workflows/ci.yml`)
 
 ## 2. Claim the npm name and publish with provenance (BLOCKER)
 
@@ -57,7 +57,7 @@ npm login                 # or add an NPM_TOKEN repo secret and use the workflow
 npm publish --provenance --access public
 ```
 
-The release workflow (`murmur/.github/workflows/release.yml`) already runs the
+The release workflow (`.github/workflows/release.yml`) already runs the
 cleanroom gate + tests and publishes with provenance on a GitHub release. Ship
 the npm artifact **only** through that path — publishing from a local machine
 loses the provenance attestation, which is exactly what the deleted hand-packed
