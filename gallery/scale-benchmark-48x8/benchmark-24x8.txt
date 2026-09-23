@@ -1,0 +1,29 @@
+﻿
+murmur scale benchmark — 24 personas × 8 rounds (seed "default-24x8", mock brain)
+==============================================================================
+wall time          1.48s (including report render, excluding host-LLM latency)
+generation items   80 (persona-round actions the host LLM must author)
+input  (tasks)     57,777 est. tokens  [ontology 808 · personas 1,012 · sim 50,980 over 8 rounds · report 4,977]
+output (content)   6,519 est. tokens  [generations 4,913 · report draft 1,606]
+round trip         64,296 est. tokens for one full run
+report size        26,292 chars of markdown
+==============================================================================
+estimates only (chars/4) — real-LLM billing varies by tokenizer and verbosity.
+
+{
+  "population": 24,
+  "rounds": 8,
+  "seed": "default-24x8",
+  "seconds": 1.48,
+  "ontologyTask": 808,
+  "personasTask": 1012,
+  "simTasks": 50980,
+  "simRounds": 8,
+  "reportTask": 4977,
+  "inputTotal": 57777,
+  "generations": 4913,
+  "draftTokens": 1606,
+  "outputTotal": 6519,
+  "generationItems": 80,
+  "markdownChars": 26292
+}

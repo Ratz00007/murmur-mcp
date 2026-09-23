@@ -14,6 +14,7 @@
     "packages/server"
   ],
   "scripts": {
+    "prepare": "npm run build",
     "build": "npm run build -w @murmur/engine && npm run build -w @murmur/prompts && npm run build -w @murmur/adapters && npm run build -w @murmur/templates && npm run build -w murmur-mcp",
     "typecheck": "npm run build:libs && tsc -p packages/engine/tsconfig.json && tsc -p packages/server/tsconfig.json",
     "build:libs": "npm run build -w @murmur/engine && npm run build -w @murmur/prompts && npm run build -w @murmur/adapters && npm run build -w @murmur/templates",

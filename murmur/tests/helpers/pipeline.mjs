@@ -50,6 +50,7 @@ export async function runPipeline(
   storage.setStage(world.id, "seeded");
 
   const ontologyTask = engine.buildOntologyTask(storage, world);
+  const ontologyTaskTokens = engine.estTokens(JSON.stringify(ontologyTask));
   const ontologyResult = completeOntology(ontologyTask);
   const ontology = engine.applyOntology(storage, world, ontologyTask.id, ontologyResult);
   if (ontology.rejected.length > 0) throw new Error("ontology rejected: " + JSON.stringify(ontology.rejected.slice(0, 3)));
@@ -60,6 +61,7 @@ export async function runPipeline(
   ws.writeAtomic(ws.graphPath(world.slug), engine.toMermaid(graphResult));
 
   const personasTask = engine.buildPersonasTask(storage, world, { count: o.population });
+  const personasTaskTokens = engine.estTokens(JSON.stringify(personasTask));
   const personasResult = engine.applyPersonas(storage, world, personasTask.id, completePersonas(personasTask));
   if (personasResult.rejected.length > 0) throw new Error("personas rejected: " + JSON.stringify(personasResult.rejected.slice(0, 3)));
 
@@ -68,6 +70,8 @@ export async function runPipeline(
   storage.setStage(world.id, "configured");
 
   const batchTokens = [];
+  const generationTokens = [];
+  let generationItems = 0;
   while (w().round < o.rounds) {
     const targetRound = w().round + 1;
     if (o.injectAtRound === targetRound && o.injectText) {
@@ -76,6 +80,8 @@ export async function runPipeline(
     const { task } = engine.buildSimBatch(storage, w());
     batchTokens.push(engine.estTokens(JSON.stringify(task)));
     const generations = completeSim(task);
+    generationTokens.push(engine.estTokens(JSON.stringify(generations)));
+    generationItems += task.items.length;
     const result = engine.submitGenerations(storage, w(), task.id, generations, {});
     if (result.rejected.length > 0) {
       // mock brain must be schema-valid; if the validator disagrees, surface it loudly
@@ -84,7 +90,9 @@ export async function runPipeline(
   }
 
   const reportTask = engine.buildReportTask(storage, w(), "community reaction to the pricing change");
+  const reportTaskTokens = engine.estTokens(JSON.stringify(reportTask));
   const draft = completeReportTask(reportTask);
+  const draftTokens = engine.estTokens(JSON.stringify(draft));
   const validated = engine.validateReportDraft(storage, w(), draft);
   if (validated.rejected.length > 0) throw new Error("report rejected: " + JSON.stringify(validated.rejected.slice(0, 3)));
   const record = engine.storeReport(storage, w(), validated.draft, "community reaction to the pricing change");
@@ -103,6 +111,25 @@ export async function runPipeline(
     markdown,
     batchTokens,
     entityCount: ontology.insertedCount,
+    /**
+     * Measured host-LLM budget (chars/4 estimator, same one the NFR uses).
+     * input = task payloads the host must read; output = content it must write.
+     */
+    tokenBudget: {
+      ontologyTask: ontologyTaskTokens,
+      personasTask: personasTaskTokens,
+      simTasks: batchTokens.reduce((a, b) => a + b, 0),
+      simRounds: batchTokens.length,
+      reportTask: reportTaskTokens,
+      inputTotal: ontologyTaskTokens + personasTaskTokens + batchTokens.reduce((a, b) => a + b, 0) + reportTaskTokens,
+      generations: generationTokens.reduce((a, b) => a + b, 0),
+      draftTokens,
+      outputTotal: generationTokens.reduce((a, b) => a + b, 0) + draftTokens,
+      generationItems,
+      population: o.population,
+      rounds: o.rounds,
+      markdownChars: markdown.length,
+    },
     dump: () => storage.dumpWorld(world.id),
     close: () => storage.close(),
   };

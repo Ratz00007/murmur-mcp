@@ -1,8 +1,9 @@
 # Murmur — Complete Project Bundle · v1.0.0
 
-<!-- Badge row — placeholders until the repo/package are live.
-     TODO(repo): replace TODO(repo) in the URLs below with the real repository path (e.g. your-org/murmur-mcp). -->
-[![build](https://img.shields.io/github/actions/workflow/status/TODO(repo)/ci.yml?branch=main)](https://github.com/TODO(repo)/actions)
+<!-- Badge row. The repo URL is assumed to be github.com/murmur-mcp/murmur-mcp
+     (same path as murmur/packages/server/package.json). If you publish under a
+     different org/repo, update these URLs and those three package.json fields. -->
+[![build](https://img.shields.io/github/actions/workflow/status/murmur-mcp/murmur-mcp/ci.yml?branch=main)](https://github.com/murmur-mcp/murmur-mcp/actions)
 [![npm](https://img.shields.io/npm/v/murmur-mcp.svg)](https://www.npmjs.com/package/murmur-mcp)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](murmur/LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-server%20%C2%B7%2029%20tools-brightgreen.svg)](murmur/README.md)
@@ -85,13 +86,20 @@ murmur-complete-v1.0.0/
     ├── preview-report.mjs     ← run the pipeline fresh and print a new report
     ├── test-sentiment.mjs     ← sentiment-scorer scratchpad
     ├── lexicon-audit.cjs      ← lexicon coverage audit of the voice templates
-    └── audit-voices.mjs       ← voice-template polarity audit
+    ├── audit-voices.mjs       ← voice-template polarity audit
+    └── scale-benchmark.mjs    ← token-budget + wall-time benchmark at any scale
 ```
 
-`murmur/` ships with `dist/` pre-built, so no TypeScript build step is ever
-needed — but like any Node package it needs its three runtime deps
-(`@modelcontextprotocol/sdk`, `better-sqlite3`, `zod`) fetched once with npm.
-`node_modules/` (97 MB) is excluded from the zip. Requires Node ≥ 20.
+`murmur/` ships with `dist/` pre-built **in the zip**, so no TypeScript build step
+is ever needed there — and on a fresh clone `npm install` builds it for you (the
+root `prepare` script runs `npm run build`). Either way the package needs its
+three runtime deps (`@modelcontextprotocol/sdk`, `better-sqlite3`, `zod`)
+fetched once with npm. `node_modules/` (97 MB) is excluded from the zip.
+Requires Node ≥ 20.
+
+**This layout is also the repository layout** — the repo root is the bundle
+root, because `tools/` resolves `murmur/` and `murmur-demo/` as siblings. Push
+this directory as-is and every path in this README keeps working.
 
 ## ① Open the demo dashboard (10 seconds)
 
@@ -154,7 +162,7 @@ the 29 Murmur tools; the LLM you already pay for does the persona voices.
 ```bash
 cd murmur
 npm install            # if you skipped Option B (dev toolchain: typescript, vitest, sqlite)
-npm test               # 46 unit + golden tests (byte-identical replay)
+npm test               # 66 unit + golden tests (byte-identical replay, citation integrity)
 npm run test:e2e       # 2 end-to-end: real SDK client ↔ server over stdio
 npm run cleanroom      # zero-egress gate: no network APIs, no URLs, no key surfaces
 npm run build          # rebuild dist from source (all 5 packages)
@@ -167,14 +175,17 @@ same bytes, every time; needs the `npm install` above first):
 node tools/demo-live.mjs
 ```
 
-The five scripts in `tools/` resolve `murmur/` and `murmur-demo/` relative to
-their own location, so the bundle can sit anywhere on disk.
+The scripts in `tools/` resolve `murmur/` and `murmur-demo/` relative to their
+own location, so the bundle can sit anywhere on disk. `scale-benchmark.mjs`
+measures token budget and wall time at any scale:
+`node tools/scale-benchmark.mjs 48 8`.
 
 ## Publishing to npm (when you're ready)
 
-1. Point `repository` / `homepage` / `bugs` in
-   `murmur/packages/server/package.json` at the real GitHub repo
-   (placeholders currently say `murmur-mcp` org).
+1. `repository` / `homepage` / `bugs` in
+   `murmur/packages/server/package.json` already point at
+   `github.com/murmur-mcp/murmur-mcp` — create the repo at that path, or update
+   those three fields plus the badge URLs at the top of this README.
 2. Push the repo, add the `NPM_TOKEN` secret, and the release workflow
    (`.github/workflows/release.yml`) runs every gate and publishes with
    provenance — or simply `npm publish` from `murmur/packages/server/`.
@@ -207,6 +218,20 @@ already pay for:
 i.e. **order of hundreds of host-LLM generations per run** at defaults.
 
 **Estimation method** (the same one the e2e tests use): `tokens ≈ chars / 4`.
+Reproduce with `node tools/scale-benchmark.mjs <personas> <rounds>`.
+
+**Measured engine-side budget per full run** (deterministic mock brain, so these
+are content-independent: they measure the task payloads the host must read and
+the shape of what it must write — *not* how verbose a real model is):
+
+| scale | generation items | input tasks | output content | round trip | engine wall time |
+|---|---|---|---|---|---|
+| defaults 24 × 8 | 80 | ≈ 57.8k | ≈ 6.5k | **≈ 64.3k** | 1.41s |
+| flagship 48 × 8 | 160 | ≈ 85.4k | ≈ 10.9k | **≈ 96.3k** | 2.98s |
+
+Input splits roughly: ontology ≈0.8k, personas ≈1.0k, per-round sim batches
+≈7.9k–9.8k each, report task ≈5.0k. Output splits ≈ generations (9.3k at
+flagship) + report draft (≈1.6k). Report markdown ≈26k chars either way.
 
 **Measured from the bundled mock demo** (`murmur-demo/.murmur/` — mock brain,
 12 personas · 5 rounds, a smaller run than the defaults above):
@@ -218,11 +243,25 @@ i.e. **order of hundreds of host-LLM generations per run** at defaults.
 | Largest single host response, budget 12,000 (reported in `DEMO-TRANSCRIPT.md`) | 4,645 tokens | as reported |
 | `audit.jsonl` / `interviews.jsonl` / `qa.jsonl` | 28 / 1 / 1 records (3,265 / 433 / 339 B) | ≈ 0.8k / 0.1k / 0.1k |
 
-Real-LLM cost varies by model, provider pricing and prompt caching — the mock
-demo figures above are engine-side measurements, not a cost proxy.
-TODO: publish median tokens/report measured from the first real-LLM gallery run.
+Real-LLM cost varies by model, provider pricing and prompt caching. The tables
+above are char-based estimates from deterministic runs — treat them as a
+**ceiling on task payload size**, not a bill. A run also costs your session's
+wall-clock time (the engine is 3s; the LLM round-trips are the slow part).
+Pending: median billed tokens/report from the first real-LLM gallery run —
+publish it in `gallery/` and replace this line with the measured figure.
 
 ## Where to read more
+
+- [`RELEASE-CHECKLIST.md`](RELEASE-CHECKLIST.md) — what is left before launch,
+  in order (repo, npm, real-LLM flagship run, directories)
+- [`gallery/`](gallery/README.md) — published runs (real ones and clearly
+  labeled mock measurements)
+- [`murmur-demo/FLAGSHIP-DEMO.md`](murmur-demo/FLAGSHIP-DEMO.md) — the 48 × 8
+  real-LLM protocol and its results table
+- [`murmur/GOOD-FIRST-ISSUES.md`](murmur/GOOD-FIRST-ISSUES.md) — ten scoped
+  starter tasks for contributors
+- [`PROJECT-WORKLOG.md`](PROJECT-WORKLOG.md) — the full build journal (design
+  decisions, test counts, what was cut and why)
 
 | Topic | File |
 |---|---|
