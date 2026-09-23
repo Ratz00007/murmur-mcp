@@ -39,9 +39,11 @@ import {
   type QuoteBank,
   type TimelineMoment,
 } from "./analytics.js";
+import { engagementScore } from "./util/engagement.js";
+import { ensembleIntervals, projectionEnsemble, type EnsembleInterval } from "./dynamics/ensemble.js";
 import { clamp, escapeMermaid, estTokens, nowIso, round2Safe, sentimentLabel, stanceBar, truncate } from "./util/text.js";
 
-export const REPORT_INSTRUCTIONS = `You are the senior analyst writing a prediction report for a social-simulation engine. You receive a deterministic statistics pack (real measured numbers from the recorded run) and an evidence pack (real posts). Draft the analyst narrative around those numbers.
+export const REPORT_INSTRUCTIONS = `You are the senior analyst writing a simulated perspective report for a social-simulation engine. You receive a deterministic statistics pack (real measured numbers from the recorded run) and an evidence pack (real posts). Draft the analyst narrative around those numbers.
 Return a JSON object:
 {
   "scenarioRecap": "2-4 sentences: what scenario was simulated, what population, what was injected",
@@ -74,6 +76,8 @@ export interface ReportStatsPack {
   entityTrends: EntityTrend[];
   sentimentCurves: { entity: string; type: string; curve: { round: number; value: number }[] }[];
   projection: { entity: string; slope: number; direction: string; projected: { round: number; value: number }[] } | null;
+  /** Seeded P10–P50–P90 bands for the focus entity's simulated projection (null when disabled). */
+  ensemble: EnsembleInterval[] | null;
   momentum: MomentumAnalysis;
   controversy: ControversyAnalysis;
   factions: FactionAnalysis;
@@ -115,6 +119,7 @@ export function buildReportTask(storage: Storage, world: World, focus: string | 
   const trends = entityTrends(storage, world, topEntities, (e) => sentimentCurve(storage, world, e), 6);
   const focusCurve = focusEntity ? sentimentCurve(storage, world, focusEntity) : [];
   const projection = focusCurve.length >= 2 ? projectCurve(focusCurve, 2) : null;
+  const ensemble = projection ? ensembleIntervals(projectionEnsemble(world.seed, world.config.ensemble?.runCount ?? 5, focusCurve, projection)) : null;
   const mom = momentum(rows);
   const moments = narrativeTimeline(storage, world, 8);
   const quotes = quoteBank(storage, world, focusEntity, 3);
@@ -133,6 +138,7 @@ export function buildReportTask(storage: Storage, world: World, focus: string | 
     projection: projection
       ? { entity: focusEntity!.name, slope: projection.slope, direction: projection.direction, projected: projection.points.filter((p) => p.projected).map((p) => ({ round: p.round, value: p.value })) }
       : null,
+    ensemble,
     momentum: mom,
     controversy,
     factions,
@@ -148,7 +154,7 @@ export function buildReportTask(storage: Storage, world: World, focus: string | 
       plat: post.platform === "twitter" ? "tw" : "rd",
       round: post.round,
       body: truncate(post.body, 200),
-      engagement: post.metrics.likes + 2 * post.metrics.reposts + post.metrics.upvotes - post.metrics.downvotes,
+      engagement: engagementScore(post.metrics),
       sentiment,
     })),
     movers: collectMovers(storage, world).slice(0, 8),
@@ -164,7 +170,7 @@ export function buildReportTask(storage: Storage, world: World, focus: string | 
       .filter((p) => p.mentions.some((m) => m.entityId === e.id) && p.kind !== "repost")
       .sort((a, b) => Math.abs(attributedSentiment(b, e, others)) - Math.abs(attributedSentiment(a, e, others)) || a.id.localeCompare(b.id))
       .slice(0, 3)
-      .map((p) => ({ id: p.id, by: handles.get(p.personaId) ?? p.personaId, plat: p.platform === "twitter" ? "tw" : "rd", sentiment: attributedSentiment(p, e, others), engagement: p.metrics.likes + 2 * p.metrics.reposts + p.metrics.upvotes - p.metrics.downvotes, body: truncate(p.body, 200) }));
+      .map((p) => ({ id: p.id, by: handles.get(p.personaId) ?? p.personaId, plat: p.platform === "twitter" ? "tw" : "rd", sentiment: attributedSentiment(p, e, others), engagement: engagementScore(p.metrics), body: truncate(p.body, 200) }));
     return { entity: e.name, posts };
   });
 
@@ -191,7 +197,7 @@ export function buildReportTask(storage: Storage, world: World, focus: string | 
     items: [
       {
         id: "draft-1",
-        label: "draft the prediction report narrative",
+        label: "draft the simulated perspective narrative",
         tokens: 0,
         payload: { focus: focus ?? "", stats, evidence },
       },
@@ -357,6 +363,8 @@ export interface ReportData {
   trends: EntityTrend[];
   focusCurve: { round: number; value: number }[];
   projection: Projection | null;
+  /** Seeded P10–P50–P90 bands for the focus entity's projection; null when disabled. */
+  ensemble: EnsembleInterval[] | null;
   amp: AmplificationInfo;
   chains: ReturnType<typeof allEscalations>;
   topBoard: ReturnType<typeof leaderboards>;
@@ -402,6 +410,7 @@ export function collectReportData(storage: Storage, world: World, report: Report
   const trends = entityTrends(storage, world, entities, (e) => sentimentCurve(storage, world, e), 6);
   const focusCurve = focusEntity ? sentimentCurve(storage, world, focusEntity) : [];
   const projection = focusCurve.length >= 2 ? projectCurve(focusCurve, 2) : null;
+  const ensemble = projection ? ensembleIntervals(projectionEnsemble(world.seed, world.config.ensemble?.runCount ?? 5, focusCurve, projection)) : null;
   const amp = amplification(storage, world);
   const chains = allEscalations(storage, world).sort((a, b) => b.severity - a.severity || a.rootId.localeCompare(b.rootId));
   const topBoard = leaderboards(storage, world, 8);
@@ -424,7 +433,7 @@ export function collectReportData(storage: Storage, world: World, report: Report
   }
   return {
     entities, personas, posts, handles, rows, mentionCount, focusEntity, mom, moments,
-    quotes, factions, arcs, controversy, cross, trends, focusCurve, projection, amp,
+    quotes, factions, arcs, controversy, cross, trends, focusCurve, projection, ensemble, amp,
     chains, topBoard, charted, totalPosts, totalEng, dominant,
     injections: injections.map((ev) => ({ round: ev.round, text: String((ev.payload as { text?: string })?.text ?? "") })),
     date,
@@ -434,7 +443,7 @@ export function collectReportData(storage: Storage, world: World, report: Report
 export function renderReportMarkdown(storage: Storage, world: World, report: ReportRecord): string {
   const {
     entities, personas, posts, handles, rows, mentionCount, focusEntity, mom, moments,
-    quotes, factions, arcs, controversy, cross, trends, focusCurve, projection, amp,
+    quotes, factions, arcs, controversy, cross, trends, focusCurve, projection, ensemble, amp,
     chains, topBoard, charted, totalPosts, totalEng, dominant, injections, date,
   } = collectReportData(storage, world, report);
   const d = report.narrative;
@@ -690,10 +699,24 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
     }
   }
 
-  // ---- 8. trajectory forecast ------------------------------------------------------------
-  L.push("## 8. Trajectory Forecast");
+  // ---- 8. simulated projection ----------------------------------------------------------------
+  L.push("## 8. Trajectory Simulated Projection");
   L.push("");
-  if (projection && focusEntity) {
+  if (projection && focusEntity && ensemble && ensemble.length > 0) {
+    // Ensemble UQ: seeded P10–P50–P90 bands replace the old 2-point line.
+    const runs = world.config.ensemble?.runCount ?? 5;
+    L.push(
+      `**Simulated projection — seeded ensemble of ${runs} runs.** Each run refits the observed curve with per-run slope jitter (seeds \`${world.seed}:0\`…\`${world.seed}:${runs - 1}\`). ` +
+        `Recorded rounds are identical in every run, so the band only opens on projected rounds — it quantifies model spread, not real-world uncertainty.`
+    );
+    L.push("");
+    L.push("| Round | P10 | P50 | P90 |");
+    L.push("|---|---|---|---|");
+    for (const b of ensemble) {
+      L.push(`| ${b.round} | ${fmt(b.p10)} | ${fmt(b.p50)} | ${fmt(b.p90)} |`);
+    }
+    L.push("");
+  } else if (projection && focusEntity) {
     L.push("```mermaid");
     L.push("xychart-beta");
     L.push(`    title "Outlook - ${escapeMermaid(focusEntity.name)} (last ${projection.points.filter((p) => p.projected).length} rounds extrapolated)"`);
@@ -703,7 +726,7 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
     L.push("```");
     L.push("");
     L.push(
-      `Engine extrapolation for **${focusEntity.name}** (least-squares over the run, assuming no new external events): slope ${projection.slope >= 0 ? "+" : ""}${projection.slope.toFixed(2)} per round → ` +
+      `Simulated projection — single-run trend for **${focusEntity.name}** (least-squares over this run only, assuming no new external events; no uncertainty band): slope ${projection.slope >= 0 ? "+" : ""}${projection.slope.toFixed(2)} per round → ` +
         projection.points
           .filter((p) => p.projected)
           .map((p) => `round ${p.round} ≈ ${fmt(p.value)}`)
@@ -745,7 +768,7 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
       for (const pid of r.postIds) {
         const p = storage.getPost(world.id, pid);
         if (p) {
-          L.push(quoteLine({ id: p.id, by: handles.get(p.personaId) ?? p.personaId, round: p.round, plat: p.platform === "twitter" ? "tw" : "rd", body: p.body, sentiment: postSentiment(p), engagement: p.metrics.likes + 2 * p.metrics.reposts + p.metrics.upvotes - p.metrics.downvotes }));
+          L.push(quoteLine({ id: p.id, by: handles.get(p.personaId) ?? p.personaId, round: p.round, plat: p.platform === "twitter" ? "tw" : "rd", body: p.body, sentiment: postSentiment(p), engagement: engagementScore(p.metrics) }));
           L.push("");
         }
       }
@@ -863,7 +886,7 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
   L.push("| Id | By | Plat | R | Sentiment | Engagement | Excerpt |");
   L.push("|---|---|---|---|---|---|---|");
   for (const { post, sentiment } of topPostsByEngagement(storage, world, 25)) {
-    const eng = post.metrics.likes + 2 * post.metrics.reposts + post.metrics.upvotes - post.metrics.downvotes;
+    const eng = engagementScore(post.metrics);
     L.push(`| ${post.id} | ${handles.get(post.personaId) ?? post.personaId} | ${post.platform === "twitter" ? "tw" : "rd"} | ${post.round} | ${fmt(sentiment)} | ${eng} | ${truncate(post.body, 90).replace(/\|/g, "\\|")} |`);
   }
   L.push("");
@@ -873,7 +896,7 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
   L.push("");
   L.push(
     `Each round the engine activated a weighted subset of the ${personas.length}-persona population, composed personalized feeds from the follow graph and platform mechanics, ` +
-      `and the host LLM wrote posts, replies and votes in character. Organic engagement, virality, stance migration (10%/round toward expressed sentiment) and escalation chains are deterministic functions of the recorded run. ` +
+      `and the host LLM wrote posts, replies and votes in character. Organic engagement, virality, stance migration (10%/round toward expressed sentiment), pairwise influence over the follow graph (Deffuant bounded confidence: ε=${world.config.dynamics?.epsilon ?? 0.4}, μ=${world.config.dynamics?.mu ?? 0.2}, ${(world.config.dynamics?.abstentionChance ?? 0.1) * 100}% chance of slight disengagement beyond ε) and escalation chains are deterministic functions of the recorded run. ` +
       `Sentiment is a lexical score over real post text, attributed to entities by mention. The report narrative was drafted by the host coding agent against the statistics pack; every quoted post id resolves to a stored post.`
   );
   L.push("");

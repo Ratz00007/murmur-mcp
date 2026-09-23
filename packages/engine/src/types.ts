@@ -87,9 +87,39 @@ export interface MurmurConfig {
     organicCapPerPost: number;
     hotThreshold: number;
   };
+  /** Multi-hop organic cascade: reach propagates along the follow graph. */
+  cascade: {
+    /** Propagation depth beyond the one-hop follower pass (default 2). */
+    maxHops: number;
+    /** Base propagation probability before engagement scaling. */
+    base: number;
+    /** Scales engagementScore/threshold into the propagation probability. */
+    factor: number;
+    /** Hard cap on propagation probability (cascadeMaxProb). */
+    maxProb: number;
+    /** Engagement score that yields the full factor contribution. */
+    threshold: number;
+    /** Per-hop attenuation multiplier (default 0.4). */
+    attenuation: number;
+  };
   memory: {
     episodicMaxRecords: number;
     episodicKeep: number;
+  };
+  /** Deffuant opinion dynamics — pairwise influence applied to stances each
+   * round alongside the self-expression update (dynamics/opinion.ts). */
+  dynamics: {
+    /** Bounded-confidence radius ε: interact only when |a − b| ≤ ε (default 0.4). */
+    epsilon: number;
+    /** Assimilation rate μ: movement toward the other stance per interaction (default 0.2). */
+    mu: number;
+    /** Beyond ε: chance of slight disengagement, both stances relax 5% toward neutral (default 0.1). */
+    abstentionChance: number;
+  };
+  /** Ensemble UQ behind the report's simulated projection (P10–P90 bands). */
+  ensemble: {
+    /** Seeded runs per ensemble: default 5, max 10, 0 = disabled (single-run trend line). */
+    runCount: number;
   };
 }
 
@@ -110,7 +140,13 @@ export const DEFAULT_CONFIG: MurmurConfig = {
   },
   context: { maxResponseTokens: 12000 },
   engagement: { viralityThreshold: 12, organicLikeBase: 0.08, organicCapPerPost: 0.6, hotThreshold: 10 },
+  cascade: { maxHops: 2, base: 0.1, factor: 0.6, maxProb: 0.8, threshold: 12, attenuation: 0.4 },
   memory: { episodicMaxRecords: 40, episodicKeep: 20 },
+  // Deffuant bounded confidence: ε = interaction radius, μ = pull rate,
+  // abstentionChance = P(slight disengagement) when |a − b| > ε.
+  dynamics: { epsilon: 0.4, mu: 0.2, abstentionChance: 0.1 },
+  // Seeded ensemble runs behind the report's P10–P90 projection bands (max 10).
+  ensemble: { runCount: 5 },
 };
 
 export const CONFIG_LIMITS = {
@@ -119,6 +155,7 @@ export const CONFIG_LIMITS = {
   maxFeedItems: { min: 3, max: 15 },
   maxResponseTokens: { min: 2000, max: 24000 },
   population: { min: 8, max: 128, default: 24 },
+  ensembleRunCount: { min: 0, max: 10, default: 5 },
 } as const;
 
 export interface World {

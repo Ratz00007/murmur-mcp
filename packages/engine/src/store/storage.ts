@@ -467,7 +467,9 @@ export class Storage {
   // ----- posts ------------------------------------------------------------
 
   insertPost(post: Omit<Post, "id"> & { id?: string }): Post {
-    const id = post.id ?? this.mintId("po", "posts");
+    // World-scoped fallback so ids are deterministic per world (po_1, po_2, …
+    // within each world; the posts PK is composite — world_id, id).
+    const id = post.id ?? `po_${this.countPosts(post.worldId) + 1}`;
     const threadId = post.threadId || id; // root posts are their own thread
     this.db
       .prepare(
@@ -498,6 +500,8 @@ export class Storage {
   }
 
   countAllPosts(): number {
+    // Global count across worlds — kept for API compatibility. Prefer
+    // countPosts(worldId) when minting or reasoning about per-world ids.
     return (this.db.prepare("SELECT COUNT(*) AS c FROM posts").get() as { c: number }).c;
   }
 
@@ -509,15 +513,15 @@ export class Storage {
     return (this.db.prepare("SELECT * FROM posts WHERE world_id=? AND thread_id=? ORDER BY id").all(worldId, threadId) as Row[]).map(postFromRow);
   }
 
-  updatePostMetrics(id: string, metrics: PostMetrics): void {
-    this.db.prepare("UPDATE posts SET metrics=? WHERE id=?").run(JSON.stringify(metrics), id);
+  updatePostMetrics(worldId: string, id: string, metrics: PostMetrics): void {
+    this.db.prepare("UPDATE posts SET metrics=? WHERE world_id=? AND id=?").run(JSON.stringify(metrics), worldId, id);
   }
 
-  addImpressions(ids: string[], by = 1): void {
+  addImpressions(worldId: string, ids: string[], by = 1): void {
     if (!ids.length) return;
     const tx = this.db.transaction(() => {
-      const stmt = this.db.prepare("UPDATE posts SET metrics = json_set(metrics, '$.impressions', json_extract(metrics,'$.impressions') + ?) WHERE id=?");
-      for (const id of ids) stmt.run(by, id);
+      const stmt = this.db.prepare("UPDATE posts SET metrics = json_set(metrics, '$.impressions', json_extract(metrics,'$.impressions') + ?) WHERE world_id=? AND id=?");
+      for (const id of ids) stmt.run(by, worldId, id);
     });
     tx();
   }

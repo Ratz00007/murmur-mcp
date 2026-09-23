@@ -5,10 +5,13 @@
  */
 import type { Entity, FeedDigestItem, MurmurConfig, Persona, Post, World } from "../types.js";
 import type { Storage } from "../store/storage.js";
+import { engagementScore } from "../util/engagement.js";
 import { truncate } from "../util/text.js";
 
 export function engagementNorm(p: Post): number {
-  const e = p.metrics.likes + 2 * p.metrics.reposts + p.metrics.upvotes + p.metrics.downvotes;
+  // Canonical score can go negative when downvotes dominate; clamp so the
+  // normalized heat stays within [0, 1).
+  const e = Math.max(0, engagementScore(p.metrics));
   return e / (1 + e);
 }
 

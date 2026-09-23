@@ -1,6 +1,6 @@
 /** SQLite schema — exactly the ten tables from the PRD data model, plus a migrations meta table. */
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const MIGRATIONS: { version: number; sql: string }[] = [
   {
@@ -140,6 +140,42 @@ CREATE TABLE generations (
   submitted_at TEXT
 );
 CREATE INDEX idx_generations_world ON generations(world_id, kind, status);
+`,
+  },
+  {
+    // Post ids become world-scoped (deterministic per world): the PK changes
+    // from id to (world_id, id) so two worlds can each hold po_1, po_2, …
+    // without colliding. Data is carried over unchanged; the three post
+    // indexes are rebuilt with their original names.
+    version: 2,
+    sql: `
+DROP INDEX IF EXISTS idx_posts_feed;
+DROP INDEX IF EXISTS idx_posts_persona;
+DROP INDEX IF EXISTS idx_posts_thread;
+ALTER TABLE posts RENAME TO posts_v1;
+CREATE TABLE posts (
+  id TEXT NOT NULL,
+  world_id TEXT NOT NULL REFERENCES worlds(id),
+  round INTEGER NOT NULL,
+  persona_id TEXT NOT NULL REFERENCES personas(id),
+  platform TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  parent_id TEXT,
+  thread_id TEXT NOT NULL,
+  community_id TEXT,
+  title TEXT,
+  body TEXT NOT NULL DEFAULT '',
+  metrics TEXT NOT NULL,
+  mentions TEXT NOT NULL,
+  origin TEXT NOT NULL DEFAULT 'generated',
+  PRIMARY KEY (world_id, id)
+);
+INSERT INTO posts (id, world_id, round, persona_id, platform, kind, parent_id, thread_id, community_id, title, body, metrics, mentions, origin)
+  SELECT id, world_id, round, persona_id, platform, kind, parent_id, thread_id, community_id, title, body, metrics, mentions, origin FROM posts_v1;
+DROP TABLE posts_v1;
+CREATE INDEX idx_posts_feed ON posts(world_id, platform, round);
+CREATE INDEX idx_posts_persona ON posts(world_id, persona_id);
+CREATE INDEX idx_posts_thread ON posts(thread_id);
 `,
   },
 ];

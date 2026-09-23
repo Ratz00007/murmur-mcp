@@ -4,10 +4,11 @@
  * persona cannot dominate every round.
  */
 import type { Persona, Post, World } from "../types.js";
+import { engagementScore } from "../util/engagement.js";
 import { streamRng } from "../util/rng.js";
 
 export function engagementOf(p: Post): number {
-  return p.metrics.likes + p.metrics.reposts + p.metrics.upvotes + p.metrics.downvotes;
+  return engagementScore(p.metrics);
 }
 
 export function activatePersonas(world: World, personas: Persona[], posts: Post[], targetRound: number, maxPersonas: number): string[] {

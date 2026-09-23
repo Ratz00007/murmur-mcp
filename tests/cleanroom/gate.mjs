@@ -75,8 +75,8 @@ export async function runGate(root = repoRoot) {
   check("dependency closure has no network libraries", denied.length === 0, denied.length ? `denylisted: ${denied.join(", ")}` : `closure: ${[...closure].sort().join(", ")}`);
 
   // ---- 4 + 5: headless run in a clean temp workspace ----------------------
-  const { runPipeline } = await import(path.join(root, "tests", "helpers", "pipeline.mjs"));
-  const engine = await import(path.join(root, "packages", "engine", "dist", "index.js"));
+  const { runPipeline } = await import(url.pathToFileURL(path.join(root, "tests", "helpers", "pipeline.mjs")).href);
+  const engine = await import(url.pathToFileURL(path.join(root, "packages", "engine", "dist", "index.js")).href);
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-cleanroom-"));
   let seconds = -1;
   let reportExists = false;

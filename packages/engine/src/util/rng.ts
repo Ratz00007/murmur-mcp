@@ -3,7 +3,10 @@
  *
  * All engine behavior derives from seeded streams (world seed + stream key),
  * never from an unseeded source, so identical inputs replay byte-identically.
- * No unseeded randomness may appear anywhere in this package (enforced by test).
+ * No unseeded randomness may appear anywhere in this package, except the
+ * documented uniqueness (not simulation) uses in store/storage.ts (random
+ * world id when no seed is given) and worlddir.ts (random temp-file suffix),
+ * which the package's test explicitly excludes.
  */
 
 /** FNV-1a 32-bit string hash. */

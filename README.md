@@ -53,7 +53,7 @@ One command per client (Node ≥ 20):
 
 Every snippet is also printed by `npx murmur-mcp doctor` (which also checks Node, the SQLite native module and your workspace) and `npx murmur-mcp init --client <id>`.
 
-> Installing from source (before the first `npm publish`): `npm i -g ./murmur-mcp-1.0.0.tgz` then use `murmur-mcp` as the command (or point `command` at `node …/packages/server/dist/index.js`).
+> Installing from source (before the first `npm publish`): `npm install` in the monorepo, then run `node packages/server/dist/index.js` directly (or `npm link` inside `packages/server` for a global `murmur-mcp` command). Release artifacts ship via npm with provenance once the repo is live (`npm i -g murmur-mcp`).
 
 ## Quickstart (2 minutes, no keys)
 

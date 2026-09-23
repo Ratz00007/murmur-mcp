@@ -9,6 +9,7 @@ import type { Entity, EscalationChain, Persona, Post, World } from "./types.js";
 import type { Storage } from "./store/storage.js";
 import { engagementPeaks, postSentiment, timeline, type TimelineRow } from "./aggregate.js";
 import { scoreSentiment } from "./sentiment.js";
+import { engagementScore } from "./util/engagement.js";
 import { clamp, round2Safe, truncate } from "./util/text.js";
 
 export interface ReportQuote {
@@ -55,7 +56,7 @@ export interface FactionAnalysis {
 }
 
 function engagementOf(p: Post): number {
-  return p.metrics.likes + 2 * p.metrics.reposts + p.metrics.upvotes - p.metrics.downvotes;
+  return engagementScore(p.metrics);
 }
 
 /** Escape a literal string for embedding inside a RegExp. */

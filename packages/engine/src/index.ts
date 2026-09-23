@@ -7,6 +7,7 @@
  */
 export * from "./types.js";
 export { hashString, hashHex, mulberry32, Rng, streamRng } from "./util/rng.js";
+export { engagementScore } from "./util/engagement.js";
 export {
   clamp,
   round2Safe,
@@ -47,6 +48,12 @@ export { activatePersonas, engagementOf } from "./sim/activation.js";
 export { buildFeed, twitterScore, redditScore, engagementNorm, trendingEntities } from "./sim/feed.js";
 export { buildSimBatch, buildPersonaDigest, batchBrief, SIM_INSTRUCTIONS } from "./sim/batch.js";
 export { submitGenerations } from "./sim/ingest.js";
+export { deffuantUpdate, applyOpinionDynamics } from "./dynamics/opinion.js";
+export type { DeffuantParams, DeffuantResult, OpinionAgent, OpinionDynamicsParams, OpinionStanceChange, OpinionDynamicsResult } from "./dynamics/opinion.js";
+export { ensembleIntervals, simulateEnsemble, projectionEnsemble, MAX_ENSEMBLE_RUNS } from "./dynamics/ensemble.js";
+export type { TrajectoryPoint, EnsembleInterval } from "./dynamics/ensemble.js";
+export { calibrate, ENGAGEMENT_BOUNDS } from "./calibrate/calibrate.js";
+export type { ParamBound, CalibrateResult } from "./calibrate/calibrate.js";
 export { workingMemory, appendEpisodic, compactIfNeeded, collectiveView, memoryTimeline } from "./memory.js";
 export {
   escalationChains,

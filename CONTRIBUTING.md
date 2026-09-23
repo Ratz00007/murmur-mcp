@@ -36,6 +36,12 @@ npm run typecheck
 - **New clients**: add an adapter in `packages/adapters` (snippet + template + detection) — never a client-specific branch in the server.
 - **New scenario packs** belong in `packages/templates`.
 
+## Good first tasks
+
+New here? [`GOOD-FIRST-ISSUES.md`](./GOOD-FIRST-ISSUES.md) lists ten scoped
+starter issues, each with file hints and acceptance criteria. Standard checks:
+`npm install && npm test` (unit + golden), `npm run test:e2e`, `npm run cleanroom`.
+
 ## Commit style
 
 Conventional commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`). Every PR runs the full CI matrix (Node 20/22/24, plus a Windows smoke job).

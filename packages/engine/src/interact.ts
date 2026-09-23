@@ -9,6 +9,7 @@ import type { Storage } from "./store/storage.js";
 import { personaCard } from "./personas.js";
 import { memoryTimeline } from "./memory.js";
 import { postSentiment, timeline, topPostsByEngagement } from "./aggregate.js";
+import { engagementScore } from "./util/engagement.js";
 import { nowIso, round2Safe, truncate, tokens } from "./util/text.js";
 
 export const INTERVIEW_INSTRUCTIONS = `Answer the user's question AS this persona, in first person, in their voice.
@@ -39,8 +40,8 @@ export function buildInterviewPack(storage: Storage, world: World, personaId: st
   const posts = storage
     .listPosts(world.id, { personaId: persona.id, limit: 200 })
     .sort((a, b) => {
-      const ea = a.metrics.likes + 2 * a.metrics.reposts + a.metrics.upvotes - a.metrics.downvotes;
-      const eb = b.metrics.likes + 2 * b.metrics.reposts + b.metrics.upvotes - b.metrics.downvotes;
+      const ea = engagementScore(a.metrics);
+      const eb = engagementScore(b.metrics);
       return eb - ea || a.id.localeCompare(b.id);
     })
     .slice(0, 10)
@@ -96,7 +97,7 @@ export function buildAskPack(storage: Storage, world: World, question: string): 
       if (entityIds.size > 0 && p.mentions.some((m) => entityIds.has(m.entityId))) score += 3;
       const words = new Set(tokens(`${p.title ?? ""} ${p.body}`));
       for (const t of qTokens) if (words.has(t)) score++;
-      const engagement = p.metrics.likes + 2 * p.metrics.reposts + p.metrics.upvotes;
+      const engagement = engagementScore(p.metrics);
       return { p, score: score + engagement / 20 };
     })
     .filter((x) => x.score > 0.3)

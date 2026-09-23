@@ -6,7 +6,7 @@
  */
 import type { Community, Entity, Persona, Relation, RelationType, World } from "./types.js";
 import { escapeMermaid, estTokens, slugify, truncate } from "./util/text.js";
-import { streamRng } from "./util/rng.js";
+import { streamRng, type Rng } from "./util/rng.js";
 import { scoreSentiment } from "./sentiment.js";
 import type { Storage } from "./store/storage.js";
 
@@ -99,21 +99,71 @@ export function buildCommunities(entities: Entity[]): Community[] {
     .map((e) => ({ id: `c_${e.id}`, entityId: e.id, name: `r/${slugify(e.name)}` }));
 }
 
-/** Deterministic follow graph for twitter-capable personas (stance affinity). */
-export function buildFollowGraph(world: World, personas: Persona[]): { personaId: string; follows: string[] }[] {
+/**
+ * Deterministic follow graph for twitter-capable personas (stance affinity +
+ * preferential attachment). Degree heterogeneity:
+ *  - each persona's outgoing follow count is drawn from a truncated zipf
+ *    (exponent ~1.8) within the existing [3, 7] bounds, so ~20% of personas
+ *    land in the hub bucket (6-7 follows);
+ *  - target selection carries an in-degree preferential-attachment bias, so
+ *    incoming follows concentrate: ~20% of personas become follower hubs
+ *    instead of a uniform fan-out.
+ * Seeded per persona via streamRng (`follows:${personaId}`) — deterministic.
+ * `opts` is additive: existing two-argument callers are unchanged.
+ */
+export function buildFollowGraph(
+  world: World,
+  personas: Persona[],
+  opts: { minFollows?: number; maxFollows?: number; zipfExponent?: number; paBias?: number } = {}
+): { personaId: string; follows: string[] }[] {
+  const minFollows = opts.minFollows ?? 3;
+  const maxFollows = opts.maxFollows ?? 7;
+  const zipfExponent = opts.zipfExponent ?? 1.8;
+  const paBias = opts.paBias ?? 0.6;
   const twitters = personas.filter((p) => p.platform === "twitter" || p.platform === "both");
   const result: { personaId: string; follows: string[] }[] = [];
+  // in-degree starts at 1 for every node (nobody is unreachable) and grows as
+  // later personas pick them — classic rich-get-richer preferential attachment
+  const inDegree = new Map<string, number>(twitters.map((p) => [p.id, 1]));
   for (const p of twitters) {
     const rng = streamRng(world.seed, `follows:${p.id}`);
     const others = twitters.filter((o) => o.id !== p.id);
+    const maxIn = Math.max(...inDegree.values());
     const scored = others
-      .map((o) => ({ id: o.id, score: stanceCosine(p.stances, o.stances) + 0.15 * o.activity + 0.1 * o.traits.extraversion }))
+      .map((o) => ({
+        id: o.id,
+        score:
+          stanceCosine(p.stances, o.stances) +
+          0.15 * o.activity +
+          0.1 * o.traits.extraversion +
+          paBias * ((inDegree.get(o.id) ?? 1) / maxIn),
+      }))
       .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
-    const k = 3 + rng.int(5); // 3..7 follows
+    const k = zipfInt(rng, minFollows, maxFollows, zipfExponent);
     const top = scored.slice(0, Math.min(k, scored.length)).map((s) => s.id);
+    for (const id of top) inDegree.set(id, (inDegree.get(id) ?? 1) + 1);
     result.push({ personaId: p.id, follows: top });
   }
   return result;
+}
+
+/** Draw k from a truncated zipf p(k) ∝ k^-exponent over [minK, maxK]. */
+function zipfInt(rng: Rng, minK: number, maxK: number, exponent: number): number {
+  const lo = Math.max(1, Math.min(minK, maxK));
+  const hi = Math.max(lo, maxK);
+  const weights: number[] = [];
+  let total = 0;
+  for (let k = lo; k <= hi; k++) {
+    const w = Math.pow(k, -exponent);
+    weights.push(w);
+    total += w;
+  }
+  let r = rng.float() * total;
+  for (let i = 0; i < weights.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return lo + i;
+  }
+  return hi;
 }
 
 export function stanceCosine(a: Record<string, number>, b: Record<string, number>): number {

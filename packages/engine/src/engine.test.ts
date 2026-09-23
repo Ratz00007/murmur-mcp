@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Rng, hashString, hashHex, streamRng } from "./util/rng.js";
 import { estTokens, truncate, slugify, stanceBar, splitSentences, topKeywords } from "./util/text.js";
 import { scoreSentiment, entityMentions } from "./sentiment.js";
@@ -39,28 +40,34 @@ describe("rng determinism", () => {
     expect(hashString("murmur")).toBe(hashString("murmur"));
     expect(hashHex("murmur")).toMatch(/^[0-9a-f]{8}$/);
   });
-  it("deterministic core contains no Math.random", () => {
-    const here = path.dirname(new URL(import.meta.url).pathname);
-    const files = [
-      "util/rng.ts",
-      "sim/activation.ts",
-      "sim/feed.ts",
-      "sim/batch.ts",
-      "sim/ingest.ts",
-      "aggregate.ts",
-      "analytics.ts",
-      "sentiment.ts",
-      "ontology.ts",
-      "graph.ts",
-      "personas.ts",
-      "report.ts",
-      "memory.ts",
-      "ingest/digest.ts",
-      "ingest/pdf.ts",
-    ];
-    for (const f of files) {
-      const src = fs.readFileSync(path.join(here, f), "utf8");
-      expect(src.includes("Math.random"), `${f} must not use Math.random`).toBe(false);
+  it("contains no unseeded randomness outside documented exclusions", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    // Explicit, documented allowlist: unseeded randomness may appear ONLY for
+    // uniqueness, never for simulation —
+    //   store/storage.ts: random world id when no seed is supplied (uniqueness)
+    //   worlddir.ts:      random temp-file suffix for atomic writes (uniqueness)
+    const exclusions = new Set(["store/storage.ts", "worlddir.ts"]);
+    const walk = (dir: string): string[] =>
+      fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) return walk(full);
+        return e.isFile() && e.name.endsWith(".ts") ? [full] : [];
+      });
+    // Built from parts so this self-scanning file never matches its own source.
+    const needle = ["Math", "random"].join(".");
+    const scanned: string[] = [];
+    for (const abs of walk(here)) {
+      const rel = path.relative(here, abs).split(path.sep).join("/");
+      if (exclusions.has(rel)) continue;
+      scanned.push(rel);
+      const src = fs.readFileSync(abs, "utf8");
+      expect(src.includes(needle), `${rel} must not use unseeded randomness`).toBe(false);
+    }
+    // every *.ts under packages/engine/src is covered — no hardcoded subset
+    expect(scanned.length).toBeGreaterThan(15);
+    // the allowlist stays honest: each entry exists and is the only omission
+    for (const rel of exclusions) {
+      expect(fs.existsSync(path.join(here, rel)), `${rel} exclusion must reference a real file`).toBe(true);
     }
   });
 });
@@ -226,7 +233,7 @@ describe("report html dashboard", () => {
     const { db, world, record } = build();
     const html = renderReportHtml(db, world, record);
     // structure: every section present
-    for (const needle of ["<!doctype html>", "MURMUR", "Executive Summary", "Market Reaction", "Faction Map", "Platform Divergence", "Persona Spotlight", "Trajectory Forecast", "Risk Register", "Recommendations", "Confidence", "Appendix A", "Appendix B", "Appendix C", "Appendix D", "Appendix E", "<svg", "personas"]) {
+    for (const needle of ["<!doctype html>", "MURMUR", "Executive Summary", "Market Reaction", "Faction Map", "Platform Divergence", "Persona Spotlight", "Trajectory Simulated Projection", "Risk Register", "Recommendations", "Confidence", "Appendix A", "Appendix B", "Appendix C", "Appendix D", "Appendix E", "<svg", "personas"]) {
       expect(html).toContain(needle);
     }
     // charts and cards
@@ -300,7 +307,7 @@ describe("storage", () => {
     expect(post.id).toBe("po_1");
     expect(post.threadId).toBe("po_1");
     post.metrics.likes++;
-    db.updatePostMetrics(post.id, post.metrics);
+    db.updatePostMetrics(world.id, post.id, post.metrics);
     expect(db.getPost(world.id, "po_1")?.metrics.likes).toBe(1);
 
     db.appendMemory(world.id, "p_1", "episodic", "event", "Posted on twitter r1", 0.4, 1);

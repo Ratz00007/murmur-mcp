@@ -4,8 +4,10 @@
  * runs deterministic organic engagement, updates memory and stances, computes
  * round statistics and advances the round.
  */
+import { DEFAULT_CONFIG } from "../types.js";
 import type { Entity, ItemError, Persona, Post, RoundStats, SimAction, SimGeneration, TaskVerdict, World } from "../types.js";
 import type { Storage } from "../store/storage.js";
+import { engagementScore } from "../util/engagement.js";
 import { streamRng } from "../util/rng.js";
 import { clamp, round2Safe, truncate } from "../util/text.js";
 import { entityMentions, scoreSentiment } from "../sentiment.js";
@@ -92,7 +94,9 @@ export function submitGenerations(
   // ---- Apply valid generations deterministically -------------------------
   const appliedPersonas = new Set([...alreadyApplied]);
   const lurkers: string[] = [];
-  let postIdBase = storage.countAllPosts() + 1;
+  // Per-world count so post ids are deterministic for this world alone and
+  // never depend on how many posts other worlds happen to hold.
+  let postIdBase = storage.countPosts(world.id) + 1;
   const mintId = () => `po_${postIdBase++}`;
   const newPosts: Post[] = [];
 
@@ -342,7 +346,7 @@ function applyAction(
     const p = storage.getPost(world.id, postId);
     if (!p) return;
     p.metrics[field]++;
-    storage.updatePostMetrics(p.id, p.metrics);
+    storage.updatePostMetrics(world.id, p.id, p.metrics);
   };
 
   switch (action.type) {
@@ -420,6 +424,7 @@ function organicEngagement(
   const tally = { likes: 0, reposts: 0, upvotes: 0, downvotes: 0 };
   const audit: Record<string, unknown>[] = [];
   const byId = new Map(personas.map((p) => [p.id, p]));
+  let cascaded = 0; // viewers engaged by the multi-hop cascade (below)
 
   for (const post of newPosts) {
     if (post.kind === "repost") continue; // re-shares don't compound
@@ -479,8 +484,85 @@ function organicEngagement(
       }
       if (engaged >= cap) break;
     }
+
+    // ---- Multi-hop cascade (seeded) ------------------------------------------
+    // Beyond the one-hop pass above, engagement propagates along the follow
+    // graph: each reached node engages and passes the post on with
+    // prob = min(cascade.maxProb, base + factor·engagementScore/threshold),
+    // attenuated ×cascade.attenuation per hop, up to cascade.maxHops hops.
+    // The cascade shares the one-hop engaged counter, so organicCapPerPost
+    // still caps engagement per post. Every (round, post, hop) draws from its
+    // own streamRng stream — never unseeded randomness.
+    if (post.platform === "twitter") {
+      // worlds persisted before the cascade block existed read back without it
+      const cas = { ...DEFAULT_CONFIG.cascade, ...(world.config.cascade ?? {}) };
+      const seen = new Set<string>(eligible.map((p) => p.id));
+      seen.add(post.personaId);
+      const followersOfId = (id: string): Persona[] => personas.filter((p) => p.follows.includes(id));
+      // seed the frontier at followers-of-followers (distance ≥ 2; distance 1
+      // was the direct pass above)
+      let frontier = new Map<string, Persona>();
+      for (const f of followersOfId(post.personaId)) {
+        for (const g of followersOfId(f.id)) {
+          if (!seen.has(g.id)) frontier.set(g.id, g);
+        }
+      }
+      const threshold = Math.max(1, cas.threshold);
+      for (let hop = 1; hop <= cas.maxHops && engaged < cap && frontier.size > 0; hop++) {
+        const pPropagate =
+          Math.min(cas.maxProb, cas.base + (cas.factor * engagementScore(post.metrics)) / threshold) *
+          Math.pow(cas.attenuation, hop - 1);
+        const hopRng = streamRng(world.seed, `cascade:${round}:${post.id}:${hop}`);
+        const ordered = [...frontier.values()].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+        frontier = new Map();
+        for (const viewer of ordered) {
+          if (seen.has(viewer.id)) continue;
+          seen.add(viewer.id);
+          if (hopRng.float() >= pPropagate) continue; // this branch dies here
+          const align = alignment(viewer, post);
+          engaged++;
+          cascaded++;
+          if (align >= 0) {
+            const strong = align > 0.4 && hopRng.float() < 0.18;
+            if (strong) {
+              bumpAndAudit(storage, world, post.id, "reposts");
+              tally.reposts++;
+              const rp: Post = {
+                id: mintId(),
+                worldId: world.id,
+                round,
+                personaId: viewer.id,
+                platform: "twitter",
+                kind: "repost",
+                parentId: post.id,
+                threadId: post.threadId,
+                communityId: null,
+                title: null,
+                body: `↻ ${truncate(post.body, 200)}`,
+                metrics: { likes: 0, reposts: 0, upvotes: 0, downvotes: 0, impressions: 2 },
+                mentions: post.mentions,
+                origin: "organic",
+              };
+              storage.insertPost(rp);
+              audit.push({ post: post.id, viewer: viewer.id, action: "repost", hop });
+            } else {
+              bumpAndAudit(storage, world, post.id, "likes");
+              tally.likes++;
+              audit.push({ post: post.id, viewer: viewer.id, action: "like", hop });
+            }
+          } // negative-aligned viewers lurk, as in the one-hop pass
+          if (engaged >= cap) break;
+          // engaged nodes propagate to their own followers next hop
+          if (hop < cas.maxHops) {
+            for (const n of followersOfId(viewer.id)) {
+              if (!seen.has(n.id)) frontier.set(n.id, n);
+            }
+          }
+        }
+      }
+    }
   }
-  storage.addEvent(world.id, round, "organic", { tally, audit: audit.slice(0, 400) }, "world");
+  storage.addEvent(world.id, round, "organic", { tally, cascaded, audit: audit.slice(0, 400) }, "world");
   void byId;
   void entities;
   return tally;
@@ -490,7 +572,7 @@ function bumpAndAudit(storage: Storage, world: World, postId: string, field: "li
   const p = storage.getPost(world.id, postId);
   if (!p) return;
   p.metrics[field]++;
-  storage.updatePostMetrics(p.id, p.metrics);
+  storage.updatePostMetrics(world.id, p.id, p.metrics);
 }
 
 function alignment(viewer: Persona, post: Post): number {
@@ -510,7 +592,11 @@ function checkVirality(storage: Storage, world: World, round: number, newPosts: 
   const threshold = world.config.engagement.viralityThreshold * Math.max(1, population / 24);
   const viral: string[] = [];
   for (const p of newPosts) {
-    const engagement = p.metrics.likes + 2 * p.metrics.reposts;
+    // Canonical engagement keeps virality consistent with reports/analytics.
+    // Only twitter posts take the branch below, and the twitter path never
+    // bumps vote fields, so the viralityThreshold keeps its likes + 2×reposts
+    // semantics exactly.
+    const engagement = engagementScore(p.metrics);
     if (p.platform === "twitter" && p.kind !== "repost" && engagement >= threshold) {
       viral.push(p.id);
       storage.addEvent(world.id, round, "viral", { postId: p.id, engagement }, "world");

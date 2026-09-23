@@ -10,6 +10,8 @@
 import * as zlib from "node:zlib";
 
 const MAX_CHARS = 2_000_000;
+/** Hard cap for a single inflate call — decompression-bomb guard. */
+const MAX_STREAM_BYTES = 32 * 1024 * 1024;
 
 export function extractPdfText(buf: Buffer): { text: string; ok: boolean } {
   const streams = decodeStreamSegments(buf);
@@ -27,6 +29,7 @@ export function extractPdfText(buf: Buffer): { text: string; ok: boolean } {
 function decodeStreamSegments(buf: Buffer): string[] {
   const latin = buf.toString("latin1");
   const out: string[] = [];
+  let totalOut = 0;
   let idx = 0;
   while (out.length < 5000) {
     const s = latin.indexOf("stream", idx);
@@ -44,18 +47,40 @@ function decodeStreamSegments(buf: Buffer): string[] {
     const chunk = buf.subarray(start, e);
     let text: string;
     try {
-      text = zlib.inflateSync(chunk).toString("latin1");
-    } catch {
+      text = zlib.inflateSync(chunk, { maxOutputLength: MAX_STREAM_BYTES }).toString("latin1");
+    } catch (err) {
+      if (isOutputTooLarge(err)) throw inflateCapError();
       try {
-        text = zlib.inflateRawSync(chunk).toString("latin1");
-      } catch {
+        text = zlib.inflateRawSync(chunk, { maxOutputLength: MAX_STREAM_BYTES }).toString("latin1");
+      } catch (err2) {
+        if (isOutputTooLarge(err2)) throw inflateCapError();
         text = chunk.toString("latin1");
       }
+    }
+    // Enforce the documented output cap DURING inflation: cumulative inflated
+    // bytes must never exceed MAX_CHARS — a decompression bomb fails fast
+    // here, stream by stream, not after joining everything.
+    totalOut += text.length;
+    if (totalOut > MAX_CHARS) {
+      throw new Error(
+        `PDF decompression aborted: cumulative inflated output exceeds the ${MAX_CHARS}-char output cap (possible decompression bomb)`,
+      );
     }
     out.push(text);
     idx = e + 9;
   }
   return out;
+}
+
+/** Node reports ERR_BUFFER_TOO_LARGE when `maxOutputLength` is hit. */
+function isOutputTooLarge(err: unknown): boolean {
+  return typeof err === "object" && err !== null && (err as { code?: unknown }).code === "ERR_BUFFER_TOO_LARGE";
+}
+
+function inflateCapError(): Error {
+  return new Error(
+    `PDF decompression aborted: single stream exceeds the ${MAX_STREAM_BYTES}-byte inflate cap (possible decompression bomb)`,
+  );
 }
 
 function looksLikeContentStream(s: string): boolean {

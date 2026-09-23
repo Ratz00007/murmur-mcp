@@ -11,6 +11,7 @@ import type { Storage } from "./store/storage.js";
 import { engagementPeaks, postSentiment, sentimentCurve, topPostsByEngagement } from "./aggregate.js";
 import type { ReportQuote } from "./analytics.js";
 import { collectReportData } from "./report.js";
+import { engagementScore } from "./util/engagement.js";
 import { truncate } from "./util/text.js";
 
 // ---------------------------------------------------------------------------
@@ -356,7 +357,7 @@ function quoteCard(q: ReportQuote, focusName?: string): string {
 }
 
 function postQuoteCard(p: Post, by: string): string {
-  const eng = p.metrics.likes + 2 * p.metrics.reposts + p.metrics.upvotes - p.metrics.downvotes;
+  const eng = engagementScore(p.metrics);
   return (
     `<div class="quote"><div class="body">&#8220;${esc(truncate(p.body, 200).replace(/\n+/g, " "))}&#8221;</div>` +
     `<div class="who"><span class="pid">${esc(p.id)}</span><b>${esc(by)}</b>${platChip(p.platform === "twitter" ? "tw" : "rd")}<span>round ${p.round}</span>${sentPill(postSentiment(p))}<span>eng ${eng}</span></div></div>`
@@ -403,9 +404,9 @@ export function renderReportHtml(storage: Storage, world: World, report: ReportR
   H.push(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">`);
   H.push(`<title>${esc(`Murmur — ${world.name}`)}</title><style>${STYLES}</style></head><body>`);
   H.push(
-    `<div class="topbar"><div class="topbar-in"><span class="wordmark">MURMUR<b>&nbsp;PREDICTION</b></span>` +
+    `<div class="topbar"><div class="topbar-in"><span class="wordmark">MURMUR<b>&nbsp;SIMULATED PERSPECTIVE</b></span>` +
     `<span class="crumb">${esc(world.name)} · report v${report.version}</span>` +
-    `<nav class="nav"><a href="#overview">Overview</a><a href="#reaction">Reaction</a><a href="#factions">Factions</a><a href="#platforms">Platforms</a><a href="#people">People</a><a href="#forecast">Forecast</a><a href="#risks">Risks</a><a href="#actions">Actions</a><a href="#evidence">Evidence</a></nav></div></div>`
+    `<nav class="nav"><a href="#overview">Overview</a><a href="#reaction">Reaction</a><a href="#factions">Factions</a><a href="#platforms">Platforms</a><a href="#people">People</a><a href="#forecast">Simulated projection</a><a href="#risks">Risks</a><a href="#actions">Actions</a><a href="#evidence">Evidence</a></nav></div></div>`
   );
   H.push(`<div class="wrap">`);
   H.push(
@@ -555,16 +556,50 @@ export function renderReportHtml(storage: Storage, world: World, report: ReportR
     H.push(`</div>`);
   }
 
-  // ---- trajectory forecast ------------------------------------------------------------------
-  H.push(`<h2 class="sec" id="forecast"><span class="n">08</span>Trajectory Forecast</h2>`);
+  // ---- simulated projection ------------------------------------------------------------------
+  H.push(`<h2 class="sec" id="forecast"><span class="n">08</span>Trajectory Simulated Projection</h2>`);
   if (D.projection && D.focusEntity) {
     const actual = D.projection.points.filter((p) => !p.projected);
     const proj = D.projection.points.filter((p) => p.projected);
-    H.push(`<div class="panel"><h4>Outlook — ${esc(D.focusEntity.name)} <span style="float:right;font-weight:400;text-transform:none;letter-spacing:0">dashed = extrapolated</span></h4>${projectionChart(actual, proj)}</div>`);
-    H.push(
-      `<p class="chart-note">Engine extrapolation for <b>${esc(D.focusEntity.name)}</b> (least-squares, no new external events): slope ${D.projection.slope >= 0 ? "+" : ""}${D.projection.slope.toFixed(2)} per round → ` +
-      proj.map((p) => `round ${p.round} ≈ ${fmt(p.value)}`).join(", ") + `. Direction: <b>${D.projection.direction}</b>.</p>`
-    );
+    if (D.ensemble && D.ensemble.length > 0) {
+      // Ensemble UQ: seeded P10–P90 band replaces the single extrapolated line.
+      const runs = world.config.ensemble?.runCount ?? 5;
+      const svgW = 640, svgH = 200, padL = 34, padR = 10, padT = 10, padB = 22;
+      const rounds = D.ensemble.map((b) => b.round);
+      const r0 = Math.min(...rounds), r1 = Math.max(...rounds);
+      const x = (r: number) => padL + (r1 === r0 ? (svgW - padL - padR) / 2 : ((r - r0) / (r1 - r0)) * (svgW - padL - padR));
+      const y = (v: number) => padT + ((1 - Math.max(-1, Math.min(1, v))) / 2) * (svgH - padT - padB);
+      const lo = D.ensemble.map((b) => `${x(b.round).toFixed(1)},${y(b.p10).toFixed(1)}`).join(" ");
+      const hi = [...D.ensemble].reverse().map((b) => `${x(b.round).toFixed(1)},${y(b.p90).toFixed(1)}`).join(" ");
+      const p50 = D.ensemble.map((b) => `${x(b.round).toFixed(1)},${y(b.p50).toFixed(1)}`).join(" ");
+      const recPts = actual.map((p) => `${x(p.round).toFixed(1)},${y(p.value).toFixed(1)}`).join(" ");
+      const axis = [1, 0, -1].map((v) => `<text x="6" y="${Number((y(v) + 3).toFixed(1))}" font-size="10" fill="var(--dim)">${v > 0 ? "+1" : String(v)}</text>`).join("");
+      const labels = rounds.map((r) => `<text x="${x(r).toFixed(1)}" y="${svgH - 6}" font-size="10" fill="var(--dim)" text-anchor="middle">r${r}</text>`).join("");
+      H.push(
+        `<div class="panel"><h4>Outlook — ${esc(D.focusEntity.name)} <span style="float:right;font-weight:400;text-transform:none;letter-spacing:0">shaded = P10–P90 ensemble · line = recorded + P50</span></h4>` +
+          `<svg viewBox="0 0 ${svgW} ${svgH}" width="100%" height="${svgH}">` +
+          `<line x1="${padL}" y1="${y(0).toFixed(1)}" x2="${svgW - padR}" y2="${y(0).toFixed(1)}" stroke="var(--line2)" stroke-width="1"/>` +
+          `<polygon points="${lo} ${hi}" fill="var(--accent)" fill-opacity="0.18"/>` +
+          `<polyline points="${recPts}" fill="none" stroke="var(--accent2)" stroke-width="2"/>` +
+          `<polyline points="${p50}" fill="none" stroke="var(--warn)" stroke-width="2" stroke-dasharray="5 4"/>` +
+          axis + labels +
+          `</svg></div>`
+      );
+      const last = D.ensemble[D.ensemble.length - 1];
+      const opened = D.ensemble.some((b) => b.p10 !== b.p90);
+      H.push(
+        `<p class="chart-note">Simulated projection — seeded ensemble of ${runs} runs (least-squares trend with per-run slope jitter): recorded rounds carry no band (every run shares the recorded history); the band opens on projected rounds. ` +
+          (opened ? `Round ${last.round}: P10 ${fmt(last.p10)} · P50 ${fmt(last.p50)} · P90 ${fmt(last.p90)}. ` : "") +
+          `Spread reflects model jitter only — a simulated perspective, not a claim about the future.</p>`
+      );
+    } else {
+      H.push(`<div class="panel"><h4>Outlook — ${esc(D.focusEntity.name)} <span style="float:right;font-weight:400;text-transform:none;letter-spacing:0">dashed = extrapolated</span></h4>${projectionChart(actual, proj)}</div>`);
+      H.push(
+        `<p class="chart-note">Simulated projection — single-run least-squares trend for <b>${esc(D.focusEntity.name)}</b> (no new external events; no uncertainty band): slope ${D.projection.slope >= 0 ? "+" : ""}${D.projection.slope.toFixed(2)} per round → ` +
+          proj.map((p) => `round ${p.round} ≈ ${fmt(p.value)}`).join(", ") +
+          `. Direction: <b>${D.projection.direction}</b>.</p>`
+      );
+    }
   }
   H.push(`<div class="summary" style="margin-top:14px">${esc(d.trajectory)}</div>`);
 
@@ -662,7 +697,7 @@ export function renderReportHtml(storage: Storage, world: World, report: ReportR
   H.push(`<details><summary>Appendix D — Post index (top 25 by engagement)</summary><div class="inner">`);
   H.push(`<table><tr><th>Id</th><th>By</th><th>Plat</th><th class="mono">R</th><th class="mono">Sentiment</th><th class="mono">Eng</th><th>Excerpt</th></tr>`);
   for (const { post, sentiment } of topPostsByEngagement(storage, world, 25)) {
-    const eng = post.metrics.likes + 2 * post.metrics.reposts + post.metrics.upvotes - post.metrics.downvotes;
+    const eng = engagementScore(post.metrics);
     H.push(`<tr><td class="mono">${esc(post.id)}</td><td>${esc(D.handles.get(post.personaId) ?? post.personaId)}</td><td>${post.platform === "twitter" ? "tw" : "rd"}</td><td class="mono">${post.round}</td><td>${sentPill(sentiment)}</td><td class="mono">${eng}</td><td style="color:var(--muted)">${esc(truncate(post.body, 90))}</td></tr>`);
   }
   H.push(`</table></div></details>`);
@@ -670,7 +705,7 @@ export function renderReportHtml(storage: Storage, world: World, report: ReportR
   H.push(`<details><summary>Appendix E — Methodology &amp; reproducibility</summary><div class="inner">`);
   H.push(
     `<p style="font-size:13.5px">Each round the engine activated a weighted subset of the ${D.personas.length}-persona population, composed personalized feeds from the follow graph and platform mechanics, and the host LLM wrote posts, replies and votes in character. ` +
-    `Organic engagement, virality, stance migration (10%/round toward expressed sentiment) and escalation chains are deterministic functions of the recorded run. ` +
+    `Organic engagement, virality, stance migration (10%/round toward expressed sentiment), pairwise influence over the follow graph (Deffuant bounded confidence: ε=${world.config.dynamics?.epsilon ?? 0.4}, μ=${world.config.dynamics?.mu ?? 0.2}, ${(world.config.dynamics?.abstentionChance ?? 0.1) * 100}% chance of slight disengagement beyond ε) and escalation chains are deterministic functions of the recorded run. ` +
     `Sentiment is a lexical score over real post text, attributed to entities by mention. The report narrative was drafted by the host coding agent against the statistics pack; every quoted post id resolves to a stored post.</p>`
   );
   H.push(
@@ -681,7 +716,7 @@ export function renderReportHtml(storage: Storage, world: World, report: ReportR
 
   // ---- footer ----------------------------------------------------------------------------------------------
   H.push(
-    `<footer class="foot">Murmur prediction dashboard · deterministic statistics by the engine, narrative by the host coding agent · generated ${esc(D.date)} from world <b>${esc(world.slug)}</b> · report v${report.version} · ` +
+    `<footer class="foot">Murmur simulated perspective dashboard · deterministic statistics by the engine, narrative by the host coding agent · generated ${esc(D.date)} from world <b>${esc(world.slug)}</b> · report v${report.version} · ` +
     `this file is self-contained (inline CSS + SVG, no external requests) and safe to commit, share or print.</footer>`
   );
   H.push(`</div></body></html>`);

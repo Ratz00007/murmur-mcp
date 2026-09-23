@@ -6,7 +6,9 @@
 import type { Entity, EscalationChain, Post, RoundStats, World } from "./types.js";
 import type { Storage } from "./store/storage.js";
 import { scoreSentiment } from "./sentiment.js";
+import { engagementScore } from "./util/engagement.js";
 import { round2Safe } from "./util/text.js";
+import { applyOpinionDynamics } from "./dynamics/opinion.js";
 
 export interface Mover {
   personaId: string;
@@ -44,6 +46,30 @@ export function computeMovers(storage: Storage, world: World, resolve: (id: stri
       }
     }
     storage.patchPersona(persona.id, { stances: persona.stances });
+  }
+
+  // Pairwise influence step — Deffuant bounded-confidence dynamics over the
+  // follow graph, layered AFTER (never instead of) the self-expression
+  // update above. All randomness derives from streamRng(world.seed,
+  // `dynamics:${round}:${i}`) inside applyOpinionDynamics, so replays of the
+  // same world seed stay byte-identical. Round comes from this round's posts
+  // (the world round has not advanced yet at this point in ingest).
+  const dynRound = newPosts.length > 0 ? Math.max(...newPosts.map((p) => p.round)) : world.round + 1;
+  const dynPopulation = storage.listPersonas(world.id);
+  const dyn = applyOpinionDynamics(world, dynRound, { ...(world.config.dynamics ?? {}), personas: dynPopulation });
+  if (dyn.changed.length > 0) {
+    const entityNames = new Map(entities.map((e) => [e.id, e.name]));
+    const byDynId = new Map(dynPopulation.map((p) => [p.id, p]));
+    for (const m of dyn.changed) {
+      // Same migration threshold as the self-expression movers above.
+      if (Math.abs(m.to - m.from) >= 0.02) {
+        movers.push({ personaId: m.personaId, entity: entityNames.get(m.entityId) ?? m.entityId, from: round2Safe(m.from), to: m.to });
+      }
+    }
+    for (const id of new Set(dyn.changed.map((m) => m.personaId))) {
+      const p = byDynId.get(id);
+      if (p) storage.patchPersona(p.id, { stances: p.stances });
+    }
   }
   return movers;
 }
@@ -178,7 +204,7 @@ export function leaderboards(storage: Storage, world: World, limit = 10): Leader
   const rows = personas.map((p) => {
     const own = posts.filter((x) => x.personaId === p.id);
     const received = own.reduce(
-      (a, x) => a + x.metrics.likes + 2 * x.metrics.reposts + x.metrics.upvotes - x.metrics.downvotes,
+      (a, x) => a + engagementScore(x.metrics),
       0
     );
     const given = own.reduce((a, x) => a + 0, 0); // generated votes are metric bumps on others' posts
@@ -210,7 +236,7 @@ export function timeline(storage: Storage, world: World): TimelineRow[] {
         round: r,
         twitter: stats.postsByPlatform.twitter,
         reddit: stats.postsByPlatform.reddit,
-        engagement: stats.engagement.likes + stats.engagement.reposts + stats.engagement.upvotes + stats.engagement.downvotes,
+        engagement: engagementScore(stats.engagement),
         sentimentByEntity: stats.sentimentByEntity,
         escalations: stats.escalations.length,
         injections: stats.injections.length,
@@ -247,7 +273,7 @@ export function topPostsByEngagement(storage: Storage, world: World, limit = 10,
     .listPosts(world.id, { limit: 100000 })
     .filter((p) => p.kind !== "repost");
   const scored = posts.map((p) => {
-    const engagement = p.metrics.likes + 2 * p.metrics.reposts + p.metrics.upvotes - p.metrics.downvotes;
+    const engagement = engagementScore(p.metrics);
     return { post: p, engagement, sentiment: postSentiment(p) };
   });
   return scored
