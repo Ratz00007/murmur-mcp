@@ -1,9 +1,9 @@
 # Murmur — Complete Project Bundle · v1.0.0
 
-<!-- Badge row. The repo URL is assumed to be github.com/murmur-mcp/murmur-mcp
+<!-- Badge row. The repo URL is assumed to be github.com/Ratz00007/murmur-mcp
      (same path as murmur/packages/server/package.json). If you publish under a
      different org/repo, update these URLs and those three package.json fields. -->
-[![build](https://img.shields.io/github/actions/workflow/status/murmur-mcp/murmur-mcp/ci.yml?branch=main)](https://github.com/murmur-mcp/murmur-mcp/actions)
+[![build](https://img.shields.io/github/actions/workflow/status/Ratz00007/murmur-mcp/ci.yml?branch=main)](https://github.com/Ratz00007/murmur-mcp/actions)
 [![npm](https://img.shields.io/npm/v/murmur-mcp.svg)](https://www.npmjs.com/package/murmur-mcp)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](murmur/LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-server%20%C2%B7%2029%20tools-brightgreen.svg)](murmur/README.md)
@@ -184,7 +184,7 @@ measures token budget and wall time at any scale:
 
 1. `repository` / `homepage` / `bugs` in
    `murmur/packages/server/package.json` already point at
-   `github.com/murmur-mcp/murmur-mcp` — create the repo at that path, or update
+   `github.com/Ratz00007/murmur-mcp` — create the repo at that path, or update
    those three fields plus the badge URLs at the top of this README.
 2. Push the repo, add the `NPM_TOKEN` secret, and the release workflow
    (`.github/workflows/release.yml`) runs every gate and publishes with

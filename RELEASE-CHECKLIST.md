@@ -34,14 +34,14 @@ so pushing a subdirectory would break them.
 
 ```bash
 cd <this directory>
-git remote add origin https://github.com/murmur-mcp/murmur-mcp.git
+git remote add origin https://github.com/Ratz00007/murmur-mcp.git
 git push -u origin main
 ```
 
 If you publish under a different org/repo, update: the badge URLs at the top of
 `README.md`, and `repository` / `homepage` / `bugs` in
 `murmur/packages/server/package.json` (they currently point at
-`github.com/murmur-mcp/murmur-mcp`).
+`github.com/Ratz00007/murmur-mcp`).
 
 - [ ] Repo pushed
 - [ ] CI green on GitHub (workflow: `murmur/.github/workflows/ci.yml`)

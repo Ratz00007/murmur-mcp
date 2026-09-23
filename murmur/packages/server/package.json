@@ -16,10 +16,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/murmur-mcp/murmur-mcp.git"
+    "url": "git+https://github.com/Ratz00007/murmur-mcp.git"
   },
-  "homepage": "https://github.com/murmur-mcp/murmur-mcp#readme",
-  "bugs": "https://github.com/murmur-mcp/murmur-mcp/issues",
+  "homepage": "https://github.com/Ratz00007/murmur-mcp#readme",
+  "bugs": "https://github.com/Ratz00007/murmur-mcp/issues",
   "author": "Murmur contributors",
   "engines": {
     "node": ">=20.0.0"
