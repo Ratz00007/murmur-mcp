@@ -252,6 +252,8 @@ publish it in `gallery/` and replace this line with the measured figure.
 
 ## Where to read more
 
+- [`ANALYSIS-AND-ROADMAP.md`](ANALYSIS-AND-ROADMAP.md) — the blunt review that
+  produced this codebase, the phase plan, its status, and the agreed guardrails
 - [`RELEASE-CHECKLIST.md`](RELEASE-CHECKLIST.md) — what is left before launch,
   in order (repo, npm, real-LLM flagship run, directories)
 - [`gallery/`](gallery/README.md) — published runs (real ones and clearly
