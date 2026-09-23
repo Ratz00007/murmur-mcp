@@ -1,10 +1,20 @@
-node_modules/
-dist/
-coverage/
-.murmur/
-*.tgz
-*.log
+# OS / editor noise
 .DS_Store
+Thumbs.db
+*.swp
+
+# Dependencies (installed per workspace, never committed)
+node_modules/
+
+# Build logs / scratch output
+*.log
+
+# Local env
 .env
 .env.*
-!.env.example
+
+# Published tarballs are produced by CI, never committed
+*.tgz
+
+# Preserved original monorepo git dir (history was imported into this repo)
+murmur/.git.bundle-history/

@@ -1,0 +1,28 @@
+{"ts":"2026-09-22T20:30:16.387Z","world":"w_757ac236","op":"world_init","name":"pricing-reaction"}
+{"ts":"2026-09-22T20:30:16.392Z","world":"w_757ac236","op":"seed_add_files","files":3}
+{"ts":"2026-09-22T20:30:16.401Z","world":"w_757ac236","op":"seed_add_text","title":"Competitive context brief"}
+{"ts":"2026-09-22T20:30:16.405Z","world":"w_757ac236","op":"ontology_plan","taskId":"t_1","tokens":1031}
+{"ts":"2026-09-22T20:30:16.419Z","world":"w_757ac236","op":"ontology_submit","taskId":"t_1","inserted":14,"rejected":0}
+{"ts":"2026-09-22T20:30:16.427Z","world":"w_757ac236","op":"graph_build","relations":35,"tensions":21,"communities":13}
+{"ts":"2026-09-22T20:30:16.433Z","world":"w_757ac236","op":"graph_export_mermaid","scope":"all"}
+{"ts":"2026-09-22T20:30:16.455Z","world":"w_757ac236","op":"personas_plan","taskId":"t_2","count":12}
+{"ts":"2026-09-22T20:30:16.463Z","world":"w_757ac236","op":"personas_submit","taskId":"t_2","personas":12,"rejected":0,"follows":39}
+{"ts":"2026-09-22T20:30:16.467Z","world":"w_757ac236","op":"sim_configure","rounds":5}
+{"ts":"2026-09-22T20:30:16.471Z","world":"w_757ac236","op":"sim_next_batch","taskId":"t_3","round":1,"personas":5}
+{"ts":"2026-09-22T20:30:16.481Z","world":"w_757ac236","op":"sim_submit_generations","taskId":"t_3","round":1,"posts":5,"rejected":0,"advanced":true}
+{"ts":"2026-09-22T20:30:16.483Z","world":"w_757ac236","op":"sim_inject_event","event":"ev_9","round":3}
+{"ts":"2026-09-22T20:30:16.487Z","world":"w_757ac236","op":"sim_next_batch","taskId":"t_4","round":2,"personas":5}
+{"ts":"2026-09-22T20:30:16.494Z","world":"w_757ac236","op":"sim_submit_generations","taskId":"t_4","round":2,"posts":5,"rejected":0,"advanced":true}
+{"ts":"2026-09-22T20:30:16.498Z","world":"w_757ac236","op":"sim_next_batch","taskId":"t_5","round":3,"personas":5}
+{"ts":"2026-09-22T20:30:16.504Z","world":"w_757ac236","op":"sim_submit_generations","taskId":"t_5","round":3,"posts":4,"rejected":0,"advanced":true}
+{"ts":"2026-09-22T20:30:16.508Z","world":"w_757ac236","op":"sim_next_batch","taskId":"t_6","round":4,"personas":5}
+{"ts":"2026-09-22T20:30:16.514Z","world":"w_757ac236","op":"sim_submit_generations","taskId":"t_6","round":4,"posts":4,"rejected":0,"advanced":true}
+{"ts":"2026-09-22T20:30:16.518Z","world":"w_757ac236","op":"sim_next_batch","taskId":"t_7","round":5,"personas":5}
+{"ts":"2026-09-22T20:30:16.525Z","world":"w_757ac236","op":"sim_submit_generations","taskId":"t_7","round":5,"posts":5,"rejected":0,"advanced":true}
+{"ts":"2026-09-22T20:30:16.551Z","world":"w_757ac236","op":"report_plan","taskId":"t_8","focus":"developer reaction to the pricing change"}
+{"ts":"2026-09-22T20:30:16.555Z","world":"w_757ac236","op":"report_submit","taskId":"t_8","version":1}
+{"ts":"2026-09-22T20:30:16.587Z","world":"w_757ac236","op":"report_export","version":1,"format":"both","files":[".murmur/reports/pricing-reaction/report-1.md",".murmur/reports/pricing-reaction/report-1.html"]}
+{"ts":"2026-09-22T20:30:16.591Z","world":"w_757ac236","op":"interview_pack","persona":"p_1"}
+{"ts":"2026-09-22T20:30:16.593Z","world":"w_757ac236","op":"interview_log","persona":"p_1"}
+{"ts":"2026-09-22T20:30:16.595Z","world":"w_757ac236","op":"ask_pack"}
+{"ts":"2026-09-22T20:30:16.597Z","world":"w_757ac236","op":"ask_log"}

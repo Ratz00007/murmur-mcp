@@ -1,0 +1,23 @@
+{
+  "name": "flagship-demo",
+  "status": "pending first real-LLM run",
+  "scenario": "launch",
+  "personas": 48,
+  "rounds": 8,
+  "platforms": "both",
+  "populationMix": [
+    "free users",
+    "Pro users",
+    "indie devs",
+    "open-source maintainers",
+    "press voices",
+    "rival fans",
+    "cautious observers"
+  ],
+  "inject": {
+    "round": 4,
+    "text": "StackHaven announces a free-tier match plus a one-click importer"
+  },
+  "ensembleRunCount": 5,
+  "notes": "Run inside a real coding agent (Claude Code / Codex CLI / Gemini CLI) with a real host LLM. Publish verbatim transcript + report HTML + report MD into gallery/flagship-<client>-<model>/. No mock LLMs for the flagship."
+}

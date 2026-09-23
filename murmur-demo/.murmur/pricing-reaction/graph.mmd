@@ -1,0 +1,62 @@
+graph LR
+  e_1["Pro Plan Pricing (topic)"]
+  e_2["Pricing FAQ (topic)"]
+  e_3["Pricing Release (topic)"]
+  e_4["Acme Cloud (org)"]
+  e_5["Nimbus Labs (org)"]
+  e_6["Free Tier (topic)"]
+  e_7["Pricing Change (topic)"]
+  e_8["Existing Customers (topic)"]
+  e_9["Pro Plan (topic)"]
+  e_10["Data Exports (topic)"]
+  e_11["Free Forever (topic)"]
+  e_12["On-prem Support (topic)"]
+  e_13["Rate Limits (topic)"]
+  e_14["Until End (idea)"]
+  e_3 -->|"opposition ⚠83"| e_4
+  e_3 -->|"opposition ⚠80"| e_6
+  e_4 -->|"opposition ⚠80"| e_5
+  e_4 -->|"opposition ⚠79"| e_6
+  e_3 -->|"opposition ⚠77"| e_8
+  e_5 -->|"opposition ⚠77"| e_6
+  e_4 -->|"opposition ⚠75"| e_8
+  e_3 -->|"opposition ⚠75"| e_9
+  e_4 -->|"opposition ⚠74"| e_9
+  e_12 -->|"opposition ⚠70"| e_3
+  e_13 -->|"opposition ⚠68"| e_3
+  e_12 -->|"opposition ⚠68"| e_6
+  e_13 -->|"opposition ⚠67"| e_4
+  e_14 -->|"opposition ⚠67"| e_3
+  e_14 -->|"opposition ⚠66"| e_4
+  e_12 -->|"opposition ⚠66"| e_8
+  e_13 -->|"opposition ⚠66"| e_6
+  e_10 -->|"opposition ⚠65"| e_11
+  e_12 -->|"opposition ⚠65"| e_9
+  e_12 -->|"opposition ⚠62"| e_13
+  e_12 -->|"opposition ⚠61"| e_14
+  e_10 -->|"alliance 80"| e_11
+  e_3 -->|"alliance 73"| e_9
+  e_12 -->|"alliance 65"| e_3
+  e_12 -->|"alliance 64"| e_9
+  e_3 -->|"alliance 62"| e_7
+  e_3 -->|"alliance 62"| e_4
+  e_4 -->|"alliance 60"| e_5
+  e_4 -->|"alliance 60"| e_9
+  e_7 -->|"alliance 60"| e_9
+  e_12 -->|"alliance 60"| e_7
+  e_4 -->|"alliance 57"| e_7
+  e_12 -->|"alliance 56"| e_4
+  e_14 -->|"alliance 56"| e_8
+  e_1 -->|"alliance 53"| e_9
+  classDef hot fill:#ffe0e0,stroke:#c0392b,stroke-width:2px;
+  class e_10 hot;
+  class e_11 hot;
+  class e_12 hot;
+  class e_13 hot;
+  class e_14 hot;
+  class e_3 hot;
+  class e_4 hot;
+  class e_5 hot;
+  class e_6 hot;
+  class e_8 hot;
+  class e_9 hot;
