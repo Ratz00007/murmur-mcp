@@ -43,7 +43,7 @@ If you publish under a different org/repo, update: the badge URLs at the top of
 `murmur/packages/server/package.json` (they currently point at
 `github.com/Ratz00007/murmur-mcp`).
 
-- [ ] Repo pushed
+- [x] Repo pushed — github.com/Ratz00007/murmur-mcp (private, branch `main`)
 - [ ] CI green on GitHub (workflow: `.github/workflows/ci.yml`)
 
 ## 2. Claim the npm name and publish with provenance (BLOCKER)
