@@ -15,6 +15,9 @@ export interface ServerCommand {
 
 export const NPM_SERVER: ServerCommand = { command: "npx", args: ["-y", "murmur-mcp"] };
 
+/** Command as a single shell line, e.g. `npx -y murmur-mcp`. */
+export const commandLine = (server: ServerCommand) => `${server.command} ${server.args.join(" ")}`;
+
 export interface ClientAdapter {
   id: string;
   name: string;
@@ -25,6 +28,10 @@ export interface ClientAdapter {
   configPath: string;
   /** Rendered config snippet for this client. */
   configSnippet: (server: ServerCommand) => string;
+  /** Language of the rendered snippet, used for the markdown fence. */
+  configFormat: "json" | "yaml";
+  /** True when the client/file/key below still needs first-party verification. */
+  unverified?: boolean;
   notes: string;
   /** Heuristic detection of an existing client setup. */
   detect: (ctx: DetectCtx) => boolean;
@@ -38,6 +45,38 @@ export interface DetectCtx {
 
 const jsonEntry = (server: ServerCommand, key = "murmur") =>
   JSON.stringify({ mcpServers: { [key]: { command: server.command, args: server.args } } }, null, 2);
+
+/** VS Code Copilot: top-level `servers`, each entry requires `type: "stdio"`. */
+const vscodeServers = (server: ServerCommand, key = "murmur") =>
+  `// .vscode/mcp.json — merge into your existing file\n${JSON.stringify(
+    { servers: { [key]: { type: "stdio", command: server.command, args: server.args } } },
+    null,
+    2,
+  )}`;
+
+/** OpenCode: `mcp` map, `type: "local"`, command is an array. */
+const opencodeMcp = (server: ServerCommand, key = "murmur") =>
+  `// opencode.json — merge the mcp block into your existing file\n${JSON.stringify(
+    { mcp: { [key]: { type: "local", command: [server.command, ...server.args], enabled: true } } },
+    null,
+    2,
+  )}`;
+
+/** Continue: YAML list of {name, command, args}. */
+const continueYaml = (server: ServerCommand, key = "murmur") =>
+  [
+    "# Continue: ~/.continue/config.yaml — merge this mcpServers list into your existing file",
+    "name: Local Assistant",
+    "version: 1.0.0",
+    "schema: v1",
+    "mcpServers:",
+    `  - name: ${key}`,
+    `    command: ${server.command}`,
+    "    args:",
+    ...server.args.map((a) => `      - ${a}`),
+  ].join("\n");
+
+const UNVERIFIED = "UNVERIFIED: check this client's own docs for the exact file and key before pasting.";
 
 export const CLIENTS: ClientAdapter[] = [
   {

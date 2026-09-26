@@ -38,7 +38,23 @@
       "postIds": ["po_16", "po_13", "po_9"]
     }
   ],
-  "recommendations": [],
+  "recommendations": [
+    {
+      "title": "Fix the amnesty form link and the day-one free-tier answer this week",
+      "action": "Link the student and nonprofit amnesty form from the migration guide, the changelog and the FAQ, and add one sentence stating exactly what happens to a project over the free tier limit on day one. Publish it as a documentation patch, not as a pricing communication.",
+      "expectedImpact": "Removes the single highest-engagement complaint in the run at zero monetary cost, and directly addresses the 58 percent undecided bloc whose engagement is currently driven by confusion rather than conviction."
+    },
+    {
+      "title": "Publish the delivered-versus-future split of the 40 percent",
+      "action": "State in the founder thread and the changelog how many of the 40 points are funded by shipped work (doubled uptime, API overhaul) versus future work (the observability layer), and name the portion the company will absorb. Put the number in the FAQ, not only in a social thread.",
+      "expectedImpact": "Meets the strongest argument on the board, which an advocate already conceded is the correct frame, and removes the 20 points that are currently undefended in public."
+    },
+    {
+      "title": "Make exiting cheap and returning cheaper",
+      "action": "Ship one-click export and archive for over-limit free-tier projects, and publish a one-click re-import path so a customer who exports can return without rebuilding. Match the 20-minute migration the competitor already demonstrates.",
+      "expectedImpact": "Converts the free-forever export commitment from a churn accelerant into a retention asset, and raises the cost of migrating to the competitor import tool for the undecided 58 percent."
+    }
+  ],
   "confidence": {
     "strongSignals": [
       "Faction distribution is unambiguous: 1 supporter (8 percent), 4 opponents (33 percent), 7 undecided (58 percent), with 13 of 19 engagement points in the undecided bloc.",
@@ -52,5 +68,13 @@
       "Whether the advocate concession in po_16 generalizes: it is a single data point from the highest-stance persona and may be personal graciousness rather than a bloc shift."
     ]
   },
-  "limitations": []
+  "limitations": [
+    "This is a simulated perspective from 12 authored personas over 4 rounds and 19 posts, not a validated forecast of real market reaction. It describes the internal dynamics of a constructed crowd, not the actual Acme Cloud developer community.",
+    "The engine linear projection and the P10-P90 ensemble band both returned null for this run, so no forecast slope, interval or confidence band is available. The trajectory section is descriptive of observed rounds only and deliberately makes no forward-looking numeric claim.",
+    "The content was authored by a language model following each persona card rather than sampled from real accounts, so stance drift reflects the authored narrative arc. Engine determinism is intact and the seed is recorded, but the LLM's own non-determinism means the content bytes are not replayable from the seed alone.",
+    "Momentum cooled 29 percent half-over-half, but with only 4 rounds and 12 total engagement points this trend is far too small a sample to distinguish from noise.",
+    "Sentiment is attributed to named entities by keyword attribution, which is why several curves are sparse or empty: only 2 posts mention Acme Cloud directly, so its -0.32 reading rests on a very small base.",
+    "No organic or cascade engagement was recorded in this run (organicEngagementShare 0, no amplification chains), so influence dynamics were exercised by authored reply behavior rather than by the seeded diffusion model.",
+    "Opponent faction sentiment shows a -0.32 entity reading while engagement-weighted sentiment is mildly positive, because the opponents bloc includes newcomers whose complaints are procedural rather than hostile. Do not read the faction label as equivalent to anger."
+  ]
 }

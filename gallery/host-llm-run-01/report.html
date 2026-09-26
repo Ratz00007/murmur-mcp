@@ -1,0 +1,350 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Murmur Reaction Simulation Report — acme-pricing-reaction</title><style>
+:root{
+  --bg:#0a1628;--panel:#0e1e36;--panel2:#132744;--line:#1e3a5f;--line2:#274a75;
+  --text:#dbe9f7;--muted:#8aa3c0;--dim:#5f7793;
+  --accent:#4da8da;--accent2:#7cc7f0;
+  --pos:#3ddc97;--neg:#ff7d8c;--warn:#ffbe5c;--neu:#9db2cc;--rd:#ff9f5c;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent2);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px 96px}
+.topbar{position:sticky;top:0;z-index:9;background:rgba(10,22,40,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1080px;margin:0 auto;padding:10px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.wordmark{font-weight:800;letter-spacing:.24em;font-size:12px;color:var(--accent);white-space:nowrap}
+.wordmark b{color:var(--text);font-weight:800}
+.topbar .crumb{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav{margin-left:auto;display:flex;gap:2px;flex-wrap:wrap}
+.nav a{font-size:12px;color:var(--muted);padding:4px 9px;border-radius:99px}
+.nav a:hover{color:var(--text);background:var(--panel2);text-decoration:none}
+.hero{padding:44px 0 8px}
+.disclaimer{border:1px solid var(--line);border-left:3px solid var(--warn);background:var(--panel);border-radius:12px;padding:12px 16px;margin:0 0 18px;color:var(--muted);font-size:13px;line-height:1.5}
+.hero .q{font-size:25px;line-height:1.4;font-weight:650;margin:0 0 14px;max-width:820px}
+.hero .sub{color:var(--muted);font-size:13.5px;display:flex;gap:8px 18px;flex-wrap:wrap}
+.hero .sub b{color:var(--text);font-weight:600}
+.split{display:flex;height:12px;border-radius:7px;overflow:hidden;margin:18px 0 10px;background:var(--panel2)}
+.split i{display:block;height:100%}
+.split-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:8px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.verdict{border:1px solid var(--line);border-left:3px solid var(--accent);background:var(--panel);border-radius:12px;padding:14px 18px;margin:20px 0 0;color:var(--text)}
+.verdict .lbl{font-size:11px;letter-spacing:.18em;color:var(--accent);font-weight:700;text-transform:uppercase}
+h2.sec{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:54px 0 6px;display:flex;align-items:center;gap:10px}
+h2.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+h2.sec .n{color:var(--dim);font-weight:600}
+.sec-sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(136px,1fr));gap:12px;margin-top:20px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi .k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kpi .v{font-size:24px;font-weight:700;margin-top:6px;font-family:var(--mono)}
+.kpi .v small{font-size:12px;font-weight:500;color:var(--muted);font-family:var(--sans)}
+.kpi .v.pos{color:var(--pos)}.kpi .v.neg{color:var(--neg)}.kpi .v.warn{color:var(--warn)}
+.meter{height:5px;border-radius:3px;background:var(--panel2);margin-top:10px;overflow:hidden}
+.meter i{display:block;height:100%;border-radius:3px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:14px}
+.card h3{margin:0 0 6px;font-size:16.5px}
+.card .meta{color:var(--muted);font-size:12.5px;display:flex;gap:6px 14px;flex-wrap:wrap;align-items:center}
+.summary{font-size:16px;line-height:1.75;color:var(--text);border:1px solid var(--line);border-left:3px solid var(--accent);background:var(--panel);border-radius:12px;padding:20px 24px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:860px){.grid2,.grid3{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.panel h4{margin:0 0 12px;font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.chart-note{color:var(--muted);font-size:12.5px;margin-top:10px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:10px 0 0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line2);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.mono,th.mono{font-family:var(--mono)}
+.quotes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:860px){.quotes{grid-template-columns:1fr}}
+.qcol h4{margin:0 0 10px;font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+.qcol.pos h4{color:var(--pos)}.qcol.neg h4{color:var(--neg)}.qcol.neu h4{color:var(--neu)}
+.quote{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.quote .body{font-size:13.5px;line-height:1.6;color:var(--text)}
+.quote .who{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--muted)}
+.quote .who .pid{font-family:var(--mono);color:var(--accent2)}
+.pill{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;padding:1px 8px;border-radius:99px;border:1px solid}
+.pill.pos{color:var(--pos);border-color:var(--pos);background:rgba(61,220,151,.08)}
+.pill.neg{color:var(--neg);border-color:var(--neg);background:rgba(255,125,140,.08)}
+.pill.neu{color:var(--neu);border-color:var(--neu);background:rgba(157,178,204,.08)}
+.pill.sev-high{color:#ff5d70;border-color:#ff5d70;background:rgba(255,93,112,.1)}
+.pill.sev-medium{color:var(--warn);border-color:var(--warn);background:rgba(255,190,92,.1)}
+.pill.sev-low{color:var(--neu);border-color:var(--neu);background:rgba(157,178,204,.08)}
+.chip{display:inline-block;font-size:11px;padding:1px 8px;border-radius:99px;background:var(--panel2);color:var(--muted);border:1px solid var(--line2)}
+.chip.plat-tw{color:var(--accent2);border-color:var(--accent)}
+.chip.plat-rd{color:var(--rd);border-color:var(--rd)}
+.faction .head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.faction .share-bar{height:8px;border-radius:4px;background:var(--panel2);overflow:hidden;margin:10px 0}
+.faction .share-bar i{display:block;height:100%}
+.faction .leaders{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+.faction .leaders .chip b{color:var(--text)}
+.track{position:relative;height:14px;background:var(--panel2);border-radius:4px;overflow:hidden}
+.track .zero{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line2);z-index:1}
+.track .half{position:absolute;top:2px;bottom:2px;display:flex}
+.track .half.left{left:0;width:50%;justify-content:flex-end}
+.track .half.right{left:50%;width:50%;justify-content:flex-start}
+.track .half i{display:block;height:100%;border-radius:2px}
+.dvg-row{display:grid;grid-template-columns:150px 1fr 120px;gap:12px;align-items:center;margin-bottom:10px}
+.dvg-row .name{font-size:13px;color:var(--text);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dvg-row .divv{font-family:var(--mono);font-size:12px;color:var(--muted)}
+@media(max-width:680px){.dvg-row{grid-template-columns:80px 1fr 70px}}
+.stance-row{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:center;margin:6px 0}
+.stance-row .lbl{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.stance-row .track{height:10px}
+.stance-row .bar{position:absolute;top:2px;bottom:2px;border-radius:2px}
+.persona .bio{color:var(--muted);font-size:13px;font-style:italic;margin:4px 0 10px}
+.persona .arc{font-weight:650}
+.risk .head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.risk .rid{font-family:var(--mono);font-size:12px;color:var(--dim)}
+.risk .rationale{margin:8px 0 12px}
+.risk .block{border-left:2px solid var(--pos);padding:2px 0 2px 14px;margin:10px 0}
+.risk .block.trigger{border-color:var(--warn)}
+.risk .block .t{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px}
+.risk .block.trigger .t{color:var(--warn)}
+.rec{display:grid;grid-template-columns:44px 1fr;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:12px}
+.rec .num{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent)}
+.rec h3{margin:0 0 4px;font-size:16px}
+.rec .impact{color:var(--muted);font-size:13px;margin-top:8px}
+.rec .impact b{color:var(--pos);font-weight:600}
+.tl{border-left:2px solid var(--line2);margin:6px 0 0 8px;padding-left:22px}
+.tl .moment{position:relative;padding-bottom:16px}
+.tl .moment::before{content:"";position:absolute;left:-28px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--bg)}
+.tl .moment .r{font-family:var(--mono);font-size:11.5px;color:var(--accent2);font-weight:700}
+.tl .moment .kind{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-left:8px}
+.tl .moment .tx{font-size:13.5px;color:var(--text);margin-top:2px}
+details{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:12px}
+details summary{cursor:pointer;padding:14px 20px;font-weight:650;font-size:14px;color:var(--text);list-style:none;display:flex;align-items:center;gap:10px}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:"+";margin-left:auto;color:var(--accent);font-weight:700;font-size:16px}
+details[open] summary::after{content:"–"}
+details .inner{padding:0 20px 18px}
+ul.pl{margin:6px 0;padding-left:20px}
+ul.pl li{margin:4px 0}
+ul.pl.pos li::marker{color:var(--pos)}
+ul.pl.neg li::marker{color:var(--neg)}
+ul.pl.dim li::marker{color:var(--dim)}
+.foot{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:12.5px}
+.foot .seed{font-family:var(--mono);color:var(--muted)}
+@media print{
+  :root{--bg:#fff;--panel:#fff;--panel2:#f2f5f9;--line:#d7dfe9;--line2:#c3cfdc;--text:#16202e;--muted:#54677c;--dim:#7d8ea3}
+  body{font-size:12px}
+  .topbar{display:none}
+  .nav{display:none}
+  .card,.panel,.quote,.summary,.verdict,details{break-inside:avoid;border-color:#d7dfe9;background:#fff}
+  details{page-break-inside:avoid}
+  details:not([open]) .inner{display:none}
+}
+</style></head><body>
+<div class="topbar"><div class="topbar-in"><span class="wordmark">MURMUR<b>&nbsp;SIMULATED PERSPECTIVE</b></span><span class="crumb">acme-pricing-reaction · report v1</span><nav class="nav"><a href="#overview">Overview</a><a href="#reaction">Reaction</a><a href="#factions">Factions</a><a href="#platforms">Platforms</a><a href="#people">People</a><a href="#forecast">Simulated projection</a><a href="#risks">Risks</a><a href="#actions">Actions</a><a href="#evidence">Evidence</a></nav></div></div>
+<div class="wrap">
+<header class="hero" id="overview"><p class="disclaimer">Simulated perspective, not a validated forecast — every persona, post and metric in this report is generated by the Murmur engine, not observed from real users, and the projection section is a simulated perspective, not a claim about the future.</p><h1 class="q">developer community reaction to the Acme Cloud pricing change</h1><div class="sub"><span><b>4</b> rounds</span><span><b>12</b> personas</span><span><b>15</b> entities</span><span>seed <b>host-llm-flagship-01</b></span><span>report <b>v1</b></span><span><b>2026-09-26</b></span><span>focus <b>developer community reaction to the Acme Cloud pricing change</b></span></div></header>
+<div class="split"><i style="width:8.0%;background:var(--pos)" title="Supporters of Acme Cloud"></i><i style="width:33.0%;background:var(--neg)" title="Opponents of Acme Cloud"></i><i style="width:58.0%;background:var(--neu)" title="Undecided / watching"></i></div>
+<div class="split-legend"><span><i class="dot" style="background:var(--pos)"></i>supporters 1</span><span><i class="dot" style="background:var(--neg)"></i>opponents 4</span><span><i class="dot" style="background:var(--neu)"></i>undecided 7</span><span>polarization <b>29/100</b></span></div>
+<div class="verdict"><div class="lbl">Verdict</div>1 supporter vs 4 opponents around Acme Cloud (7 still undecided) — the population is leaning one way. Controversy reads <b>low-stakes</b> (16/100).</div>
+<div class="kpis">
+<div class="kpi"><div class="k">Simulated posts</div><div class="v ">19</div></div>
+<div class="kpi"><div class="k">Total engagement</div><div class="v ">12</div></div>
+<div class="kpi"><div class="k">Escalation chains</div><div class="v ">0</div></div>
+<div class="kpi"><div class="k">Viral posts</div><div class="v ">0</div></div>
+<div class="kpi"><div class="k">Controversy</div><div class="v pos">16<small>/100 low-stakes</small></div><div class="meter"><i style="width:16%;background:#ffbe5c"></i></div></div>
+<div class="kpi"><div class="k">Momentum</div><div class="v neg">cooling <small>-29%</small></div></div>
+<div class="kpi"><div class="k">Most-discussed</div><div class="v ">free tier</div></div>
+</div>
+<h2 class="sec"><span class="n">01</span>Executive Summary</h2>
+<div class="summary">Verdict: this is a documentation failure being read as a pricing betrayal, and it is not going to escalate into a backlash. Across 19 posts and 12 engagement points the crowd stayed cold, not hot: controversy scored 16 out of 100 (low-stakes), polarization sat at 29/100, and zero escalation chains formed over 4 rounds. The decisive number is faction share, not sentiment: only 1 of 12 personas (8 percent) ended a supporter and 4 (33 percent) as opponents, while 7 (58 percent) stayed undecided at avg stance -0.05. That undecided bloc carried 13 engagement points, more than supporters (3) and opponents (3) combined. The single most-engaged post in the run was not an attack on Acme Cloud but a confused student asking how to claim the amnesty form (6 points). Momentum cooled -29 percent second half to first. The pricing itself is defensible; the FAQ is not.</div>
+<p class="sec-sub" style="margin-top:14px">A 40 percent Pro plan increase plus a free-tier cut (3 projects to 1, 5000 to 1000 requests/hr), announced with a 6-month grandfather window, free-forever exports, and a buried amnesty form. A competitor shipped a one-click import tool within a day. 12 personas, 4 rounds, 19 posts, 12 total engagement.</p>
+<div class="panel" style="margin-top:14px"><h4>Key findings</h4><ul class="pl">
+<li>The undecided bloc was 58 percent of the population (7 of 12) but held 13 of 19 engagement points, more than the supporter and opponent factions combined, making uncertainty rather than anger the dominant state.</li>
+<li>Controversy scored 16/100 (low-stakes) with polarization at 29/100 and 0 escalation chains across 4 rounds, so the announcement never developed an escalation cascade in this run.</li>
+<li>The top-engagement item was po_10 at 6 points, a newcomer asking whether the student amnesty needs a form, beating every substantive pro and con argument in the run.</li>
+<li>Momentum cooled -29 percent (7 to 5) between the first and second half, with engagement peaking in round 4 at 6 after the competitor import was confirmed working.</li>
+<li>Free tier was the highest-volume contested entity at 9 posts, trending down -0.13, and 5 of 8 tracked stance movers shifted on it, mostly from negative toward less negative.</li>
+</ul></div>
+<h2 class="sec" id="reaction"><span class="n">04</span>Market Reaction</h2>
+<div class="panel"><h4>Sentiment toward the top entities</h4><svg viewBox="0 0 640 270" role="img" style="width:100%;height:auto;display:block"><line x1="48" y1="16.0" x2="626" y2="16.0" stroke="#1e3a5f" stroke-width="1"/><text x="40" y="20.0" text-anchor="end" font-size="11" fill="#5f7793" font-family="ui-monospace,Menlo,monospace">+1.0</text><line x1="48" y1="70.5" x2="626" y2="70.5" stroke="#1e3a5f" stroke-width="1"/><text x="40" y="74.5" text-anchor="end" font-size="11" fill="#5f7793" font-family="ui-monospace,Menlo,monospace">+0.5</text><line x1="48" y1="125.0" x2="626" y2="125.0" stroke="#274a75" stroke-width="1.5"/><text x="40" y="129.0" text-anchor="end" font-size="11" fill="#5f7793" font-family="ui-monospace,Menlo,monospace">0.0</text><line x1="48" y1="179.5" x2="626" y2="179.5" stroke="#1e3a5f" stroke-width="1"/><text x="40" y="183.5" text-anchor="end" font-size="11" fill="#5f7793" font-family="ui-monospace,Menlo,monospace">-0.5</text><line x1="48" y1="234.0" x2="626" y2="234.0" stroke="#1e3a5f" stroke-width="1"/><text x="40" y="238.0" text-anchor="end" font-size="11" fill="#5f7793" font-family="ui-monospace,Menlo,monospace">-1.0</text><text x="48.0" y="258" text-anchor="middle" font-size="11" fill="#5f7793" font-family="ui-monospace,Menlo,monospace">r1</text><text x="240.7" y="258" text-anchor="middle" font-size="11" fill="#5f7793" font-family="ui-monospace,Menlo,monospace">r2</text><text x="433.3" y="258" text-anchor="middle" font-size="11" fill="#5f7793" font-family="ui-monospace,Menlo,monospace">r3</text><text x="626.0" y="258" text-anchor="middle" font-size="11" fill="#5f7793" font-family="ui-monospace,Menlo,monospace">r4</text><polyline points="48.0,76.0 240.7,137.0 433.3,68.3 626.0,90.1" fill="none" stroke="#4da8da" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="48.0" cy="76.0" r="3" fill="#4da8da"/><circle cx="240.7" cy="137.0" r="3" fill="#4da8da"/><circle cx="433.3" cy="68.3" r="3" fill="#4da8da"/><circle cx="626.0" cy="90.1" r="3" fill="#4da8da"/><polyline points="48.0,61.8 433.3,23.6 626.0,61.8" fill="none" stroke="#3ddc97" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="48.0" cy="61.8" r="3" fill="#3ddc97"/><circle cx="433.3" cy="23.6" r="3" fill="#3ddc97"/><circle cx="626.0" cy="61.8" r="3" fill="#3ddc97"/><polyline points="240.7,90.1 433.3,90.1" fill="none" stroke="#ffbe5c" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="240.7" cy="90.1" r="3" fill="#ffbe5c"/><circle cx="433.3" cy="90.1" r="3" fill="#ffbe5c"/></svg>
+<div class="legend"><span><i class="dot" style="background:#4da8da"></i>free tier</span><span><i class="dot" style="background:#3ddc97"></i>migration guide</span><span><i class="dot" style="background:#ffbe5c"></i>amnesty window</span></div></div>
+<div class="panel" style="margin-top:14px"><h4>Entity trend</h4><table><tr><th>Entity</th><th>Type</th><th class="mono">First</th><th class="mono">Last</th><th class="mono">Δ</th><th>Direction</th><th class="mono">Mentions</th><th class="mono">Peak</th></tr>
+<tr><td>Acme Cloud</td><td>org</td><td class="mono">-0.32</td><td class="mono">-0.32</td><td class="mono">0.00</td><td><span class="pill neu">■ flat</span></td><td class="mono">2</td><td class="mono">2</td></tr>
+<tr><td>free tier</td><td>product</td><td class="mono">+0.45</td><td class="mono">+0.32</td><td class="mono">-0.13</td><td><span class="pill neg">▼ down</span></td><td class="mono">9</td><td class="mono">2</td></tr>
+<tr><td>StackHaven</td><td>org</td><td class="mono">-0.32</td><td class="mono">-0.32</td><td class="mono">0.00</td><td><span class="pill neu">■ flat</span></td><td class="mono">2</td><td class="mono">2</td></tr>
+<tr><td>migration guide</td><td>product</td><td class="mono">+0.58</td><td class="mono">+0.58</td><td class="mono">0.00</td><td><span class="pill neu">■ flat</span></td><td class="mono">3</td><td class="mono">1</td></tr>
+<tr><td>amnesty window</td><td>topic</td><td class="mono">+0.32</td><td class="mono">+0.32</td><td class="mono">0.00</td><td><span class="pill neu">■ flat</span></td><td class="mono">2</td><td class="mono">2</td></tr>
+</table></div>
+<p class="chart-note">Engagement is <b>cooling</b> — 7 in the first half of the run vs 5 in the second (-29%).</p>
+<div class="panel" style="margin-top:14px"><h4>What the crowd actually said about Acme Cloud</h4><div class="quotes">
+
+<div class="qcol neg"><h4>Critics said</h4><div class="quote"><div class="body">&#8220;Writing this up properly because the thread is full of half-information. The 40% is aimed at the segment with the worst contracts and the best leverage, which is us. So here is what is actually true: - Data export…&#8221;</div><div class="who"><span class="pid">po_6</span><b>u/leoz</b><span class="chip plat-rd">reddit</span><span>round 2</span>toward Acme Cloud <span class="pill neg">-0.32</span><span>eng 0</span></div></div></div>
+
+</div></div>
+<h2 class="sec" id="factions"><span class="n">05</span>Faction Map</h2>
+<div class="grid2" style="grid-template-columns:260px 1fr;align-items:center">
+<div><svg viewBox="0 0 180 180" role="img" style="width:180px;height:180px;display:block;margin:0 auto"><circle cx="90" cy="90" r="54" fill="none" stroke="#3ddc97" stroke-width="22" stroke-dasharray="28.27 311.02" stroke-dashoffset="0.00" transform="rotate(-90 90 90)"/><circle cx="90" cy="90" r="54" fill="none" stroke="#ff7d8c" stroke-width="22" stroke-dasharray="113.10 226.19" stroke-dashoffset="-28.27" transform="rotate(-90 90 90)"/><circle cx="90" cy="90" r="54" fill="none" stroke="#9db2cc" stroke-width="22" stroke-dasharray="197.92 141.37" stroke-dashoffset="-141.37" transform="rotate(-90 90 90)"/><text x="90" y="88" text-anchor="middle" font-size="30" font-weight="700" fill="#dbe9f7" font-family="ui-monospace,Menlo,monospace">12</text><text x="90" y="110" text-anchor="middle" font-size="12" fill="#8aa3c0" font-family="-apple-system,Segoe UI,Roboto,sans-serif">personas</text></svg></div>
+<div><p style="margin:0 0 10px">Polarization <b>29/100</b> — the population has not yet hardened.</p><ul class="pl dim"><li>polarization 29/100</li><li>share of engagement on negative posts 16%</li><li>escalation density 0 chains over 4 rounds</li></ul></div>
+</div>
+<div class="card faction" style="margin-top:14px;border-left:3px solid #3ddc97">
+<div class="head"><h3>Supporters of Acme Cloud</h3><span class="chip">1 persona · 8%</span><span class="chip">avg stance +0.76</span><span class="chip">4 posts</span><span class="chip">3 eng</span></div>
+<div class="share-bar"><i style="width:8.0%;background:#3ddc97"></i></div>
+<div class="leaders"><span class="chip"><b>@marcus_ops</b> · passionate advocate · 4 posts</span></div>
+<div class="quote"><div class="body">&#8220;14 hobby projects on a personal bill is a fair hit and I was going to argue otherwise. The delivered-versus-future split is the right frame. I would fund 20 points of that 40 and fight the other 20.&#8221;</div><div class="who"><span class="pid">po_16</span><b>@marcus_ops</b><span class="chip plat-tw">twitter</span><span>round 4</span><span class="pill pos">+0.38</span><span>eng 2</span></div></div>
+</div>
+<div class="card faction" style="margin-top:14px;border-left:3px solid #ff7d8c">
+<div class="head"><h3>Opponents of Acme Cloud</h3><span class="chip">4 personas · 33%</span><span class="chip">avg stance -0.33</span><span class="chip">6 posts</span><span class="chip">3 eng</span></div>
+<div class="share-bar"><i style="width:33.0%;background:#ff7d8c"></i></div>
+<div class="leaders"><span class="chip"><b>@danabuilds</b> · power user · 1 posts</span><span class="chip"><b>@rdelac</b> · power user · 2 posts</span><span class="chip"><b>u/leoz</b> · passionate advocate · 3 posts</span></div>
+<div class="quote"><div class="body">&#8220;Writing this up properly because the thread is full of half-information. The 40% is aimed at the segment with the worst contracts and the best leverage, which is us. So here is what is actually true: - Data export…&#8221;</div><div class="who"><span class="pid">po_8</span><b>u/leoz</b><span class="chip plat-rd">reddit</span><span>round 2</span>toward Acme Cloud <span class="pill neg">-0.32</span><span>eng 0</span></div></div>
+<div class="quote"><div class="body">&#8220;@graceo nobody is asking about margin. 40 services on my bill, 14 of them hobby projects that now fall off the free tier. Do the math on my invoice, not the roadmap.&#8221;</div><div class="who"><span class="pid">po_11</span><b>@danabuilds</b><span class="chip plat-tw">twitter</span><span>round 3</span><span class="pill pos">+0.32</span><span>eng 2</span></div></div>
+</div>
+<div class="card faction" style="margin-top:14px;border-left:3px solid #9db2cc">
+<div class="head"><h3>Undecided / watching</h3><span class="chip">7 personas · 58%</span><span class="chip">avg stance -0.05</span><span class="chip">9 posts</span><span class="chip">13 eng</span></div>
+<div class="share-bar"><i style="width:58.0%;background:#9db2cc"></i></div>
+<div class="leaders"><span class="chip"><b>@graceo</b> · pragmatic skeptic · 2 posts</span><span class="chip"><b>@samok</b> · curious newcomer · 1 posts</span><span class="chip"><b>@yuki_t</b> · industry professional · 2 posts</span></div>
+<div class="quote"><div class="body">&#8220;Procurement view: a 40% increase funded by work already delivered is a different conversation than one funded by future work. They led with observability, which is future. Uptime was last year. Price the delivered half…&#8221;</div><div class="who"><span class="pid">po_4</span><b>@graceo</b><span class="chip plat-tw">twitter</span><span>round 1</span><span class="pill neu">0.00</span><span>eng 3</span></div></div>
+<div class="quote"><div class="body">&#8220;Lurking turned into following. What finally moved me was not the 40%, it was reading how many people could not find out what happens to their projects. I checked the export thing. It works. That is one point for them…&#8221;</div><div class="who"><span class="pid">po_18</span><b>@tomasb</b><span class="chip plat-tw">twitter</span><span>round 4</span><span class="pill neu">0.00</span><span>eng 0</span></div></div>
+</div>
+<h2 class="sec" id="platforms"><span class="n">06</span>Platform Divergence</h2>
+<div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"><div class="kpi"><div class="k">Twitter posts / eng</div><div class="v ">16 <small>/ 21</small></div></div><div class="kpi"><div class="k">Reddit posts / eng</div><div class="v ">4 <small>/ -2</small></div></div><div class="kpi"><div class="k">Escalations tw / rd</div><div class="v ">0 <small>/ 0</small></div></div></div>
+<div class="panel" style="margin-top:14px"><h4>Sentiment by venue <span style="float:right;font-weight:400;text-transform:none;letter-spacing:0">reddit ← · → twitter</span></h4>
+<div class="dvg-row"><span class="name">free tier</span><div class="track"><span class="zero"></span><span class="half left"><i style="width:5.0%;background:#ff9f5c"></i></span><span class="half right"><i style="width:18.0%;background:#4da8da"></i></span></div><span class="divv">Δ 0.26 · 6/3 posts</span></div>
+<div class="dvg-row"><span class="name">migration guide</span><div class="track"><span class="zero"></span><span class="half left"><i style="width:38.0%;background:#ff9f5c"></i></span><span class="half right"><i style="width:29.0%;background:#4da8da"></i></span></div><span class="divv">Δ 0.18 · 1/2 posts</span></div>
+<div class="dvg-row"><span class="name">Acme Cloud</span><div class="track"><span class="zero"></span><span class="half left"><i style="width:16.0%;background:#c96f42"></i></span><span class="half right"><i style="width:0.0%;background:#4da8da"></i></span></div><span class="divv">Δ 0.00 · 0/2 posts</span></div>
+<div class="dvg-row"><span class="name">amnesty window</span><div class="track"><span class="zero"></span><span class="half left"><i style="width:0.0%;background:#ff9f5c"></i></span><span class="half right"><i style="width:16.0%;background:#4da8da"></i></span></div><span class="divv">Δ 0.00 · 2/0 posts</span></div>
+<div class="dvg-row"><span class="name">StackHaven</span><div class="track"><span class="zero"></span><span class="half left"><i style="width:16.0%;background:#c96f42"></i></span><span class="half right"><i style="width:0.0%;background:#4da8da"></i></span></div><span class="divv">Δ 0.00 · 0/2 posts</span></div>
+</div>
+<p class="chart-note">The largest split is <b>free tier</b> (Δ 0.26 between platforms) — the same story is landing differently on Twitter than on Reddit.</p>
+<h2 class="sec" id="people"><span class="n">07</span>Persona Spotlight</h2>
+<div class="grid3">
+<div class="card persona">
+<h3>Dana Whitfield <span style="color:var(--muted);font-weight:400;font-size:13px">@danabuilds</span></h3>
+<div class="meta"><span class="chip">power user</span><span class="chip">1 posts</span><span class="chip">2 eng</span><span class="pill pos arc">warmed to Acme Cloud</span></div>
+<p class="bio">staff eng, 40 services on Acme, pays the Pro bill personally</p>
+<div class="stance-row"><span class="lbl">before</span><div class="track"><span class="zero"></span><span class="bar" style="left:15.000000000000002%;width:35%;background:var(--neg)"></span></div></div>
+<div class="stance-row"><span class="lbl">after</span><div class="track"><span class="zero"></span><span class="bar" style="left:33.5%;width:16.5%;background:var(--neg)"></span></div></div>
+<p class="chart-note">stance -0.70 → -0.33 (shift +0.37)</p>
+<div class="quote"><div class="body">&#8220;@graceo nobody is asking about margin. 40 services on my bill, 14 of them hobby projects that now fall off the free tier. Do the math on my invoice, not the roadmap.&#8221;</div><div class="who"><span class="pid">po_11</span><b>@danabuilds</b><span class="chip plat-tw">twitter</span><span>round 3</span><span class="pill pos">+0.32</span><span>eng 2</span></div></div>
+</div>
+<div class="card persona">
+<h3>Sam Okonkwo <span style="color:var(--muted);font-weight:400;font-size:13px">@samok</span></h3>
+<div class="meta"><span class="chip">curious newcomer</span><span class="chip">1 posts</span><span class="chip">6 eng</span><span class="pill neg arc">soured on Acme Cloud</span></div>
+<p class="bio">CS student, uses the free tier for everything</p>
+<div class="stance-row"><span class="lbl">before</span><div class="track"><span class="zero"></span><span class="bar" style="left:50%;width:5.000000000000007%;background:var(--pos)"></span></div></div>
+<div class="stance-row"><span class="lbl">after</span><div class="track"><span class="zero"></span><span class="bar" style="left:46%;width:4%;background:var(--neg)"></span></div></div>
+<p class="chart-note">stance +0.10 → -0.08 (shift -0.18)</p>
+<div class="quote"><div class="body">&#8220;same here. i have 2 projects on the free tier and one is my portfolio. do student discounts actually apply automatically or is there a form? the FAQ says amnesty window but doesnt say how to claim it&#8221;</div><div class="who"><span class="pid">po_10</span><b>@samok</b><span class="chip plat-tw">twitter</span><span>round 2</span><span class="pill pos">+0.32</span><span>eng 6</span></div></div>
+</div>
+<div class="card persona">
+<h3>Grace Osei <span style="color:var(--muted);font-weight:400;font-size:13px">@graceo</span></h3>
+<div class="meta"><span class="chip">pragmatic skeptic</span><span class="chip">2 posts</span><span class="chip">6 eng</span><span class="pill pos arc">still weighing Acme Cloud</span></div>
+<p class="bio">procurement. asks what the margin was before the increase</p>
+<div class="stance-row"><span class="lbl">before</span><div class="track"><span class="zero"></span><span class="bar" style="left:40%;width:10%;background:var(--neg)"></span></div></div>
+<div class="stance-row"><span class="lbl">after</span><div class="track"><span class="zero"></span><span class="bar" style="left:45.5%;width:4.5%;background:var(--neg)"></span></div></div>
+<p class="chart-note">stance -0.20 → -0.09 (shift +0.11)</p>
+<div class="quote"><div class="body">&#8220;Closing the loop: the export commitment plus the 6-month grandfather closes the enterprise and mid-market conversations. It does nothing for the bottom of the market, where the FAQ is the entire product experience.…&#8221;</div><div class="who"><span class="pid">po_19</span><b>@graceo</b><span class="chip plat-tw">twitter</span><span>round 4</span><span class="pill neg">-0.58</span><span>eng 3</span></div></div>
+</div>
+</div>
+<h2 class="sec" id="forecast"><span class="n">08</span>Trajectory Simulated Projection</h2>
+<div class="summary" style="margin-top:14px">The run opens in round 1 with 5 posts and 4 engagement as both camps assert positions, and Acme Cloud sentiment registers -0.32 in round 2 then goes flat, never deepening across 4 rounds. Round 2 is the only negative-velocity round at -1 engagement, driven by the free tier dipping to -0.11. Recovery follows: round 3 restores the aggregate once a newcomer publishes a consolidated PSA with the actual doc contents, and round 4 is the strongest at 6 engagement as a procurement post (po_19) and a concession quote (po_16) land together. Momentum cooled 29 percent half-over-half (7 to 5), and the engine linear projection returned null for this run, so no slope or interval band is available and none is claimed here. The shape is dispute-then-exhaustion rather than escalation, with the undecided faction absorbing the energy and the advocate bloc conceding ground in round 4 (po_16).</div>
+<h2 class="sec" id="risks"><span class="n">09</span>Risk Register</h2>
+<div class="card risk">
+<div class="head"><span class="rid">R1</span><h3 style="margin:0">The amnesty form stays unlinked and the FAQ keeps failing the free-tier cohort</h3><span class="pill sev-high">HIGH</span><span class="chip">likelihood high</span></div>
+<p class="rationale">The highest-engagement post in the entire run was a student asking how to claim a discount that already exists (po_10, 6 points), and a second newcomer independently asked the same question (po_2). An open-source maintainer escalated it into the most quotable criticism of the release, calling the unlinked form the single most damning detail and noting it is a documentation bug rather than a pricing decision (po_18). With free tier carrying 9 posts and trending down -0.13, this cohort is the volume center of the conversation. The risk is not that they reject the price; it is that they conclude Acme does not understand them, which is a far cheaper problem to fix and a far more expensive one to leave alone.</p>
+<div class="block"><div class="t">Mitigation</div>Link the amnesty form directly from the migration guide and the changelog, and state the day-one behavior for projects over the free tier limit in the FAQ. Both are documentation-only changes that cost nothing and remove the top-engagement complaint in the run.</div>
+<div class="block trigger"><div class="t">Early-warning trigger</div>The form remains unlinked, or support tickets about day-one free-tier behavior exceed pricing-related ticket volume for two consecutive weeks.</div>
+<div class="t" style="font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:12px 0 6px">Evidence from the run</div>
+<div class="quote"><div class="body">&#8220;same here. i have 2 projects on the free tier and one is my portfolio. do student discounts actually apply automatically or is there a form? the FAQ says amnesty window but doesnt say how to claim it&#8221;</div><div class="who"><span class="pid">po_10</span><b>Sam Okonkwo (@samok)</b><span class="chip plat-tw">twitter</span><span>round 2</span><span class="pill pos">+0.32</span><span>eng 6</span></div></div>
+<div class="quote"><div class="body">&#8220;wait so i lose 2 of my 3 free projects AND my api calls drop 5x?? i thought i was on the free tier because i could not afford pro. is the student thing automatic or a form? asking because i…&#8221;</div><div class="who"><span class="pid">po_2</span><b>Ines Fontaine (@inesbuilds)</b><span class="chip plat-tw">twitter</span><span>round 1</span><span class="pill pos">+0.58</span><span>eng 1</span></div></div>
+<div class="quote"><div class="body">&#8220;Lurking turned into following. What finally moved me was not the 40%, it was reading how many people could not find out what happens to their projects. I checked the export thing. It works. That is…&#8221;</div><div class="who"><span class="pid">po_18</span><b>Tomas Bergen (@tomasb)</b><span class="chip plat-tw">twitter</span><span>round 4</span><span class="pill neu">0.00</span><span>eng 0</span></div></div>
+</div>
+<div class="card risk">
+<div class="head"><span class="rid">R2</span><h3 style="margin:0">The undecided 58 percent converts to churn through import friction, not outrage</h3><span class="pill sev-medium">MEDIUM</span><span class="chip">likelihood medium</span></div>
+<p class="rationale">7 of 12 personas ended undecided at an average stance of -0.05, and that bloc held 13 engagement points. An agency owner reported running the competitor import tool across 4 client projects in 20 minutes and concluded the hard part was never data, it was client trust mid-contract (po_15). A separate analysis framed the announcement as aimed at the segment with the best pricing leverage and the weakest contracts (po_5). Because the undecided bloc is the largest and least committed, a low-friction migration path converts it without requiring anyone to become angry. The free-forever export commitment helps here rather than hurting, which is counterintuitive and worth respecting in planning.</p>
+<div class="block"><div class="t">Mitigation</div>Ship self-serve project export with a one-click path to archive over-limit free-tier projects, matching the 20-minute migration a competitor already demonstrates. Compete on making exit cheap and return cheaper, since exports being free is already stated policy.</div>
+<div class="block trigger"><div class="t">Early-warning trigger</div>Competitor import-tool usage is mentioned in more than 15 percent of posts in a subsequent run, or the undecided share falls below 40 percent without any supporter growth.</div>
+<div class="t" style="font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:12px 0 6px">Evidence from the run</div>
+<div class="quote"><div class="body">&#8220;Update: Nimbus import tool ran on 4 client projects today. Took 20 minutes total. The hard part was never the data, it was convincing clients to accept a new vendor mid-contract. Data export being…&#8221;</div><div class="who"><span class="pid">po_15</span><b>Ruben Delacroix (@rdelac)</b><span class="chip plat-tw">twitter</span><span>round 3</span><span class="pill pos">+0.32</span><span>eng 0</span></div></div>
+<div class="quote"><div class="body">&#8220;The interesting part is who this does not hit. Enterprise is 6 cities of roadshow and price-insensitive. The 40% is aimed at the segment with the best pricing leverage and the weakest contract. Both…&#8221;</div><div class="who"><span class="pid">po_5</span><b>Yuki Tanaka (@yuki_t)</b><span class="chip plat-tw">twitter</span><span>round 1</span><span class="pill pos">+0.44</span><span>eng 1</span></div></div>
+<div class="quote"><div class="body">&#8220;Agency owner here. 12 client projects on Acme, 6 on the free tier that just lost 2 slots. Starting migration work this week regardless of the 6-month window because the window does not help clients…&#8221;</div><div class="who"><span class="pid">po_3</span><b>Ruben Delacroix (@rdelac)</b><span class="chip plat-tw">twitter</span><span>round 1</span><span class="pill pos">+0.32</span><span>eng 1</span></div></div>
+</div>
+<div class="card risk">
+<div class="head"><span class="rid">R3</span><h3 style="margin:0">The strongest pro-argument concedes the delivered-versus-future split is the right frame</h3><span class="pill sev-medium">MEDIUM</span><span class="chip">likelihood medium</span></div>
+<p class="rationale">The most committed advocate, at stance +0.76, ended by agreeing the delivered-versus-future split is the correct frame and conceding that 14 hobby projects on a personal bill is a fair hit, stating he would fund 20 points of the 40 and fight the other 20 (po_16). He also endorsed the criticism that the FAQ answers the question nobody asked while skipping the one everyone has (po_13). An analyst independently reached the same three-tier read, that enterprise renews, the mid-market hesitates and the bottom of the market churns (po_9). When the opposition frame is adopted by the defense, the pricing narrative is being decided on delivered value rather than goodwill, and the remaining 20 points are undefended in public.</p>
+<div class="block"><div class="t">Mitigation</div>Publish an explicit split of the increase into the portion funded by already-delivered uptime and API work versus the portion funding the new observability layer, and commit to the delivered half in writing so the contested 20 points has a stated position.</div>
+<div class="block trigger"><div class="t">Early-warning trigger</div>A second advocate or analyst publicly adopts the delivered-versus-future frame without pushback, or the founder response continues to lead with roadmap items.</div>
+<div class="t" style="font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:12px 0 6px">Evidence from the run</div>
+<div class="quote"><div class="body">&#8220;14 hobby projects on a personal bill is a fair hit and I was going to argue otherwise. The delivered-versus-future split is the right frame. I would fund 20 points of that 40 and fight the other 20.&#8221;</div><div class="who"><span class="pid">po_16</span><b>Marcus Oyelaran (@marcus_ops)</b><span class="chip plat-tw">twitter</span><span>round 4</span><span class="pill pos">+0.38</span><span>eng 2</span></div></div>
+<div class="quote"><div class="body">&#8220;The FAQ is the whole problem. It answers the question nobody asked while skipping the one everyone has: what happens to my stuff on day one. Confused is the correct response.&#8221;</div><div class="who"><span class="pid">po_13</span><b>Marcus Oyelaran (@marcus_ops)</b><span class="chip plat-tw">twitter</span><span>round 3</span><span class="pill neg">-0.58</span><span>eng 0</span></div></div>
+<div class="quote"><div class="body">&#8220;The delivered-versus-future split is the only part of this that will decide churn. Enterprise renews, the mid-market hesitates, the bottom of the market churns. Three reactions to one announcement.&#8221;</div><div class="who"><span class="pid">po_9</span><b>Yuki Tanaka (@yuki_t)</b><span class="chip plat-tw">twitter</span><span>round 2</span><span class="pill neg">-0.32</span><span>eng 0</span></div></div>
+</div>
+<h2 class="sec" id="actions"><span class="n">10</span>Recommendations</h2>
+<div class="rec"><div class="num">01</div><div><h3>Fix the amnesty form link and the day-one free-tier answer this week</h3><p style="margin:4px 0 0">Link the student and nonprofit amnesty form from the migration guide, the changelog and the FAQ, and add one sentence stating exactly what happens to a project over the free tier limit on day one. Publish it as a documentation patch, not as a pricing communication.</p><p class="impact"><b>Expected impact</b> — Removes the single highest-engagement complaint in the run at zero monetary cost, and directly addresses the 58 percent undecided bloc whose engagement is currently driven by confusion rather than conviction.</p></div></div>
+<div class="rec"><div class="num">02</div><div><h3>Publish the delivered-versus-future split of the 40 percent</h3><p style="margin:4px 0 0">State in the founder thread and the changelog how many of the 40 points are funded by shipped work (doubled uptime, API overhaul) versus future work (the observability layer), and name the portion the company will absorb. Put the number in the FAQ, not only in a social thread.</p><p class="impact"><b>Expected impact</b> — Meets the strongest argument on the board, which an advocate already conceded is the correct frame, and removes the 20 points that are currently undefended in public.</p></div></div>
+<div class="rec"><div class="num">03</div><div><h3>Make exiting cheap and returning cheaper</h3><p style="margin:4px 0 0">Ship one-click export and archive for over-limit free-tier projects, and publish a one-click re-import path so a customer who exports can return without rebuilding. Match the 20-minute migration the competitor already demonstrates.</p><p class="impact"><b>Expected impact</b> — Converts the free-forever export commitment from a churn accelerant into a retention asset, and raises the cost of migrating to the competitor import tool for the undecided 58 percent.</p></div></div>
+<h2 class="sec"><span class="n">11</span>Confidence &amp; Limitations</h2>
+<div class="grid2">
+<div class="panel"><h4>Strong signals</h4><ul class="pl pos"><li>Faction distribution is unambiguous: 1 supporter (8 percent), 4 opponents (33 percent), 7 undecided (58 percent), with 13 of 19 engagement points in the undecided bloc.</li><li>Low escalation is consistent across every engine metric: controversy 16/100, polarization 29/100, 0 escalation chains over 4 rounds.</li><li>The top-engagement post is a confusion question (po_10, 6 points) and the second is a procurement summary (po_19, 3 points), so attention is on clarity rather than price.</li><li>Free tier is the highest-volume contested entity at 9 posts and the only entity with a tracked downward trend (-0.13).</li></ul></div>
+<div class="panel"><h4>Contested</h4><ul class="pl neg"><li>Whether the undecided 58 percent resolves toward Acme or toward the competitor. The run contains one confirmed successful competitor migration (po_15) and one that treats exports as a positive; these point in opposite directions.</li><li>Whether the round-4 engagement peak (6) reflects genuine recovery or an artifact of the final round having the largest cohort available to post.</li><li>Whether the advocate concession in po_16 generalizes: it is a single data point from the highest-stance persona and may be personal graciousness rather than a bloc shift.</li></ul></div>
+</div>
+<div class="panel" style="margin-top:14px"><h4>Limitations</h4><ul class="pl dim"><li>This is a simulated perspective from 12 authored personas over 4 rounds and 19 posts, not a validated forecast of real market reaction. It describes the internal dynamics of a constructed crowd, not the actual Acme Cloud developer community.</li><li>The engine linear projection and the P10-P90 ensemble band both returned null for this run, so no forecast slope, interval or confidence band is available. The trajectory section is descriptive of observed rounds only and deliberately makes no forward-looking numeric claim.</li><li>The content was authored by a language model following each persona card rather than sampled from real accounts, so stance drift reflects the authored narrative arc. Engine determinism is intact and the seed is recorded, but the LLM&#39;s own non-determinism means the content bytes are not replayable from the seed alone.</li></ul></div>
+<h2 class="sec"><span class="n">—</span>Timeline of the Run</h2>
+<div class="tl">
+<div class="moment"><span class="r">round 1</span><span class="kind">rally</span><div class="tx">First strong endorsement: @inesbuilds — &quot;wait so i lose 2 of my 3 free projects AND my api calls drop 5x?? i thought i was on the free tier because i could not…&quot; <span class="pid" style="font-family:var(--mono);color:var(--accent2);font-size:12px">po_2</span></div></div>
+<div class="moment"><span class="r">round 3</span><span class="kind">flashpoint</span><div class="tx">First strong criticism: @marcus_ops — &quot;The FAQ is the whole problem. It answers the question nobody asked while skipping the one everyone has: what happens…&quot; <span class="pid" style="font-family:var(--mono);color:var(--accent2);font-size:12px">po_13</span></div></div>
+<div class="moment"><span class="r">round 3</span><span class="kind">shift</span><div class="tx">@inesbuilds shifted on free tier: -0.63 → -0.47</div></div>
+</div>
+<h2 class="sec" id="evidence"><span class="n">A–E</span>Evidence &amp; Appendices</h2>
+<details><summary>Appendix A — Round-by-round statistics</summary><div class="inner">
+<table><tr><th>Round</th><th class="mono">Twitter</th><th class="mono">Reddit</th><th class="mono">Engagement</th><th class="mono">Escalations</th><th class="mono">Injections</th><th class="mono">Lurkers</th></tr>
+<tr><td class="mono">r1</td><td class="mono">5</td><td class="mono">0</td><td class="mono">4</td><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td></tr>
+<tr><td class="mono">r2</td><td class="mono">3</td><td class="mono">2</td><td class="mono">3</td><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td></tr>
+<tr><td class="mono">r3</td><td class="mono">4</td><td class="mono">1</td><td class="mono">-1</td><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td></tr>
+<tr><td class="mono">r4</td><td class="mono">4</td><td class="mono">1</td><td class="mono">6</td><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td></tr>
+</table>
+<div style="margin-top:14px"><svg viewBox="0 0 640 190" role="img" style="width:100%;height:auto;display:block"><line x1="40" y1="160" x2="626" y2="160" stroke="#274a75" stroke-width="1.2"/><text x="34" y="26" text-anchor="end" font-size="10.5" fill="#5f7793" font-family="ui-monospace,Menlo,monospace">6</text><rect x="90.3" y="68.0" width="46.0" height="92.0" rx="3" fill="#4da8da" opacity="0.85"/><text x="113.3" y="63.0" text-anchor="middle" font-size="10" fill="#8aa3c0" font-family="ui-monospace,Menlo,monospace">4</text><text x="113.3" y="180" text-anchor="middle" font-size="11" fill="#5f7793" font-family="ui-monospace,Menlo,monospace">r1</text><rect x="236.8" y="91.0" width="46.0" height="69.0" rx="3" fill="#4da8da" opacity="0.85"/><text x="259.8" y="86.0" text-anchor="middle" font-size="10" fill="#8aa3c0" font-family="ui-monospace,Menlo,monospace">3</text><text x="259.8" y="180" text-anchor="middle" font-size="11" fill="#5f7793" font-family="ui-monospace,Menlo,monospace">r2</text><rect x="383.3" y="183.0" width="46.0" height="1.0" rx="3" fill="#4da8da" opacity="0.85"/><text x="406.3" y="180" text-anchor="middle" font-size="11" fill="#5f7793" font-family="ui-monospace,Menlo,monospace">r3</text><rect x="529.8" y="22.0" width="46.0" height="138.0" rx="3" fill="#4da8da" opacity="0.85"/><text x="552.8" y="17.0" text-anchor="middle" font-size="10" fill="#8aa3c0" font-family="ui-monospace,Menlo,monospace">6</text><text x="552.8" y="180" text-anchor="middle" font-size="11" fill="#5f7793" font-family="ui-monospace,Menlo,monospace">r4</text></svg></div>
+</div></details>
+<details><summary>Appendix B — Escalation chains</summary><div class="inner">
+<p class="chart-note">No escalation chains formed this run — disagreement stayed at post level instead of threading into reply spirals. That caps how fast either camp can recruit: intensity has nowhere to compound.</p>
+</div></details>
+<details><summary>Appendix C — Amplification</summary><div class="inner">
+<p class="chart-note">No post crossed the virality threshold this run — reach stayed inside the follow graph.</p>
+<p class="chart-note">Organic (engine-simulated bystander) engagement share: <b>0%</b> — the rest came from activated personas engaging each other's content.</p>
+</div></details>
+<details><summary>Appendix D — Post index (top 25 by engagement)</summary><div class="inner">
+<table><tr><th>Id</th><th>By</th><th>Plat</th><th class="mono">R</th><th class="mono">Sentiment</th><th class="mono">Eng</th><th>Excerpt</th></tr>
+<tr><td class="mono">po_10</td><td>Sam Okonkwo (@samok)</td><td>tw</td><td class="mono">2</td><td><span class="pill pos">+0.32</span></td><td class="mono">6</td><td style="color:var(--muted)">same here. i have 2 projects on the free tier and one is my portfolio. do student…</td></tr>
+<tr><td class="mono">po_19</td><td>Grace Osei (@graceo)</td><td>tw</td><td class="mono">4</td><td><span class="pill neg">-0.58</span></td><td class="mono">3</td><td style="color:var(--muted)">Closing the loop: the export commitment plus the 6-month grandfather closes the…</td></tr>
+<tr><td class="mono">po_4</td><td>Grace Osei (@graceo)</td><td>tw</td><td class="mono">1</td><td><span class="pill neu">0.00</span></td><td class="mono">3</td><td style="color:var(--muted)">Procurement view: a 40% increase funded by work already delivered is a different…</td></tr>
+<tr><td class="mono">po_11</td><td>Dana Whitfield (@danabuilds)</td><td>tw</td><td class="mono">3</td><td><span class="pill pos">+0.32</span></td><td class="mono">2</td><td style="color:var(--muted)">@graceo nobody is asking about margin. 40 services on my bill, 14 of them hobby projects…</td></tr>
+<tr><td class="mono">po_16</td><td>Marcus Oyelaran (@marcus_ops)</td><td>tw</td><td class="mono">4</td><td><span class="pill pos">+0.38</span></td><td class="mono">2</td><td style="color:var(--muted)">14 hobby projects on a personal bill is a fair hit and I was going to argue otherwise.…</td></tr>
+<tr><td class="mono">po_1</td><td>Marcus Oyelaran (@marcus_ops)</td><td>tw</td><td class="mono">1</td><td><span class="pill pos">+0.32</span></td><td class="mono">1</td><td style="color:var(--muted)">Genuine question for the 40% crowd: uptime doubled and the API overhaul shipped. That is…</td></tr>
+<tr><td class="mono">po_17</td><td>Ines Fontaine (@inesbuilds)</td><td>tw</td><td class="mono">4</td><td><span class="pill pos">+0.32</span></td><td class="mono">1</td><td style="color:var(--muted)">this is the clearest statement of the problem i have read. i moved my portfolio off the…</td></tr>
+<tr><td class="mono">po_2</td><td>Ines Fontaine (@inesbuilds)</td><td>tw</td><td class="mono">1</td><td><span class="pill pos">+0.58</span></td><td class="mono">1</td><td style="color:var(--muted)">wait so i lose 2 of my 3 free projects AND my api calls drop 5x?? i thought i was on the…</td></tr>
+<tr><td class="mono">po_3</td><td>Ruben Delacroix (@rdelac)</td><td>tw</td><td class="mono">1</td><td><span class="pill pos">+0.32</span></td><td class="mono">1</td><td style="color:var(--muted)">Agency owner here. 12 client projects on Acme, 6 on the free tier that just lost 2…</td></tr>
+<tr><td class="mono">po_5</td><td>Yuki Tanaka (@yuki_t)</td><td>tw</td><td class="mono">1</td><td><span class="pill pos">+0.44</span></td><td class="mono">1</td><td style="color:var(--muted)">The interesting part is who this does not hit. Enterprise is 6 cities of roadshow and…</td></tr>
+<tr><td class="mono">po_13</td><td>Marcus Oyelaran (@marcus_ops)</td><td>tw</td><td class="mono">3</td><td><span class="pill neg">-0.58</span></td><td class="mono">0</td><td style="color:var(--muted)">The FAQ is the whole problem. It answers the question nobody asked while skipping the…</td></tr>
+<tr><td class="mono">po_15</td><td>Ruben Delacroix (@rdelac)</td><td>tw</td><td class="mono">3</td><td><span class="pill pos">+0.32</span></td><td class="mono">0</td><td style="color:var(--muted)">Update: Nimbus import tool ran on 4 client projects today. Took 20 minutes total. The…</td></tr>
+<tr><td class="mono">po_18</td><td>Tomas Bergen (@tomasb)</td><td>tw</td><td class="mono">4</td><td><span class="pill neu">0.00</span></td><td class="mono">0</td><td style="color:var(--muted)">Lurking turned into following. What finally moved me was not the 40%, it was reading how…</td></tr>
+<tr><td class="mono">po_20</td><td>Leo Zaremba (u/leoz)</td><td>rd</td><td class="mono">4</td><td><span class="pill pos">+0.58</span></td><td class="mono">0</td><td style="color:var(--muted)">The amnesty form being unlinked from the migration guide is the single most damning…</td></tr>
+<tr><td class="mono">po_6</td><td>Leo Zaremba (u/leoz)</td><td>rd</td><td class="mono">2</td><td><span class="pill neg">-0.32</span></td><td class="mono">0</td><td style="color:var(--muted)">Writing this up properly because the thread is full of half-information.
+
+The 40% is…</td></tr>
+<tr><td class="mono">po_7</td><td>Marcus Oyelaran (@marcus_ops)</td><td>tw</td><td class="mono">2</td><td><span class="pill pos">+0.58</span></td><td class="mono">0</td><td style="color:var(--muted)">@graceo this is the best argument on the thread and I still do not buy the conclusion.…</td></tr>
+<tr><td class="mono">po_8</td><td>Leo Zaremba (u/leoz)</td><td>rd</td><td class="mono">2</td><td><span class="pill neg">-0.32</span></td><td class="mono">0</td><td style="color:var(--muted)">Writing this up properly because the thread is full of half-information.
+
+The 40% is…</td></tr>
+<tr><td class="mono">po_9</td><td>Yuki Tanaka (@yuki_t)</td><td>tw</td><td class="mono">2</td><td><span class="pill neg">-0.32</span></td><td class="mono">0</td><td style="color:var(--muted)">The delivered-versus-future split is the only part of this that will decide churn.…</td></tr>
+<tr><td class="mono">po_14</td><td>Ines Fontaine (@inesbuilds)</td><td>rd</td><td class="mono">3</td><td><span class="pill pos">+0.93</span></td><td class="mono">-2</td><td style="color:var(--muted)">Collecting what I found so nobody else loses a portfolio project to this.
+
+What is…</td></tr>
+</table></div></details>
+<details><summary>Appendix E — Methodology &amp; reproducibility</summary><div class="inner">
+<p style="font-size:13.5px">Each round the engine activated a weighted subset of the 12-persona population, composed personalized feeds from the follow graph and platform mechanics, and the host LLM wrote posts, replies and votes in character. Organic engagement, virality, stance migration (10%/round toward expressed sentiment), pairwise influence over the follow graph (Deffuant bounded confidence: ε=0.4, μ=0.2, 10% chance of slight disengagement beyond ε) and escalation chains are deterministic functions of the recorded run. Sentiment is a lexical score over real post text, attributed to entities by mention. The report narrative was drafted by the host coding agent against the statistics pack; every quoted post id resolves to a stored post.</p>
+<p class="chart-note"><b>Reproduce:</b> initialize a world with seed <span class="seed">host-llm-flagship-01</span>, attach the same seeds, and drive the same host model through the plan/submit protocol. The engine's state — and therefore every number in this report — replays identically.</p>
+<p class="chart-note"><b>Top voices:</b> @samok (curious newcomer, 1 posts, 6 eng) · @graceo (pragmatic skeptic, 2 posts, 6 eng) · @marcus_ops (passionate advocate, 4 posts, 3 eng) · @danabuilds (power user, 2 posts, 2 eng) · @yuki_t (industry professional, 2 posts, 1 eng) · @rdelac (power user, 2 posts, 1 eng) · u/leoz (passionate advocate, 3 posts, 0 eng) · u/raghu_ops (pragmatic skeptic, 0 posts, 0 eng)</p>
+</div></details>
+<footer class="foot">Murmur simulated perspective dashboard · deterministic statistics by the engine, narrative by the host coding agent · generated 2026-09-26 from world <b>acme-pricing-reaction</b> · report v1 · this file is self-contained (inline CSS + SVG, no external requests) and safe to commit, share or print.</footer>
+</div></body></html>
