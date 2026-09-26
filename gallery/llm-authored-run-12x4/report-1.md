@@ -16,9 +16,9 @@
 
 | Simulated posts | Total engagement | Escalation chains | Viral posts | Controversy | Momentum | Most-discussed entity |
 |---|---|---|---|---|---|---|
-| 19 | 12 | 0 | 0 | **low-stakes** 16/100 | cooling (-29%) | free tier |
+| 19 | 19 | 0 | 0 | **low-stakes** 13/100 | accelerating (+71%) | free tier |
 
-**Verdict —** 1 supporter vs 4 opponents around Acme Cloud (7 still undecided) — the population is leaning one way. Controversy reads **low-stakes** (16/100).
+**Verdict —** 1 supporter vs 4 opponents around Acme Cloud (7 still undecided) — the population is leaning one way. Controversy reads **low-stakes** (13/100).
 
 ## 1. Executive Summary
 
@@ -32,13 +32,13 @@ A 40 percent Pro plan increase plus a free-tier cut (3 projects to 1, 5000 to 10
 
 | Entity | Type | Salience | Mentions | Motive |
 |---|---|---|---|---|
-| Acme Cloud | org | 1.00 | 2 | fund reliability work and a new observability layer |
+| Acme Cloud | org | 1.00 | 1 | fund reliability work and a new observability layer |
 | developer community | topic | 0.95 | 0 | decide whether to stay or churn |
 | Pro plan | product | 0.95 | 0 | monetize the most active developers |
 | Nimbus Labs | org | 0.90 | 0 | poisson Acme Cloud's developer base |
-| free tier | product | 0.90 | 9 | push hobbyists onto paid plans |
+| free tier | product | 0.90 | 5 | push hobbyists onto paid plans |
 | churn threat | idea | 0.80 | 0 | pressure Acme Cloud to reverse course |
-| StackHaven | org | 0.75 | 2 | recruit departing Acme Cloud developers |
+| StackHaven | org | 0.75 | 1 | recruit departing Acme Cloud developers |
 | migration guide | product | 0.70 | 3 | explain the transition to customers |
 
 ### Population mix
@@ -66,33 +66,32 @@ A 40 percent Pro plan increase plus a free-tier cut (3 projects to 1, 5000 to 10
 
 ```mermaid
 xychart-beta
-    title "Sentiment by round - free tier / migration guide / amnesty window"
+    title "Sentiment by round - free tier / migration guide"
     x-axis [1, 2, 3, 4]
     y-axis "sentiment" -1 --> 1
-    line [0.45, -0.11, 0.52, 0.32]
-    line [0.58, 0, 0.93, 0.58]
-    line [0, 0.32, 0.32, 0]
+    line [0.45, 0.00, 0.00, 0]
+    line [0.58, 0, 0.00, 0.32]
 ```
 
-Lines, in chart order: **free tier**, **migration guide**, **amnesty window**.
+Lines, in chart order: **free tier**, **migration guide**.
 
 ### Entity trend
 
 | Entity | Type | First reading | Last reading | Δ | Direction | Mentions | Peak round |
 |---|---|---|---|---|---|---|---|
-| Acme Cloud | org | -0.32 | -0.32 | 0.00 | → flat | 2 | 2 |
-| free tier | product | +0.45 | +0.32 | -0.13 | ↓ worsening | 9 | 2 |
-| StackHaven | org | -0.32 | -0.32 | 0.00 | → flat | 2 | 2 |
-| migration guide | product | +0.58 | +0.58 | 0.00 | → flat | 3 | 1 |
-| amnesty window | topic | +0.32 | +0.32 | 0.00 | → flat | 2 | 2 |
+| Acme Cloud | org | -0.32 | -0.32 | 0.00 | → flat | 1 | 2 |
+| free tier | product | +0.45 | 0.00 | -0.45 | ↓ worsening | 5 | 1 |
+| StackHaven | org | -0.32 | -0.32 | 0.00 | → flat | 1 | 2 |
+| migration guide | product | +0.58 | +0.32 | -0.26 | ↓ worsening | 3 | 1 |
+| amnesty window | topic | +0.32 | +0.32 | 0.00 | → flat | 1 | 2 |
 
-Engagement is **cooling** — 7 in the first half of the run vs 5 in the second (-29%).
+Engagement is **accelerating** — 7 in the first half of the run vs 12 in the second (+71%).
 
 ### What the crowd actually said about Acme Cloud
 
 **Critics said**
 
-> **po_6** · u/leoz · reddit · round 2 · sentiment toward Acme Cloud -0.32 · engagement 0
+> **po_7** · u/leoz · reddit · round 2 · sentiment toward Acme Cloud -0.32 · engagement 0
 >
 > Writing this up properly because the thread is full of half-information. The 40% is aimed at the segment with the worst contracts and the best leverage, which is us. So here is what is actually true: - Data export…
 
@@ -112,63 +111,63 @@ Polarization: **29/100** — the population has not yet hardened.
 
 `██░░░░░░░░░░░░░░░░░░░░░░`
 
-Average stance +0.76 · 4 posts · 3 engagement received.
+Average stance +0.76 · 4 posts · 2 engagement received.
 
 **Leading voices:** @marcus_ops (passionate advocate, stance +0.76, 4 posts)
 
-> **po_16** · @marcus_ops · twitter · round 4 · sentiment +0.38 · engagement 2
+> **po_1** · @marcus_ops · twitter · round 1 · sentiment +0.32 · engagement 1
 >
-> 14 hobby projects on a personal bill is a fair hit and I was going to argue otherwise. The delivered-versus-future split is the right frame. I would fund 20 points of that 40 and fight the other 20.
+> Genuine question for the 40% crowd: uptime doubled and the API overhaul shipped. That is real. But tell me what the 40% bought that the roadmap item you cite has not already promised for free. Federation is on the…
 
 ### Opponents of Acme Cloud — 4 personas (33%)
 
 `████████░░░░░░░░░░░░░░░░`
 
-Average stance -0.33 · 6 posts · 3 engagement received.
+Average stance -0.33 · 5 posts · 2 engagement received.
 
-**Leading voices:** @danabuilds (power user, stance -0.33, 1 posts) · @rdelac (power user, stance -0.31, 2 posts) · u/leoz (passionate advocate, stance -0.40, 3 posts)
+**Leading voices:** @danabuilds (power user, stance -0.33, 1 posts) · @rdelac (power user, stance -0.31, 2 posts) · u/leoz (passionate advocate, stance -0.40, 2 posts)
 
-> **po_8** · u/leoz · reddit · round 2 · sentiment toward Acme Cloud -0.32 · engagement 0
+> **po_7** · u/leoz · reddit · round 2 · sentiment toward Acme Cloud -0.32 · engagement 0
 >
 > Writing this up properly because the thread is full of half-information. The 40% is aimed at the segment with the worst contracts and the best leverage, which is us. So here is what is actually true: - Data export…
 
-> **po_11** · @danabuilds · twitter · round 3 · sentiment +0.32 · engagement 2
+> **po_3** · @rdelac · twitter · round 1 · sentiment +0.32 · engagement 1
 >
-> @graceo nobody is asking about margin. 40 services on my bill, 14 of them hobby projects that now fall off the free tier. Do the math on my invoice, not the roadmap.
+> Agency owner here. 12 client projects on Acme, 6 on the free tier that just lost 2 slots. Starting migration work this week regardless of the 6-month window because the window does not help clients who are already…
 
 ### Undecided / watching — 7 personas (58%)
 
 `██████████████░░░░░░░░░░`
 
-Average stance -0.05 · 9 posts · 13 engagement received.
+Average stance -0.05 · 10 posts · 18 engagement received.
 
-**Leading voices:** @graceo (pragmatic skeptic, stance -0.09, 2 posts) · @samok (curious newcomer, stance -0.08, 1 posts) · @yuki_t (industry professional, stance -0.04, 2 posts)
+**Leading voices:** @graceo (pragmatic skeptic, stance -0.09, 3 posts) · @inesbuilds (curious newcomer, stance -0.18, 3 posts) · @samok (curious newcomer, stance -0.08, 1 posts)
 
 > **po_4** · @graceo · twitter · round 1 · sentiment 0.00 · engagement 3
 >
 > Procurement view: a 40% increase funded by work already delivered is a different conversation than one funded by future work. They led with observability, which is future. Uptime was last year. Price the delivered half…
 
-> **po_18** · @tomasb · twitter · round 4 · sentiment 0.00 · engagement 0
+> **po_12** · @inesbuilds · twitter · round 3 · sentiment 0.00 · engagement 1
 >
-> Lurking turned into following. What finally moved me was not the 40%, it was reading how many people could not find out what happens to their projects. I checked the export thing. It works. That is one point for them…
+> reading the migration guide again and it genuinely does not say what happens to a project over the limit. it just says you will be prompted. so either my 2 extra projects get archived or they get deleted and the guide…
 
 ## 6. Platform Divergence
 
 | Metric | Twitter | Reddit |
 |---|---|---|
-| Posts | 16 | 4 |
-| Engagement | 21 | -2 |
+| Posts | 17 | 2 |
+| Engagement | 22 | 0 |
 | Escalation chains | 0 | 0 |
 
 | Entity | Twitter sentiment | Reddit sentiment | Divergence |
 |---|---|---|---|
-| free tier | +0.36 (6 posts) | +0.10 (3 posts) | 0.26 |
-| migration guide | +0.58 (1 posts) | +0.76 (2 posts) | 0.18 |
-| Acme Cloud | — (0 posts) | -0.32 (2 posts) | 0.00 |
-| amnesty window | +0.32 (2 posts) | — (0 posts) | 0.00 |
-| StackHaven | — (0 posts) | -0.32 (2 posts) | 0.00 |
+| free tier | +0.31 (4 posts) | -0.32 (1 posts) | 0.63 |
+| migration guide | +0.29 (2 posts) | +0.32 (1 posts) | 0.03 |
+| Acme Cloud | — (0 posts) | -0.32 (1 posts) | 0.00 |
+| amnesty window | +0.32 (1 posts) | — (0 posts) | 0.00 |
+| StackHaven | — (0 posts) | -0.32 (1 posts) | 0.00 |
 
-The largest split is **free tier** (Δ 0.26 between platforms) — the same story is landing differently on Twitter than on Reddit, which usually means different framings are winning in each venue.
+The largest split is **free tier** (Δ 0.63 between platforms) — the same story is landing differently on Twitter than on Reddit, which usually means different framings are winning in each venue.
 
 ## 7. Persona Spotlight
 
@@ -176,43 +175,43 @@ The largest split is **free tier** (Δ 0.26 between platforms) — the same stor
 
 *staff eng, 40 services on Acme, pays the Pro bill personally*
 
-1 posts · 2 engagement received · platform twitter · arc: **warmed to Acme Cloud** (stance -0.70 → -0.33, shift +0.37)
+1 posts · 1 engagement received · platform twitter · arc: **warmed to Acme Cloud** (stance -0.70 → -0.33, shift +0.37)
 
 ```
 before ███████···|··········
 after  ███·······|··········
 ```
-> **po_11** · @danabuilds · twitter · round 3 · sentiment +0.32 · engagement 2
+> **po_10** · @danabuilds · twitter · round 3 · sentiment 0.00 · engagement 1
 >
-> @graceo nobody is asking about margin. 40 services on my bill, 14 of them hobby projects that now fall off the free tier. Do the math on my invoice, not the roadmap.
+> Adding the number nobody posted: my Pro bill goes from 340 to 476 a month. That is a car payment for a build tool. I have 40 services on this and I still cannot find a migration that does not cost me a week.
+
+### Ines Fontaine (@inesbuilds) — curious newcomer
+
+*bootcamp grad, first paid plan, genuinely confused by the tiers*
+
+3 posts · 5 engagement received · platform both · arc: **soured on Acme Cloud** (stance +0.10 → -0.18, shift -0.28)
+
+```
+before ··········|·········█
+after  ██········|··········
+```
+> **po_16** · @inesbuilds · twitter · round 4 · sentiment +0.91 · engagement 3
+>
+> So the honest answer is nobody knows yet, and the guide does not say. Fine. I am archiving mine myself tonight so it is not a surprise later. Not angry, just done waiting for a page to clarify it.
 
 ### Sam Okonkwo (@samok) — curious newcomer
 
 *CS student, uses the free tier for everything*
 
-1 posts · 6 engagement received · platform both · arc: **soured on Acme Cloud** (stance +0.10 → -0.08, shift -0.18)
+1 posts · 3 engagement received · platform both · arc: **soured on Acme Cloud** (stance +0.10 → -0.08, shift -0.18)
 
 ```
 before ··········|·········█
 after  █·········|··········
 ```
-> **po_10** · @samok · twitter · round 2 · sentiment +0.32 · engagement 6
+> **po_9** · @samok · twitter · round 2 · sentiment +0.32 · engagement 3
 >
 > same here. i have 2 projects on the free tier and one is my portfolio. do student discounts actually apply automatically or is there a form? the FAQ says amnesty window but doesnt say how to claim it
-
-### Grace Osei (@graceo) — pragmatic skeptic
-
-*procurement. asks what the margin was before the increase*
-
-2 posts · 6 engagement received · platform twitter · arc: **still weighing Acme Cloud** (stance -0.20 → -0.09, shift +0.11)
-
-```
-before ██········|··········
-after  █·········|··········
-```
-> **po_19** · @graceo · twitter · round 4 · sentiment -0.58 · engagement 3
->
-> Closing the loop: the export commitment plus the 6-month grandfather closes the enterprise and mid-market conversations. It does nothing for the bottom of the market, where the FAQ is the entire product experience.…
 
 ## 8. Trajectory Simulated Projection
 
@@ -238,17 +237,17 @@ The highest-engagement post in the entire run was a student asking how to claim 
 
 **Evidence from the run:**
 
-> **po_10** · Sam Okonkwo (@samok) · twitter · round 2 · sentiment +0.32 · engagement 6
+> **po_10** · Dana Whitfield (@danabuilds) · twitter · round 3 · sentiment 0.00 · engagement 1
 >
-> same here. i have 2 projects on the free tier and one is my portfolio. do student discounts actually apply automatically or is there a form? the FAQ says amnesty window but doesnt say how to claim it
+> Adding the number nobody posted: my Pro bill goes from 340 to 476 a month. That is a car payment for a build tool. I have 40 services on this and I still cannot find a migration that does not cost me a week.
 
 > **po_2** · Ines Fontaine (@inesbuilds) · twitter · round 1 · sentiment +0.58 · engagement 1
 >
 > wait so i lose 2 of my 3 free projects AND my api calls drop 5x?? i thought i was on the free tier because i could not afford pro. is the student thing automatic or a form? asking because i genuinely cant tell from the…
 
-> **po_18** · Tomas Bergen (@tomasb) · twitter · round 4 · sentiment 0.00 · engagement 0
+> **po_18** · Grace Osei (@graceo) · twitter · round 4 · sentiment 0.00 · engagement 3
 >
-> Lurking turned into following. What finally moved me was not the 40%, it was reading how many people could not find out what happens to their projects. I checked the export thing. It works. That is one point for them…
+> That is the correct question and nobody has answered it with a number. 40 percent more for a service that doubled its uptime is a defensible trade. 40 percent more for a roadmap is not. They have never had to choose…
 
 ### R2. The undecided 58 percent converts to churn through import friction, not outrage
 
@@ -262,9 +261,9 @@ The highest-engagement post in the entire run was a student asking how to claim 
 
 **Evidence from the run:**
 
-> **po_15** · Ruben Delacroix (@rdelac) · twitter · round 3 · sentiment +0.32 · engagement 0
+> **po_15** · Marcus Oyelaran (@marcus_ops) · twitter · round 4 · sentiment -0.76 · engagement 1
 >
-> Update: Nimbus import tool ran on 4 client projects today. Took 20 minutes total. The hard part was never the data, it was convincing clients to accept a new vendor mid-contract. Data export being free makes that…
+> I take it back. If the split gets published and they absorb part of it, I will pay the 40 without complaining and I will say so here. Retroactive billing for shipped work is defensible. Surprise billing for a roadmap…
 
 > **po_5** · Yuki Tanaka (@yuki_t) · twitter · round 1 · sentiment +0.44 · engagement 1
 >
@@ -286,17 +285,17 @@ The most committed advocate, at stance +0.76, ended by agreeing the delivered-ve
 
 **Evidence from the run:**
 
-> **po_16** · Marcus Oyelaran (@marcus_ops) · twitter · round 4 · sentiment +0.38 · engagement 2
+> **po_16** · Ines Fontaine (@inesbuilds) · twitter · round 4 · sentiment +0.91 · engagement 3
 >
-> 14 hobby projects on a personal bill is a fair hit and I was going to argue otherwise. The delivered-versus-future split is the right frame. I would fund 20 points of that 40 and fight the other 20.
+> So the honest answer is nobody knows yet, and the guide does not say. Fine. I am archiving mine myself tonight so it is not a surprise later. Not angry, just done waiting for a page to clarify it.
 
-> **po_13** · Marcus Oyelaran (@marcus_ops) · twitter · round 3 · sentiment -0.58 · engagement 0
+> **po_13** · Ruben Delacroix (@rdelac) · twitter · round 3 · sentiment 0.00 · engagement 0
 >
-> The FAQ is the whole problem. It answers the question nobody asked while skipping the one everyone has: what happens to my stuff on day one. Confused is the correct response.
+> Client update going out today: two of their projects are over the new free tier limit. I am telling them the projects get archived, not deleted, because that is what I believe. If I am wrong, tell me now, because I am…
 
-> **po_9** · Yuki Tanaka (@yuki_t) · twitter · round 2 · sentiment -0.32 · engagement 0
+> **po_9** · Sam Okonkwo (@samok) · twitter · round 2 · sentiment +0.32 · engagement 3
 >
-> The delivered-versus-future split is the only part of this that will decide churn. Enterprise renews, the mid-market hesitates, the bottom of the market churns. Three reactions to one announcement.
+> same here. i have 2 projects on the free tier and one is my portfolio. do student discounts actually apply automatically or is there a form? the FAQ says amnesty window but doesnt say how to claim it
 
 ## 10. Recommendations
 
@@ -336,24 +335,23 @@ The most committed advocate, at stance +0.76, ended by agreeing the delivered-ve
 ## Timeline of the Run — the moments a launch team would replay
 
 - **Round 1** · rally: First strong endorsement: @inesbuilds — "wait so i lose 2 of my 3 free projects AND my api calls drop 5x?? i thought i was on the free tier because i could not…" (`po_2`)
-- **Round 3** · flashpoint: First strong criticism: @marcus_ops — "The FAQ is the whole problem. It answers the question nobody asked while skipping the one everyone has: what happens…" (`po_13`)
-- **Round 3** · shift: @inesbuilds shifted on free tier: -0.63 → -0.47
+- **Round 4** · flashpoint: First strong criticism: @marcus_ops — "I take it back. If the split gets published and they absorb part of it, I will pay the 40 without complaining and I…" (`po_15`)
 
 ## Appendix A — Round-by-Round Statistics
 
 | Round | Twitter | Reddit | Engagement | Escalations | Injections | Lurkers |
 |---|---|---|---|---|---|---|
 | 1 | 5 | 0 | 4 | 0 | 0 | 0 |
-| 2 | 3 | 2 | 3 | 0 | 0 | 0 |
-| 3 | 4 | 1 | -1 | 0 | 0 | 0 |
-| 4 | 4 | 1 | 6 | 0 | 0 | 0 |
+| 2 | 3 | 1 | 3 | 0 | 0 | 0 |
+| 3 | 5 | 0 | 5 | 0 | 0 | 0 |
+| 4 | 4 | 1 | 7 | 0 | 0 | 0 |
 
 ```mermaid
 xychart-beta
     title "Engagement by round"
     x-axis [1, 2, 3, 4]
-    y-axis "engagement" 0 --> 8
-    bar [4, 3, -1, 6]
+    y-axis "engagement" 0 --> 9
+    bar [4, 3, 5, 7]
 ```
 
 
@@ -371,31 +369,27 @@ Organic (engine-simulated bystander) engagement share: **0%** — the rest came 
 
 | Id | By | Plat | R | Sentiment | Engagement | Excerpt |
 |---|---|---|---|---|---|---|
-| po_10 | Sam Okonkwo (@samok) | tw | 2 | +0.32 | 6 | same here. i have 2 projects on the free tier and one is my portfolio. do student… |
-| po_19 | Grace Osei (@graceo) | tw | 4 | -0.58 | 3 | Closing the loop: the export commitment plus the 6-month grandfather closes the… |
+| po_14 | Grace Osei (@graceo) | tw | 3 | +0.32 | 3 | This is the actually good post in the thread. Name the split, absorb part of it, and the… |
+| po_16 | Ines Fontaine (@inesbuilds) | tw | 4 | +0.91 | 3 | So the honest answer is nobody knows yet, and the guide does not say. Fine. I am… |
+| po_18 | Grace Osei (@graceo) | tw | 4 | 0.00 | 3 | That is the correct question and nobody has answered it with a number. 40 percent more… |
 | po_4 | Grace Osei (@graceo) | tw | 1 | 0.00 | 3 | Procurement view: a 40% increase funded by work already delivered is a different… |
-| po_11 | Dana Whitfield (@danabuilds) | tw | 3 | +0.32 | 2 | @graceo nobody is asking about margin. 40 services on my bill, 14 of them hobby projects… |
-| po_16 | Marcus Oyelaran (@marcus_ops) | tw | 4 | +0.38 | 2 | 14 hobby projects on a personal bill is a fair hit and I was going to argue otherwise.… |
+| po_9 | Sam Okonkwo (@samok) | tw | 2 | +0.32 | 3 | same here. i have 2 projects on the free tier and one is my portfolio. do student… |
 | po_1 | Marcus Oyelaran (@marcus_ops) | tw | 1 | +0.32 | 1 | Genuine question for the 40% crowd: uptime doubled and the API overhaul shipped. That is… |
-| po_17 | Ines Fontaine (@inesbuilds) | tw | 4 | +0.32 | 1 | this is the clearest statement of the problem i have read. i moved my portfolio off the… |
+| po_10 | Dana Whitfield (@danabuilds) | tw | 3 | 0.00 | 1 | Adding the number nobody posted: my Pro bill goes from 340 to 476 a month. That is a car… |
+| po_12 | Ines Fontaine (@inesbuilds) | tw | 3 | 0.00 | 1 | reading the migration guide again and it genuinely does not say what happens to a… |
+| po_15 | Marcus Oyelaran (@marcus_ops) | tw | 4 | -0.76 | 1 | I take it back. If the split gets published and they absorb part of it, I will pay the… |
 | po_2 | Ines Fontaine (@inesbuilds) | tw | 1 | +0.58 | 1 | wait so i lose 2 of my 3 free projects AND my api calls drop 5x?? i thought i was on the… |
 | po_3 | Ruben Delacroix (@rdelac) | tw | 1 | +0.32 | 1 | Agency owner here. 12 client projects on Acme, 6 on the free tier that just lost 2… |
 | po_5 | Yuki Tanaka (@yuki_t) | tw | 1 | +0.44 | 1 | The interesting part is who this does not hit. Enterprise is 6 cities of roadshow and… |
-| po_13 | Marcus Oyelaran (@marcus_ops) | tw | 3 | -0.58 | 0 | The FAQ is the whole problem. It answers the question nobody asked while skipping the… |
-| po_15 | Ruben Delacroix (@rdelac) | tw | 3 | +0.32 | 0 | Update: Nimbus import tool ran on 4 client projects today. Took 20 minutes total. The… |
-| po_18 | Tomas Bergen (@tomasb) | tw | 4 | 0.00 | 0 | Lurking turned into following. What finally moved me was not the 40%, it was reading how… |
-| po_20 | Leo Zaremba (u/leoz) | rd | 4 | +0.58 | 0 | The amnesty form being unlinked from the migration guide is the single most damning… |
-| po_6 | Leo Zaremba (u/leoz) | rd | 2 | -0.32 | 0 | Writing this up properly because the thread is full of half-information.
+| po_11 | Marcus Oyelaran (@marcus_ops) | tw | 3 | +0.32 | 0 | You are right and that is the part that stings. Half the 40 is paying for last year's… |
+| po_13 | Ruben Delacroix (@rdelac) | tw | 3 | 0.00 | 0 | Client update going out today: two of their projects are over the new free tier limit. I… |
+| po_17 | Tomas Bergen (@tomasb) | tw | 4 | +0.32 | 0 | catching up on this pricing thing and my honest reaction: i cannot tell if this is a… |
+| po_19 | Leo Zaremba (u/leoz) | rd | 4 | +0.32 | 0 | Pinned the Acme pricing change migration thread here since it keeps splitting across… |
+| po_6 | Marcus Oyelaran (@marcus_ops) | tw | 2 | +0.58 | 0 | @graceo this is the best argument on the thread and I still do not buy the conclusion.… |
+| po_7 | Leo Zaremba (u/leoz) | rd | 2 | -0.32 | 0 | Writing this up properly because the thread is full of half-information.
 
 The 40% is… |
-| po_7 | Marcus Oyelaran (@marcus_ops) | tw | 2 | +0.58 | 0 | @graceo this is the best argument on the thread and I still do not buy the conclusion.… |
-| po_8 | Leo Zaremba (u/leoz) | rd | 2 | -0.32 | 0 | Writing this up properly because the thread is full of half-information.
-
-The 40% is… |
-| po_9 | Yuki Tanaka (@yuki_t) | tw | 2 | -0.32 | 0 | The delivered-versus-future split is the only part of this that will decide churn.… |
-| po_14 | Ines Fontaine (@inesbuilds) | rd | 3 | +0.93 | -2 | Collecting what I found so nobody else loses a portfolio project to this.
-
-What is… |
+| po_8 | Yuki Tanaka (@yuki_t) | tw | 2 | -0.32 | 0 | The delivered-versus-future split is the only part of this that will decide churn.… |
 
 ## Appendix E — Methodology & Reproducibility
 
@@ -403,4 +397,4 @@ Each round the engine activated a weighted subset of the 12-persona population, 
 
 **Reproduce:** initialize a world with seed `host-llm-flagship-01`, attach the same seeds, and drive the same host model through the plan/submit protocol. The engine's state — and therefore every number in this report — replays identically.
 
-**Leaderboard (top voices):** @samok (curious newcomer, 1 posts, 6 engagement) · @graceo (pragmatic skeptic, 2 posts, 6 engagement) · @marcus_ops (passionate advocate, 4 posts, 3 engagement) · @danabuilds (power user, 2 posts, 2 engagement) · @yuki_t (industry professional, 2 posts, 1 engagement) · @rdelac (power user, 2 posts, 1 engagement) · u/leoz (passionate advocate, 3 posts, 0 engagement) · u/raghu_ops (pragmatic skeptic, 0 posts, 0 engagement)
+**Leaderboard (top voices):** @graceo (pragmatic skeptic, 3 posts, 9 engagement) · @inesbuilds (curious newcomer, 3 posts, 5 engagement) · @samok (curious newcomer, 1 posts, 3 engagement) · @marcus_ops (passionate advocate, 4 posts, 2 engagement) · @danabuilds (power user, 1 posts, 1 engagement) · @yuki_t (industry professional, 2 posts, 1 engagement) · @rdelac (power user, 2 posts, 1 engagement) · u/leoz (passionate advocate, 2 posts, 0 engagement)
