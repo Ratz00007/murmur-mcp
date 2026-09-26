@@ -1,0 +1,56 @@
+{
+  "scenarioRecap": "A 40 percent Pro plan increase plus a free-tier cut (3 projects to 1, 5000 to 1000 requests/hr), announced with a 6-month grandfather window, free-forever exports, and a buried amnesty form. A competitor shipped a one-click import tool within a day. 12 personas, 4 rounds, 19 posts, 12 total engagement.",
+  "executiveSummary": "Verdict: this is a documentation failure being read as a pricing betrayal, and it is not going to escalate into a backlash. Across 19 posts and 12 engagement points the crowd stayed cold, not hot: controversy scored 16 out of 100 (low-stakes), polarization sat at 29/100, and zero escalation chains formed over 4 rounds. The decisive number is faction share, not sentiment: only 1 of 12 personas (8 percent) ended a supporter and 4 (33 percent) as opponents, while 7 (58 percent) stayed undecided at avg stance -0.05. That undecided bloc carried 13 engagement points, more than supporters (3) and opponents (3) combined. The single most-engaged post in the run was not an attack on Acme Cloud but a confused student asking how to claim the amnesty form (6 points). Momentum cooled -29 percent second half to first. The pricing itself is defensible; the FAQ is not.",
+  "keyFindings": [
+    "The undecided bloc was 58 percent of the population (7 of 12) but held 13 of 19 engagement points, more than the supporter and opponent factions combined, making uncertainty rather than anger the dominant state.",
+    "Controversy scored 16/100 (low-stakes) with polarization at 29/100 and 0 escalation chains across 4 rounds, so the announcement never developed an escalation cascade in this run.",
+    "The top-engagement item was po_10 at 6 points, a newcomer asking whether the student amnesty needs a form, beating every substantive pro and con argument in the run.",
+    "Momentum cooled -29 percent (7 to 5) between the first and second half, with engagement peaking in round 4 at 6 after the competitor import was confirmed working.",
+    "Free tier was the highest-volume contested entity at 9 posts, trending down -0.13, and 5 of 8 tracked stance movers shifted on it, mostly from negative toward less negative."
+  ],
+  "trajectory": "The run opens in round 1 with 5 posts and 4 engagement as both camps assert positions, and Acme Cloud sentiment registers -0.32 in round 2 then goes flat, never deepening across 4 rounds. Round 2 is the only negative-velocity round at -1 engagement, driven by the free tier dipping to -0.11. Recovery follows: round 3 restores the aggregate once a newcomer publishes a consolidated PSA with the actual doc contents, and round 4 is the strongest at 6 engagement as a procurement post (po_19) and a concession quote (po_16) land together. Momentum cooled 29 percent half-over-half (7 to 5), and the engine linear projection returned null for this run, so no slope or interval band is available and none is claimed here. The shape is dispute-then-exhaustion rather than escalation, with the undecided faction absorbing the energy and the advocate bloc conceding ground in round 4 (po_16).",
+  "risks": [
+    {
+      "title": "The amnesty form stays unlinked and the FAQ keeps failing the free-tier cohort",
+      "rationale": "The highest-engagement post in the entire run was a student asking how to claim a discount that already exists (po_10, 6 points), and a second newcomer independently asked the same question (po_2). An open-source maintainer escalated it into the most quotable criticism of the release, calling the unlinked form the single most damning detail and noting it is a documentation bug rather than a pricing decision (po_18). With free tier carrying 9 posts and trending down -0.13, this cohort is the volume center of the conversation. The risk is not that they reject the price; it is that they conclude Acme does not understand them, which is a far cheaper problem to fix and a far more expensive one to leave alone.",
+      "severity": "high",
+      "likelihood": "high",
+      "mitigation": "Link the amnesty form directly from the migration guide and the changelog, and state the day-one behavior for projects over the free tier limit in the FAQ. Both are documentation-only changes that cost nothing and remove the top-engagement complaint in the run.",
+      "trigger": "The form remains unlinked, or support tickets about day-one free-tier behavior exceed pricing-related ticket volume for two consecutive weeks.",
+      "postIds": ["po_10", "po_2", "po_18"]
+    },
+    {
+      "title": "The undecided 58 percent converts to churn through import friction, not outrage",
+      "rationale": "7 of 12 personas ended undecided at an average stance of -0.05, and that bloc held 13 engagement points. An agency owner reported running the competitor import tool across 4 client projects in 20 minutes and concluded the hard part was never data, it was client trust mid-contract (po_15). A separate analysis framed the announcement as aimed at the segment with the best pricing leverage and the weakest contracts (po_5). Because the undecided bloc is the largest and least committed, a low-friction migration path converts it without requiring anyone to become angry. The free-forever export commitment helps here rather than hurting, which is counterintuitive and worth respecting in planning.",
+      "severity": "medium",
+      "likelihood": "medium",
+      "mitigation": "Ship self-serve project export with a one-click path to archive over-limit free-tier projects, matching the 20-minute migration a competitor already demonstrates. Compete on making exit cheap and return cheaper, since exports being free is already stated policy.",
+      "trigger": "Competitor import-tool usage is mentioned in more than 15 percent of posts in a subsequent run, or the undecided share falls below 40 percent without any supporter growth.",
+      "postIds": ["po_15", "po_5", "po_3"]
+    },
+    {
+      "title": "The strongest pro-argument concedes the delivered-versus-future split is the right frame",
+      "rationale": "The most committed advocate, at stance +0.76, ended by agreeing the delivered-versus-future split is the correct frame and conceding that 14 hobby projects on a personal bill is a fair hit, stating he would fund 20 points of the 40 and fight the other 20 (po_16). He also endorsed the criticism that the FAQ answers the question nobody asked while skipping the one everyone has (po_13). An analyst independently reached the same three-tier read, that enterprise renews, the mid-market hesitates and the bottom of the market churns (po_9). When the opposition frame is adopted by the defense, the pricing narrative is being decided on delivered value rather than goodwill, and the remaining 20 points are undefended in public.",
+      "severity": "medium",
+      "likelihood": "medium",
+      "mitigation": "Publish an explicit split of the increase into the portion funded by already-delivered uptime and API work versus the portion funding the new observability layer, and commit to the delivered half in writing so the contested 20 points has a stated position.",
+      "trigger": "A second advocate or analyst publicly adopts the delivered-versus-future frame without pushback, or the founder response continues to lead with roadmap items.",
+      "postIds": ["po_16", "po_13", "po_9"]
+    }
+  ],
+  "recommendations": [],
+  "confidence": {
+    "strongSignals": [
+      "Faction distribution is unambiguous: 1 supporter (8 percent), 4 opponents (33 percent), 7 undecided (58 percent), with 13 of 19 engagement points in the undecided bloc.",
+      "Low escalation is consistent across every engine metric: controversy 16/100, polarization 29/100, 0 escalation chains over 4 rounds.",
+      "The top-engagement post is a confusion question (po_10, 6 points) and the second is a procurement summary (po_19, 3 points), so attention is on clarity rather than price.",
+      "Free tier is the highest-volume contested entity at 9 posts and the only entity with a tracked downward trend (-0.13)."
+    ],
+    "contested": [
+      "Whether the undecided 58 percent resolves toward Acme or toward the competitor. The run contains one confirmed successful competitor migration (po_15) and one that treats exports as a positive; these point in opposite directions.",
+      "Whether the round-4 engagement peak (6) reflects genuine recovery or an artifact of the final round having the largest cohort available to post.",
+      "Whether the advocate concession in po_16 generalizes: it is a single data point from the highest-stance persona and may be personal graciousness rather than a bloc shift."
+    ]
+  },
+  "limitations": []
+}

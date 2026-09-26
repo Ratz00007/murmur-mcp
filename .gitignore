@@ -24,5 +24,9 @@ murmur-demo/.murmur/*.db-shm
 # Published tarballs are produced by CI, never committed
 *.tgz
 
+# host-llm-run: the driver and its authored brain are tracked; the run output is not
+tools/host-llm-run/dump/
+tools/host-llm-run/state.json
+
 # Preserved original monorepo git dir (history was imported into this repo)
 murmur/.git.bundle-history/
