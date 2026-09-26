@@ -35,7 +35,8 @@ items that this goal now owns.*
 - [x] Flagship protocol resized to 16 personas × 8 rounds + gallery scaffold ready
 - [x] Full verification green: `npm test` 66/66 · `npm run test:e2e` 2/2 · `npm run cleanroom` GATE GREEN · typecheck exit 0
 
-**Status:** active — code work complete; two items need the user (below)
+**Status:** blocked — all agent-executable work is done and verified; the two remaining
+criteria require the user's npm account and their own LLM session (listed below).
 
 ## Blocked on the user (cannot be done from here)
 1. **`npm login` + publish** — the `murmur-mcp` name is still unclaimed, so every `npx` install
