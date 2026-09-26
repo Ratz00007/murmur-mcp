@@ -1,0 +1,16 @@
+[
+  { "persona": "p_1", "actions": [
+    { "type": "reply", "parent": "po_4", "body": "@graceo nobody is asking about margin. 40 services on my bill, 14 of them hobby projects that now fall off the free tier. Do the math on my invoice, not the roadmap." },
+    { "type": "repost", "parent": "po_10" }
+  ] },
+  { "persona": "p_3", "actions": [
+    { "type": "reply", "parent": "po_10", "body": "The FAQ is the whole problem. It answers the question nobody asked while skipping the one everyone has: what happens to my stuff on day one. Confused is the correct response." }
+  ] },
+  { "persona": "p_4", "actions": [
+    { "type": "post", "platform": "reddit", "title": "PSA for anyone on the free tier: check the amnesty form BEFORE you panic", "body": "Collecting what I found so nobody else loses a portfolio project to this.\n\nWhat is actually in the docs:\n- Exports are free forever. Your data is not the hostage here.\n- Grandfather pricing lasts 6 months for existing customers.\n- The student/nonprofit amnesty exists but the FAQ never says how to claim it. I found the form buried in the support portal. It is not linked from the migration guide.\n\nWhat is NOT in the docs:\n- What happens to projects over the free tier limit on day one. I could not find an answer and support has not replied yet." }
+  ] },
+  { "persona": "p_7", "actions": [
+    { "type": "quote", "parent": "po_3", "body": "Update: Nimbus import tool ran on 4 client projects today. Took 20 minutes total. The hard part was never the data, it was convincing clients to accept a new vendor mid-contract. Data export being free makes that conversation much easier." }
+  ] },
+  { "persona": "p_9", "actions": [ { "type": "like", "parent": "po_10" } ] }
+]

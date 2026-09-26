@@ -4,13 +4,24 @@
  * Listed via `murmur-mcp templates`; copied via `murmur-mcp init --template X`.
  */
 
+export type ScenarioTier = "primary" | "secondary";
+
 export interface ScenarioTemplate {
   id: string;
   title: string;
   description: string;
+  /** "primary" = the core wedge (founder about to ship a pricing or launch change). "secondary" = experimental, a different buyer. */
+  tier: ScenarioTier;
   suggested: { rounds: number; personas: number; focus: string };
   markdown: string;
 }
+
+/** The packs that serve the core ICP; machine-readable signal for the primary/secondary split. */
+export const PRIMARY_SCENARIO_IDS: string[] = ["launch", "crisis"];
+
+/** Prefix applied to every secondary pack description so `murmur-mcp templates` shows the distinction. */
+export const SECONDARY_DESCRIPTION_PREFIX =
+  "Secondary, experimental — a different buyer than the core wedge.";
 
 function brief(sections: Record<string, string>): string {
   return Object.entries(sections)
@@ -22,7 +33,9 @@ export const SCENARIOS: ScenarioTemplate[] = [
   {
     id: "launch",
     title: "Product launch reaction",
-    description: "Predict how developer and user communities react to a launch: pricing, positioning, migration friction, competitor response.",
+    tier: "primary",
+    description:
+      "For a founder or dev about to ship a pricing or launch change: rehearse the first two weeks of backlash before you ship — who churns, which threads escalate, and whether the migration path survives contact with your loudest users.",
     suggested: { rounds: 8, personas: 24, focus: "community reaction to the launch" },
     markdown: `# Launch Brief — {{PRODUCT_NAME}}
 
@@ -43,7 +56,8 @@ ${brief({
   {
     id: "policy",
     title: "Policy / governance change",
-    description: "Simulate stakeholder reaction to a policy change: API terms, moderation rules, licensing, data usage, return-to-office.",
+    tier: "secondary",
+    description: SECONDARY_DESCRIPTION_PREFIX + " Policy, governance and stakeholder work: API terms, moderation rules, licensing, data usage, return-to-office.",
     suggested: { rounds: 10, personas: 32, focus: "stakeholder acceptance of the policy" },
     markdown: `# Policy Brief — {{POLICY_NAME}}
 
@@ -60,7 +74,9 @@ ${brief({
   {
     id: "crisis",
     title: "Incident / crisis communications",
-    description: "War-game an outage, breach or recall: what the community says, which threads escalate, what statement lands.",
+    tier: "primary",
+    description:
+      "Pre-launch backlash rehearsal: a founder or dev whose change is already going sideways. War-game the outage, breach or angry thread — which claims escalate, which statement lands, and where your trust reserve is already spent.",
     suggested: { rounds: 6, personas: 24, focus: "sentiment trajectory and escalation chains" },
     markdown: `# Crisis Brief — {{INCIDENT}}
 
@@ -77,7 +93,8 @@ ${brief({
   {
     id: "finance",
     title: "Earnings / market reaction",
-    description: "Simulate investor and analyst chatter after an earnings print, guidance change or product finance event.",
+    tier: "secondary",
+    description: SECONDARY_DESCRIPTION_PREFIX + " Markets, investors and analysts: an earnings print, guidance change or product finance event.",
     suggested: { rounds: 6, personas: 20, focus: "narrative formation around the numbers" },
     markdown: `# Market Brief — {{COMPANY}}
 
@@ -93,7 +110,8 @@ ${brief({
   {
     id: "fiction",
     title: "Fiction / worldbuilding test audience",
-    description: "Run a fictional population of readers/fans reacting to a story beat, twist or canon change — a zero-cost test audience.",
+    tier: "secondary",
+    description: SECONDARY_DESCRIPTION_PREFIX + " Creators: a fictional population of readers/fans reacting to a story beat, twist or canon change — a zero-cost test audience.",
     suggested: { rounds: 8, personas: 16, focus: "fan-community reaction to the twist" },
     markdown: `# Test-Audience Brief — {{WORK_TITLE}}
 

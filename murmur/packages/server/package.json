@@ -1,7 +1,7 @@
 {
   "name": "murmur-mcp",
   "version": "1.0.0",
-  "description": "Murmur — social-simulation MCP server for coding agents. Predict how communities react to your product, policy or story — powered by the coding subscription you already pay for. Zero API keys.",
+  "description": "Rehearse community reaction to a pricing or launch change — social-simulation MCP for coding agents. Zero API keys.",
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
@@ -32,8 +32,19 @@
     "codex",
     "social-simulation",
     "agent-based-modeling",
-    "prediction",
-    "market-research"
+    "reaction-simulation",
+    "market-research",
+    "pricing-change",
+    "product-launch",
+    "launch-planning",
+    "user-research",
+    "customer-feedback",
+    "sentiment-analysis",
+    "scenario-planning",
+    "product-manager",
+    "founder-tools",
+    "what-if-analysis",
+    "zero-api-keys"
   ],
   "scripts": {
     "build": "tsup"

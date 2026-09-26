@@ -1,0 +1,253 @@
+{
+  "round": 3,
+  "taskId": "t_8",
+  "personas": [
+    {
+      "personaId": "p_1",
+      "handle": "@danabuilds",
+      "archetype": "power user",
+      "platform": "twitter",
+      "stances": {
+        "free tier": -0.67,
+        "Acme Cloud": -0.6,
+        "churn threat": 0.57
+      },
+      "memory": [],
+      "feed": [
+        {
+          "id": "po_10",
+          "by": "@samok",
+          "plat": "tw",
+          "kind": "reply",
+          "body": "same here. i have 2 projects on the free tier and one is my portfolio. do student discounts actually apply automatically or is there a form? the FAQ says amnesty window but doesnt say how to claim it",
+          "engagement": "♥3 ⇄0"
+        },
+        {
+          "id": "po_2",
+          "by": "@inesbuilds",
+          "plat": "tw",
+          "kind": "post",
+          "body": "wait so i lose 2 of my 3 free projects AND my api calls drop 5x?? i thought i was on the free tier because i could not afford pro. is the student thing automatic or a form? asking because i genuinely cant tell from the…",
+          "engagement": "♥1 ⇄0"
+        },
+        {
+          "id": "po_4",
+          "by": "@graceo",
+          "plat": "tw",
+          "kind": "post",
+          "body": "Procurement view: a 40% increase funded by work already delivered is a different conversation than one funded by future work. They led with observability, which is future. Uptime was last year. Price the delivered half…",
+          "engagement": "♥3 ⇄0"
+        },
+        {
+          "id": "po_3",
+          "by": "@rdelac",
+          "plat": "tw",
+          "kind": "post",
+          "body": "Agency owner here. 12 client projects on Acme, 6 on the free tier that just lost 2 slots. Starting migration work this week regardless of the 6-month window because the window does not help clients who are already…",
+          "engagement": "♥1 ⇄0"
+        }
+      ],
+      "allowedActions": [
+        "post ≤280c",
+        "reply ≤280c",
+        "repost",
+        "quote ≤280c",
+        "like"
+      ],
+      "charLimits": {
+        "twitter": 280,
+        "reddit": 4000,
+        "comment": 2000
+      }
+    },
+    {
+      "personaId": "p_3",
+      "handle": "@marcus_ops",
+      "archetype": "passionate advocate",
+      "platform": "twitter",
+      "stances": {
+        "Acme Cloud": 0.76,
+        "Nimbus Labs": -0.6,
+        "federation and on-prem roadmap": 0.9
+      },
+      "memory": [
+        "Replied on twitter r2: \"@graceo this is the best argument on the thread and I still do not buy the conclusion. Uptime funded 20 points of that 40. Say so…",
+        "Liked po_4: \"Procurement view: a 40% increase funded by work already delivered is a different conversation than…\"",
+        "Posted on twitter r1: \"Genuine question for the 40% crowd: uptime doubled and the API overhaul shipped. That is real. But tell me what the 40% bought that the…\""
+      ],
+      "feed": [
+        {
+          "id": "po_10",
+          "by": "@samok",
+          "plat": "tw",
+          "kind": "reply",
+          "body": "same here. i have 2 projects on the free tier and one is my portfolio. do student discounts actually apply automatically or is there a form? the FAQ says amnesty window but doesnt say how to claim it",
+          "engagement": "♥3 ⇄0"
+        },
+        {
+          "id": "po_4",
+          "by": "@graceo",
+          "plat": "tw",
+          "kind": "post",
+          "body": "Procurement view: a 40% increase funded by work already delivered is a different conversation than one funded by future work. They led with observability, which is future. Uptime was last year. Price the delivered half…",
+          "engagement": "♥3 ⇄0"
+        },
+        {
+          "id": "po_2",
+          "by": "@inesbuilds",
+          "plat": "tw",
+          "kind": "post",
+          "body": "wait so i lose 2 of my 3 free projects AND my api calls drop 5x?? i thought i was on the free tier because i could not afford pro. is the student thing automatic or a form? asking because i genuinely cant tell from the…",
+          "engagement": "♥1 ⇄0"
+        }
+      ],
+      "allowedActions": [
+        "post ≤280c",
+        "reply ≤280c",
+        "repost",
+        "quote ≤280c",
+        "like"
+      ],
+      "charLimits": {
+        "twitter": 280,
+        "reddit": 4000,
+        "comment": 2000
+      }
+    },
+    {
+      "personaId": "p_4",
+      "handle": "@inesbuilds",
+      "archetype": "curious newcomer",
+      "platform": "both",
+      "stances": {
+        "free tier": -0.63,
+        "Pro plan": -0.42,
+        "amnesty window": 0.66
+      },
+      "memory": [
+        "Posted on twitter r1 about free tier, migration guide: \"wait so i lose 2 of my 3 free projects AND my api calls drop 5x?? i thought i was on the free tier…"
+      ],
+      "feed": [
+        {
+          "id": "po_10",
+          "by": "@samok",
+          "plat": "tw",
+          "kind": "reply",
+          "body": "same here. i have 2 projects on the free tier and one is my portfolio. do student discounts actually apply automatically or is there a form? the FAQ says amnesty window but doesnt say how to claim it",
+          "engagement": "♥3 ⇄0"
+        },
+        {
+          "id": "po_4",
+          "by": "@graceo",
+          "plat": "tw",
+          "kind": "post",
+          "body": "Procurement view: a 40% increase funded by work already delivered is a different conversation than one funded by future work. They led with observability, which is future. Uptime was last year. Price the delivered half…",
+          "engagement": "♥3 ⇄0"
+        },
+        {
+          "id": "po_3",
+          "by": "@rdelac",
+          "plat": "tw",
+          "kind": "post",
+          "body": "Agency owner here. 12 client projects on Acme, 6 on the free tier that just lost 2 slots. Starting migration work this week regardless of the 6-month window because the window does not help clients who are already…",
+          "engagement": "♥1 ⇄0"
+        },
+        {
+          "id": "po_1",
+          "by": "@marcus_ops",
+          "plat": "tw",
+          "kind": "post",
+          "body": "Genuine question for the 40% crowd: uptime doubled and the API overhaul shipped. That is real. But tell me what the 40% bought that the roadmap item you cite has not already promised for free. Federation is on the…",
+          "engagement": "♥1 ⇄0"
+        }
+      ],
+      "allowedActions": [
+        "twitter: post/reply/repost/quote/like",
+        "reddit: post(title+body)/comment/upvote/downvote"
+      ],
+      "charLimits": {
+        "twitter": 280,
+        "reddit": 4000,
+        "comment": 2000
+      }
+    },
+    {
+      "personaId": "p_7",
+      "handle": "@rdelac",
+      "archetype": "power user",
+      "platform": "both",
+      "stances": {
+        "free tier": -0.67,
+        "churn threat": 0.53,
+        "Acme Cloud": -0.42
+      },
+      "memory": [
+        "Posted on twitter r1 about free tier: \"Agency owner here. 12 client projects on Acme, 6 on the free tier that just lost 2 slots. Starting migration work this…"
+      ],
+      "feed": [
+        {
+          "id": "po_2",
+          "by": "@inesbuilds",
+          "plat": "tw",
+          "kind": "post",
+          "body": "wait so i lose 2 of my 3 free projects AND my api calls drop 5x?? i thought i was on the free tier because i could not afford pro. is the student thing automatic or a form? asking because i genuinely cant tell from the…",
+          "engagement": "♥1 ⇄0"
+        }
+      ],
+      "allowedActions": [
+        "twitter: post/reply/repost/quote/like",
+        "reddit: post(title+body)/comment/upvote/downvote"
+      ],
+      "charLimits": {
+        "twitter": 280,
+        "reddit": 4000,
+        "comment": 2000
+      }
+    },
+    {
+      "personaId": "p_9",
+      "handle": "@graceo",
+      "archetype": "pragmatic skeptic",
+      "platform": "twitter",
+      "stances": {
+        "Pro plan": -0.41,
+        "data export policy": 0.5,
+        "Nimbus Labs": 0.21
+      },
+      "memory": [
+        "Liked po_5: \"The interesting part is who this does not hit. Enterprise is 6 cities of roadshow and…\"",
+        "Posted on twitter r1: \"Procurement view: a 40% increase funded by work already delivered is a different conversation than one funded by future work. They led…\""
+      ],
+      "feed": [
+        {
+          "id": "po_5",
+          "by": "@yuki_t",
+          "plat": "tw",
+          "kind": "post",
+          "body": "The interesting part is who this does not hit. Enterprise is 6 cities of roadshow and price-insensitive. The 40% is aimed at the segment with the best pricing leverage and the weakest contract. Both sides of that trade…",
+          "engagement": "♥1 ⇄0"
+        },
+        {
+          "id": "po_9",
+          "by": "@yuki_t",
+          "plat": "tw",
+          "kind": "quote",
+          "body": "The delivered-versus-future split is the only part of this that will decide churn. Enterprise renews, the mid-market hesitates, the bottom of the market churns. Three reactions to one announcement.",
+          "engagement": "♥0 ⇄0"
+        }
+      ],
+      "allowedActions": [
+        "post ≤280c",
+        "reply ≤280c",
+        "repost",
+        "quote ≤280c",
+        "like"
+      ],
+      "charLimits": {
+        "twitter": 280,
+        "reddit": 4000,
+        "comment": 2000
+      }
+    }
+  ]
+}

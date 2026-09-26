@@ -157,7 +157,7 @@ describe("MCP server end-to-end", () => {
       expect(fs.existsSync(mdFile)).toBe(true);
       expect(fs.existsSync(htmlFile)).toBe(true);
       const md = fs.readFileSync(mdFile, "utf8");
-      expect(md).toContain("# Murmur Prediction Report");
+      expect(md).toContain("# Murmur Reaction Simulation Report");
       expect(md).toContain("xychart-beta");
       expect(md).toContain("## At a Glance");
       expect(md).toContain("## 9. Risk Register");

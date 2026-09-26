@@ -49,7 +49,7 @@ describe("golden run", () => {
       expect(fs.existsSync(path.join(dir, ".murmur", slug, "graph.mmd"))).toBe(true);
       // F6: report written, versioned, with required sections
       expect(fs.existsSync(run.reportPath)).toBe(true);
-      expect(run.markdown).toContain("# Murmur Prediction Report");
+      expect(run.markdown).toContain("# Murmur Reaction Simulation Report");
       expect(run.markdown).toContain("```mermaid");
       expect(run.markdown).toContain("## At a Glance");
       expect(run.markdown).toContain("## 9. Risk Register");

@@ -10,7 +10,7 @@ import type { Post, ReportRecord, World } from "./types.js";
 import type { Storage } from "./store/storage.js";
 import { engagementPeaks, postSentiment, sentimentCurve, topPostsByEngagement } from "./aggregate.js";
 import type { ReportQuote } from "./analytics.js";
-import { collectReportData } from "./report.js";
+import { collectReportData, REPORT_DISCLAIMER } from "./report.js";
 import { engagementScore } from "./util/engagement.js";
 import { truncate } from "./util/text.js";
 
@@ -79,6 +79,7 @@ a:hover{text-decoration:underline}
 .nav a{font-size:12px;color:var(--muted);padding:4px 9px;border-radius:99px}
 .nav a:hover{color:var(--text);background:var(--panel2);text-decoration:none}
 .hero{padding:44px 0 8px}
+.disclaimer{border:1px solid var(--line);border-left:3px solid var(--warn);background:var(--panel);border-radius:12px;padding:12px 16px;margin:0 0 18px;color:var(--muted);font-size:13px;line-height:1.5}
 .hero .q{font-size:25px;line-height:1.4;font-weight:650;margin:0 0 14px;max-width:820px}
 .hero .sub{color:var(--muted);font-size:13.5px;display:flex;gap:8px 18px;flex-wrap:wrap}
 .hero .sub b{color:var(--text);font-weight:600}
@@ -402,7 +403,7 @@ export function renderReportHtml(storage: Storage, world: World, report: ReportR
   const opp = D.factions.factions.find((f) => f.key === "opponents");
   const und = D.factions.factions.find((f) => f.key === "undecided");
   H.push(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">`);
-  H.push(`<title>${esc(`Murmur — ${world.name}`)}</title><style>${STYLES}</style></head><body>`);
+  H.push(`<title>${esc(`Murmur Reaction Simulation Report — ${world.name}`)}</title><style>${STYLES}</style></head><body>`);
   H.push(
     `<div class="topbar"><div class="topbar-in"><span class="wordmark">MURMUR<b>&nbsp;SIMULATED PERSPECTIVE</b></span>` +
     `<span class="crumb">${esc(world.name)} · report v${report.version}</span>` +
@@ -410,7 +411,8 @@ export function renderReportHtml(storage: Storage, world: World, report: ReportR
   );
   H.push(`<div class="wrap">`);
   H.push(
-    `<header class="hero" id="overview"><h1 class="q">${esc(world.description || report.focus || world.name)}</h1>` +
+    `<header class="hero" id="overview"><p class="disclaimer">${esc(REPORT_DISCLAIMER)}</p>` +
+    `<h1 class="q">${esc(world.description || report.focus || world.name)}</h1>` +
     `<div class="sub"><span><b>${world.round}</b> rounds</span><span><b>${D.personas.length}</b> personas</span><span><b>${D.entities.length}</b> entities</span>` +
     `<span>seed <b>${esc(world.seed)}</b></span><span>report <b>v${report.version}</b></span><span><b>${esc(D.date)}</b></span><span>focus <b>${esc(report.focus || "general reaction")}</b></span></div></header>`
   );

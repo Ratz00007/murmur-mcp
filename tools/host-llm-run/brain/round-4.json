@@ -1,0 +1,18 @@
+[
+  { "persona": "p_3", "actions": [
+    { "type": "quote", "parent": "po_11", "body": "14 hobby projects on a personal bill is a fair hit and I was going to argue otherwise. The delivered-versus-future split is the right frame. I would fund 20 points of that 40 and fight the other 20." }
+  ] },
+  { "persona": "p_4", "actions": [
+    { "type": "like", "parent": "po_11" },
+    { "type": "reply", "parent": "po_11", "body": "this is the clearest statement of the problem i have read. i moved my portfolio off the free tier manually just in case. took 20 minutes. maybe Acme should just do that for everyone instead of publishing an FAQ" }
+  ] },
+  { "persona": "p_5", "actions": [
+    { "type": "post", "body": "Lurking turned into following. What finally moved me was not the 40%, it was reading how many people could not find out what happens to their projects. I checked the export thing. It works. That is one point for them and it bought them a lot of goodwill." }
+  ] },
+  { "persona": "p_9", "actions": [
+    { "type": "post", "body": "Closing the loop: the export commitment plus the 6-month grandfather closes the enterprise and mid-market conversations. It does nothing for the bottom of the market, where the FAQ is the entire product experience. Same announcement, two different churn curves." }
+  ] },
+  { "persona": "p_10", "actions": [
+    { "type": "comment", "parent": "po_14", "body": "The amnesty form being unlinked from the migration guide is the single most damning detail in this whole thread. That is a documentation bug, not a pricing decision, and it is the one thing Acme could fix this week at zero cost." }
+  ] }
+]
