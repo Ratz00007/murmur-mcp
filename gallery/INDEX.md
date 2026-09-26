@@ -20,12 +20,15 @@ headlessly rather than by an agent in Claude Code / Codex / Gemini — honest, a
 still not the demonstration. This pending row is the only blocker between this
 gallery and a real one.
 
-**This was attempted, twice, and failed for a reason outside Murmur.** The
-blocker is the *client model*, not the engine: the free tier here resolves to
-`deepseek-v4.1-flash:free`, which cannot reliably populate MCP tool arguments
-(it emits `{}` and retries the identical call instead of reading the error), and
-paid models on this account return `402 balance is at $0`. The same two attempts
-did surface two real Murmur defects, both fixed and documented — an ambiguous
+**This was attempted three times, and failed for a reason outside Murmur.**
+The blocker is the *client model*, not the engine. **14 candidate models were
+probed** (raw output: [`tools/flagship-16x8/model-probe.txt`](../tools/flagship-16x8/model-probe.txt)).
+On this account the only model that responds at all is
+`deepseek-v4.1-flash:free`, and it cannot reliably populate MCP tool arguments —
+it emits `{}` and retries the identical call instead of reading the error.
+`mimo-v2.6-flash:free` is `unrecognized_model`; the paid aliases (`sonnet`,
+`opus`) return `402 Your Token Harbor balance is at $0`. The attempts did
+surface two real Murmur defects, both fixed and documented — an ambiguous
 `MURMUR_WORKSPACE` contract that silently nested `.murmur/.murmur/`, and a run
 protocol that never stated argument shapes.
 

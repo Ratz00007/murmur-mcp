@@ -3,7 +3,32 @@
 Goal: a flagship run driven by a **real MCP client** (Claude Code CLI) acting as
 the host LLM, to replace the mock-brain demo as the primary evidence.
 
-Two prior attempts, both archived in this folder as raw transcripts.
+**Status: BLOCKED — not achievable on this account.** Verified by probing 14
+models (see `model-probe.txt`). The conclusion is a *client-model capability
+limit*, not a Murmur defect: every schema, validator and tool worked; the free
+tier model simply cannot populate structured MCP tool arguments.
+
+## Model availability probe (14 candidates, this account)
+
+| Model | Result |
+|---|---|
+| `deepseek-v4.1-flash:free` | **OK** — but emits `{}` for MCP tool args (see below) |
+| `deepseek-v3.2:free` | timed out at 120s (no rejection) |
+| `kimi-k2:free`, `kimi-k2-thinking:free` | does not exist on this account |
+| `glm-4.5-air:free` | does not exist on this account |
+| `qwen3-235b:free`, `qwen3:free` | does not exist on this account |
+| `gpt-oss-120b:free` | does not exist on this account |
+| `llama-4:free`, `llama-3.3-70b:free` | does not exist on this account |
+| `mistral:free` | does not exist on this account |
+| `gemini-2.5-flash-lite` | does not exist on this account |
+| `gpt-5-mini` | does not exist on this account |
+| `claude-sonnet-4-5` | does not exist on this account |
+| `mimo-v2.6-flash:free` | `unrecognized_model` |
+| `--model sonnet` / `opus` (paid aliases) | `402 Your Token Harbor balance is at $0` |
+
+`~/.claude/settings.json` pins `deepseek-v4.1-flash:free` as the only model.
+Reproduce with `node probe-models.mjs <model> [<model> ...]`.
+
 
 ## Attempt 1 — 26 tool calls, 0 usable results
 

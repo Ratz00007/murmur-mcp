@@ -1,0 +1,14 @@
+OK    deepseek-v4.1-flash:free           13.3s  OK
+FAIL  kimi-k2:free                       13.9s  There's an issue with the selected model (kimi-k2:free). It may not exist or you may not h
+FAIL  glm-4.5-air:free                   15.0s  There's an issue with the selected model (glm-4.5-air:free). It may not exist or you may n
+FAIL  qwen3-235b:free                    17.5s  There's an issue with the selected model (qwen3-235b:free). It may not exist or you may no
+FAIL  gpt-oss-120b:free                  17.8s  There's an issue with the selected model (gpt-oss-120b:free). It may not exist or you may 
+FAIL  deepseek-v3.2:free                 120.1s  Warning: no stdin data received in 3s, proceeding without it. If piping from a slow comman
+FAIL  deepseek-r1:free                   11.0s  There's an issue with the selected model (deepseek-r1:free). It may not exist or you may n
+FAIL  kimi-k2-thinking:free              12.9s  There's an issue with the selected model (kimi-k2-thinking:free). It may not exist or you 
+FAIL  qwen3:free                         14.2s  There's an issue with the selected model (qwen3:free). It may not exist or you may not hav
+FAIL  llama-4:free                       14.1s  There's an issue with the selected model (llama-4:free). It may not exist or you may not h
+FAIL  mistral:free                       12.4s  There's an issue with the selected model (mistral:free). It may not exist or you may not h
+FAIL  gemini-2.5-flash-lite              11.6s  There's an issue with the selected model (gemini-2.5-flash-lite). It may not exist or you 
+FAIL  gpt-5-mini                         10.7s  There's an issue with the selected model (gpt-5-mini). It may not exist or you may not hav
+FAIL  claude-sonnet-4-5                  10.8s  There's an issue with the selected model (claude-sonnet-4-5). It may not exist or you may 

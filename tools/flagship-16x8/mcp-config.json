@@ -3,7 +3,8 @@
     "murmur": {
       "command": "node",
       "args": ["C:\\Users\\ratin\\Desktop\\murmur-mcp\\murmur\\packages\\server\\dist\\index.js"],
-      "env": { "MURMUR_WORKSPACE": "C:\\Users\\ratin\\Desktop\\murmur-mcp" }
+      "env": { "MURMUR_WORKSPACE": "C:\\Users\\ratin\\Desktop\\murmur-mcp\\tools\\flagship-16x8" }
     }
   }
 }
+

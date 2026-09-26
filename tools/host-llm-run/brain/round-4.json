@@ -1,18 +1,7 @@
 [
-  { "persona": "p_3", "actions": [
-    { "type": "quote", "parent": "po_11", "body": "14 hobby projects on a personal bill is a fair hit and I was going to argue otherwise. The delivered-versus-future split is the right frame. I would fund 20 points of that 40 and fight the other 20." }
-  ] },
-  { "persona": "p_4", "actions": [
-    { "type": "like", "parent": "po_11" },
-    { "type": "reply", "parent": "po_11", "body": "this is the clearest statement of the problem i have read. i moved my portfolio off the free tier manually just in case. took 20 minutes. maybe Acme should just do that for everyone instead of publishing an FAQ" }
-  ] },
-  { "persona": "p_5", "actions": [
-    { "type": "post", "body": "Lurking turned into following. What finally moved me was not the 40%, it was reading how many people could not find out what happens to their projects. I checked the export thing. It works. That is one point for them and it bought them a lot of goodwill." }
-  ] },
-  { "persona": "p_9", "actions": [
-    { "type": "post", "body": "Closing the loop: the export commitment plus the 6-month grandfather closes the enterprise and mid-market conversations. It does nothing for the bottom of the market, where the FAQ is the entire product experience. Same announcement, two different churn curves." }
-  ] },
-  { "persona": "p_10", "actions": [
-    { "type": "comment", "parent": "po_14", "body": "The amnesty form being unlinked from the migration guide is the single most damning detail in this whole thread. That is a documentation bug, not a pricing decision, and it is the one thing Acme could fix this week at zero cost." }
-  ] }
+  { "persona": "p_3", "actions": [ { "type": "reply", "parent": "po_14", "body": "I take it back. If the split gets published and they absorb part of it, I will pay the 40 without complaining and I will say so here. Retroactive billing for shipped work is defensible. Surprise billing for a roadmap is not." } ] },
+  { "persona": "p_4", "actions": [ { "type": "reply", "parent": "po_10", "body": "So the honest answer is nobody knows yet, and the guide does not say. Fine. I am archiving mine myself tonight so it is not a surprise later. Not angry, just done waiting for a page to clarify it." } ] },
+  { "persona": "p_5", "actions": [ { "type": "post", "body": "catching up on this pricing thing and my honest reaction: i cannot tell if this is a scandal or not, which is itself the problem. every thread is arguing about the philosophy instead of the facts. is the new price at least good value?" } ] },
+  { "persona": "p_9", "actions": [ { "type": "reply", "parent": "po_5", "body": "That is the correct question and nobody has answered it with a number. 40 percent more for a service that doubled its uptime is a defensible trade. 40 percent more for a roadmap is not. They have never had to choose between those two sentences out loud." } ] },
+  { "persona": "p_10", "actions": [ { "type": "post", "title": "Migration thread: what actually happens to over-limit free-tier projects", "body": "Pinned the Acme pricing change migration thread here since it keeps splitting across three subreddits.\n\nWhat is settled: exports stay free, the 6-month grandfather window is real, and the one-click importer from the competitor does work. Nobody has posted a straight answer on whether an over-limit project gets archived or deleted, and the migration guide does not say. If you know, post it here and I will pin it.\n\nNot banning price discussion. Banning the fourth repost of the same unanswered question." } ] }
 ]

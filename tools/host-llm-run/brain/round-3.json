@@ -1,16 +1,7 @@
 [
-  { "persona": "p_1", "actions": [
-    { "type": "reply", "parent": "po_4", "body": "@graceo nobody is asking about margin. 40 services on my bill, 14 of them hobby projects that now fall off the free tier. Do the math on my invoice, not the roadmap." },
-    { "type": "repost", "parent": "po_10" }
-  ] },
-  { "persona": "p_3", "actions": [
-    { "type": "reply", "parent": "po_10", "body": "The FAQ is the whole problem. It answers the question nobody asked while skipping the one everyone has: what happens to my stuff on day one. Confused is the correct response." }
-  ] },
-  { "persona": "p_4", "actions": [
-    { "type": "post", "platform": "reddit", "title": "PSA for anyone on the free tier: check the amnesty form BEFORE you panic", "body": "Collecting what I found so nobody else loses a portfolio project to this.\n\nWhat is actually in the docs:\n- Exports are free forever. Your data is not the hostage here.\n- Grandfather pricing lasts 6 months for existing customers.\n- The student/nonprofit amnesty exists but the FAQ never says how to claim it. I found the form buried in the support portal. It is not linked from the migration guide.\n\nWhat is NOT in the docs:\n- What happens to projects over the free tier limit on day one. I could not find an answer and support has not replied yet." }
-  ] },
-  { "persona": "p_7", "actions": [
-    { "type": "quote", "parent": "po_3", "body": "Update: Nimbus import tool ran on 4 client projects today. Took 20 minutes total. The hard part was never the data, it was convincing clients to accept a new vendor mid-contract. Data export being free makes that conversation much easier." }
-  ] },
-  { "persona": "p_9", "actions": [ { "type": "like", "parent": "po_10" } ] }
+  { "persona": "p_1", "actions": [ { "type": "reply", "parent": "po_9", "body": "Adding the number nobody posted: my Pro bill goes from 340 to 476 a month. That is a car payment for a build tool. I have 40 services on this and I still cannot find a migration that does not cost me a week." } ] },
+  { "persona": "p_3", "actions": [ { "type": "reply", "parent": "po_4", "body": "You are right and that is the part that stings. Half the 40 is paying for last year's uptime. I have been arguing the wrong case. Honest version: they improved the product, then billed us for the improvement retroactively." } ] },
+  { "persona": "p_4", "actions": [ { "type": "reply", "parent": "po_1", "body": "reading the migration guide again and it genuinely does not say what happens to a project over the limit. it just says you will be prompted. so either my 2 extra projects get archived or they get deleted and the guide does not say which. does anyone know?" } ] },
+  { "persona": "p_7", "actions": [ { "type": "post", "body": "Client update going out today: two of their projects are over the new free tier limit. I am telling them the projects get archived, not deleted, because that is what I believe. If I am wrong, tell me now, because I am about to put it in a contract email." } ] },
+  { "persona": "p_9", "actions": [ { "type": "reply", "parent": "po_8", "body": "This is the actually good post in the thread. Name the split, absorb part of it, and the procurement objection dies. The objection was never the 40 percent, it is that nobody will say which 40." } ] }
 ]
