@@ -43,9 +43,12 @@ criteria require the user's npm account and their own LLM session (listed below)
    instruction in the docs points at a name anyone can squat. Repo is now public, so provenance
    will work. Runbook: `murmur/packages/server/PUBLISH-CHECKLIST.md`.
 2. **The real-LLM flagship run** — 16×8 in a real client session per `murmur-demo/FLAGSHIP-DEMO.md`.
-   A real-client smoke probe already passed (`tools/flagship-16x8/probe.log`: `STATUS=ok`, all 29
-   tools exposed, world created), so the server works end-to-end in a live agent; the full run
-   needs the operator's own LLM session.
+   **Blocked on model access, not effort** (`tools/flagship-16x8/RUN-LOG.md`): two client-IDE
+   attempts were made and logged. The only free client model (`deepseek-v4.1-flash:free`) emits
+   empty `{}` tool arguments and cannot drive the pipeline; paid models return HTTP 402 (no
+   credit on the account). Needs a working paid/hosted model, or the operator's own session.
+   A real-client smoke probe DID pass (`STATUS=ok`, all 29 tools exposed, world created), so the
+   server itself works end-to-end in a live agent.
 
 **Progress log**
 - 2026-09-23 — Goal set. 8-expert panel audited the repo; scores were PMF 3/10, MCP-readiness
@@ -62,3 +65,8 @@ criteria require the user's npm account and their own LLM session (listed below)
       so local builds had been silently broken; CI masked it via fresh `npm ci`. Repaired.
 - VERIFIED: build exit 0 · 66/66 unit+golden · 2/2 e2e · typecheck exit 0 · cleanroom GATE GREEN.
 - Repo pushed and set to PUBLIC; CI green on the public repo. Description retargeted to the ICP.
+- FOUND (not in the original plan): the flagship client run is blocked on **model access** —
+  free client models emit empty tool arguments, paid models return 402. Logged honestly in
+  `tools/flagship-16x8/RUN-LOG.md` and marked `_blocked_` in `gallery/INDEX.md` rather than
+  left vaguely pending. Publishing the LLM-authored 12x4 run with explicit "not a client-IDE
+  session" labelling is the honest interim evidence.
