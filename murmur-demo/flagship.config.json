@@ -1,8 +1,15 @@
 {
   "name": "flagship-demo",
   "status": "pending first real-LLM run",
+  "protocol": "murmur-demo/FLAGSHIP-DEMO.md",
+  "why": [
+    "The credibility blocker is that no real-LLM run of Murmur has ever been published.",
+    "A finished 16 personas x 8 rounds run on ONE real pricing page beats an unfinished 48 x 8 run.",
+    "Every number in the gallery is currently MOCK or pending. This config describes the run that replaces 'pending' with a measured result."
+  ],
+  "recommended": true,
   "scenario": "launch",
-  "personas": 48,
+  "personas": 16,
   "rounds": 8,
   "platforms": "both",
   "populationMix": [
@@ -16,8 +23,71 @@
   ],
   "inject": {
     "round": 4,
-    "text": "StackHaven announces a free-tier match plus a one-click importer"
+    "text": "StackHaven announces a free-tier match plus a one-click importer",
+    "type": "price",
+    "scope": "all",
+    "note": "Fires after round 3 is submitted and lands in the round 4 digest, so personas react to it in the same round they read about it. Inject exactly once. sim_inject_event clamps round to >= current round + 1 and refuses after the final round."
   },
   "ensembleRunCount": 5,
-  "notes": "Run inside a real coding agent (Claude Code / Codex CLI / Gemini CLI) with a real host LLM. Publish verbatim transcript + report HTML + report MD into gallery/flagship-<client>-<model>/. No mock LLMs for the flagship."
+  "seedMaterial": {
+    "primary": "ONE real pricing or launch page the operator is actually shipping (or a real public pricing page they can link). Fetch it, then pass the extracted text to seed_add_url.",
+    "optionalExtras": [
+      "murmur-demo/examples/FAQ.md",
+      "murmur-demo/examples/CHANGELOG.md"
+    ],
+    "honestyRule": "The entry header MUST state which seeds were real and which were fictional. The bundled Acme Cloud material (murmur-demo/examples/pricing-page.md, FAQ.md, CHANGELOG.md) is FICTIONAL worked-example content. Mixing real and fictional seeds in one run is allowed, but it must be disclosed, not blended."
+  },
+  "capture": {
+    "directory": "gallery/flagship-<client>-<model>/",
+    "required": [
+      "transcript.md — verbatim, unedited, including rejected submissions and retries",
+      "report-1.md",
+      "report-1.html",
+      "billed tokens in/out — the provider's own number, not an estimate",
+      "seed, ensemble runCount, personas, rounds, platforms",
+      "client + version, exact model id",
+      "one honest 'what we would change' paragraph"
+    ],
+    "forbidden": [
+      "filling any field with an estimate, a projection, or a mock number",
+      "cherry-picking the seed after seeing the verdict",
+      "editing the transcript to remove unflattering output"
+    ]
+  },
+  "harness": {
+    "consumers": "Declarative only. No tool in tools/*.mjs parses this file; the operator or client agent transcribes these values into the MCP tool calls listed in `toolSequence`.",
+    "toolSequence": [
+      "world_init",
+      "seed_add_url | seed_add_files | seed_add_text",
+      "seeds_review",
+      "ontology_plan -> ontology_submit",
+      "graph_build -> graph_export_mermaid",
+      "personas_plan { count: 16 } -> personas_submit",
+      "sim_configure { rounds: 8 }",
+      "round 1..3: sim_next_batch -> sim_submit_generations",
+      "sim_inject_event { round: 4 }",
+      "round 4..8: sim_next_batch -> sim_submit_generations",
+      "report_plan -> report_submit -> report_export { format: both }",
+      "sim_timeline + sim_round_summary for the timeline table",
+      "optional: interview_agent / report_agent_ask for one hostile-persona follow-up"
+    ],
+    "valueMapping": [
+      "personas -> personas_plan({ count }) — tool range is 8..128",
+      "rounds -> sim_configure({ rounds }) — tool range is 1..40",
+      "inject.round -> sim_inject_event({ round }) — must be < rounds",
+      "ensembleRunCount -> world_config / the world's ensemble.runCount setting",
+      "platforms -> one platform label per persona in personas_submit; 'both' means the population spans reddit + twitter"
+    ],
+    "scaleBenchmarkCli": "node tools/scale-benchmark.mjs 16 8 flagship-16x8",
+    "headlessDriver": "tools/host-llm-run/run.mjs (env: MURMUR_POP, MURMUR_ROUNDS, MURMUR_SEED). It runs the same tool sequence against the real validators, but it is NOT a client-IDE session and must never be published as the flagship."
+  },
+  "stretchGoal": {
+    "personas": 48,
+    "rounds": 8,
+    "status": "optional, later",
+    "onlyAfter": "a 16 x 8 real-LLM run is published in gallery/",
+    "command": "node tools/scale-benchmark.mjs 48 8 flagship-48x8",
+    "reason": "The 48 x 8 shape is already covered as a labeled MOCK engine measurement (gallery/scale-benchmark-48x8/). Re-running it with a real LLM is a nice-to-have, not the blocker."
+  },
+  "notes": "Run inside a real coding agent (Claude Code / Codex CLI / Gemini CLI) with a real host LLM. Publish verbatim transcript + report HTML + report MD into gallery/flagship-<client>-<model>/. No mock LLMs for the flagship. Publish even if the verdict is unflattering — that is the point of the run."
 }

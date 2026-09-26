@@ -7,8 +7,10 @@ deterministic contract — new randomness must ride `streamRng` (the unit test
 
 1. **Adapter for one more coding agent** — `murmur/packages/adapters/src/index.ts`.
    Add an install snippet for a client not yet covered (check the file's client
-   list). Acceptance: `vitest run --project unit` passes; entry appears in
-   `murmur-mcp adapters`.
+   list). Acceptance: `vitest run --project unit` passes; the entry appears in the
+   client's list from `murmur-mcp init` and in `murmur-mcp init --client <id>`.
+   (`murmur-mcp adapters` is not a CLI action — valid ones are `serve`, `doctor`,
+   `init`, `templates`, `version`, `help`.)
 2. **Lexicon coverage for voice templates** — `murmur/packages/engine/src/sentiment.ts`
    + `tools/lexicon-audit.cjs`. Add 20+ domain words (finance slang, developer
    slang). Acceptance: audit script reports higher coverage, no test changes.

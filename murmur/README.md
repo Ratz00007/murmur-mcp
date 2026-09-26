@@ -1,8 +1,8 @@
 # Murmur
 
-**Social-simulation for coding agents. Predict how communities react — powered by the coding subscription you already pay for.**
+**Social-simulation for coding agents. Rehearse how communities react — powered by the coding subscription you already pay for.**
 
-Murmur is an [MCP](https://modelcontextprotocol.io) server that runs agent-based social simulations: seed it with your material (a pricing page, a policy memo, an incident brief), and a population of simulated users debates it across Twitter-style and Reddit-style platforms. You get a versioned, in-repo prediction report — trajectory, named risks with cited posts, confidence — plus the ability to interview any simulated persona about why they wrote what they wrote.
+Murmur is an [MCP](https://modelcontextprotocol.io) server that runs agent-based social simulations: seed it with your material (a pricing page, a policy memo, an incident brief), and a population of simulated personas debates it across Twitter-style and Reddit-style platforms. You get a versioned, in-repo scenario report — trajectory, named risks with cited posts, confidence — plus the ability to interview any simulated persona about why they wrote what they wrote. It is a simulated perspective, not a validated forecast.
 
 **Zero API keys. Zero extra bills.** The engine is deterministic and LLM-free; every generation is performed by *your* coding agent's LLM (Claude, Codex, Gemini, Antigravity, OpenCode, Hermes…) through the connection you already have. The server makes **no outbound network calls at all** — enforced by a release-gate test that fails the build on any egress, key or token surface.
 
@@ -29,7 +29,7 @@ Tools like MiroFish solve social simulation with a server-side LLM: you pay a mo
 | LLM calls | Their API key, your bill | Your coding agent, on your existing subscription |
 | Memory | Cloud memory service, quota | Three-tier local memory in SQLite, in your repo |
 | Artifacts | Web console | Markdown + Mermaid files in `.murmur/`, render on any git forge |
-| Reproducibility | Best-effort | Deterministic engine: same seed + same submissions ⇒ byte-identical world |
+| Reproducibility | Approximate | Deterministic engine: same seed + same submissions ⇒ byte-identical world |
 | Where it runs | Their servers | Your machine, one stdio process, zero egress |
 
 The engine (world state, ontology graph, persona activation, feed ranking, retweet amplification, vote gravity, virality, sentiment, stance migration, escalation detection, statistics) is pure, deterministic computation. The intelligence — writing posts in character, drafting the report narrative, answering interviews — is borrowed from the host agent in batched plan/submit exchanges, so one tool call amortizes many generations.
@@ -51,11 +51,13 @@ One command per client (Node ≥ 20):
 | **Cline / Continue** | `cline_mcp_settings.json` / `~/.continue/config.yaml` → same entry |
 | **VS Code Copilot** | `.vscode/mcp.json` → same entry |
 
-Every snippet is also printed by `npx murmur-mcp doctor` (which also checks Node, the SQLite native module and your workspace) and `npx murmur-mcp init --client <id>`.
+> The `npx -y murmur-mcp` commands above assume the package is on the registry. The `murmur-mcp` npm name is not claimed yet, so `npx` fails today — until the first publish, use the from-source path in the next note.
+
+Every snippet is also printed by `npx murmur-mcp doctor` (which also checks Node, the SQLite native module and your workspace) and `npx murmur-mcp init --client <id>`. `init --client <id> --write` only writes a config file for `cursor`, `vscode`, `opencode` and `windsurf`; for every other client (Claude Code included) it prints the snippet and asks you to merge it into `client.configPath` yourself.
 
 > Installing from source (before the first `npm publish`): `npm install` in the monorepo, then run `node packages/server/dist/index.js` directly (or `npm link` inside `packages/server` for a global `murmur-mcp` command). Release artifacts ship via npm with provenance once the repo is live (`npm i -g murmur-mcp`).
 
-## Quickstart (2 minutes, no keys)
+## Quickstart
 
 1. Install for your client (above).
 2. Put some material in your repo — a pricing page export, a FAQ, a changelog, or run `npx murmur-mcp init --template launch` for a fill-in brief.
@@ -65,7 +67,11 @@ Every snippet is also printed by `npx murmur-mcp doctor` (which also checks Node
 /murmur-predict How will developers react to our new pricing? Sources: pricing-page.md, FAQ.md
 ```
 
-That's it. The prompt is a playbook: your agent drives all 29 tools in order, shows you digests for approval, writes the report, and every receipt tells it the next step. Mid-run experimentation:
+That prompt is a playbook: your agent drives all 29 tools in order, shows you digests for approval, writes the report, and every receipt tells it the next step.
+
+> **What a run actually costs.** Zero keys, but not zero time: a default 8-round world puts the order of *hundreds* of generations in front of your host model, so wall time is set by the model and the batch size, not by Murmur. Nothing has been published end-to-end with a real LLM yet — the 66-test suite (golden byte-identical replays plus the cleanroom release gate) runs against mock generations, and `npm run demo` exercises the full pipeline headless. Treat your first real run as a rehearsal, and start with fewer rounds.
+
+Mid-run experimentation:
 
 ```
 /murmur-simulate How will r/programming react to the pricing change? Rounds: 4
@@ -79,7 +85,7 @@ That's it. The prompt is a playbook: your agent drives all 29 tools in order, sh
 
 - **`.murmur/murmur.db`** — the whole world in SQLite (10 tables: worlds, seeds, entities, relations, personas, memories, posts, events, reports, generations). Portable by copying the directory; resumable at any stage boundary after a crash.
 - **`.murmur/{world}/graph.mmd`** — the ontology graph as Mermaid (typed relations: alliance / opposition / influence / ownership, with tension scores).
-- **`.murmur/reports/{world}/report-N.md`** — versioned prediction reports: Mermaid `xychart` sentiment curves, stance-migration bars, escalation chains, persona leaderboards, deterministic statistics appendix and a post index. Reports regenerate, never mutate — diff two scenarios line by line.
+- **`.murmur/reports/{world}/report-N.md`** — versioned scenario reports: Mermaid `xychart` sentiment curves, stance-migration bars, escalation chains, persona leaderboards, deterministic statistics appendix and a post index. Reports regenerate, never mutate — diff two scenarios line by line.
 - **`.murmur/reports/{world}/report-N.html`** — the same report as a self-contained dashboard (`report_export` with `format: "md" | "html" | "both"`): inline CSS + SVG charts (sentiment lines, faction donut, platform-divergence bars, trajectory projection), KPI cards, quote banks, risk register — zero JavaScript, zero external requests, safe to commit or share. It shares one engine computation with the `.md`, so the two can never disagree on a number.
 - **`.murmur/{world}/interviews.jsonl` + `qa.jsonl`** — logged deep-interaction dialogues.
 - **`.murmur/{world}/audit.jsonl`** — the audit trail of every plan/submit exchange.
@@ -152,7 +158,7 @@ tests/
 examples/      a ready-to-run demo scenario + paste-ready prompts
 ```
 
-Develop: `npm install && npm run build && npm test` (42 tests) · `npm run test:e2e` · `npm run cleanroom` · `npm run demo` (headless full pipeline, no LLM needed).
+Develop: `npm install && npm run build && npm test` (66 tests) · `npm run test:e2e` · `npm run cleanroom` · `npm run demo` (headless full pipeline, no LLM needed).
 
 ## License & provenance
 

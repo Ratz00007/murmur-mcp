@@ -84,8 +84,9 @@ export const CLIENTS: ClientAdapter[] = [
     name: "Claude Code",
     kind: "cli",
     install: "claude mcp add murmur -- npx -y murmur-mcp",
-    configPath: "managed by the claude CLI (per-project: .claude/settings.json)",
+    configPath: "~/.claude.json (user scope) or .mcp.json (project scope) — .claude/settings.json is permissions/hooks only, not MCP servers",
     configSnippet: (s) => jsonEntry(s),
+    configFormat: "json",
     notes: "Reference client. Prompts surface as /murmur-predict, /murmur-simulate, /murmur-interview, /murmur-resume slash commands.",
     detect: ({ home, cwd, exists }) => exists(path.join(home, ".claude.json")) || exists(path.join(cwd, ".claude")),
   },
@@ -97,6 +98,7 @@ export const CLIENTS: ClientAdapter[] = [
     configPath: "~/.codex/config.toml",
     configSnippet: (s) =>
       `# ~/.codex/config.toml\n[mcp_servers.murmur]\ncommand = "${s.command}"\nargs = [${s.args.map((a) => `"${a}"`).join(", ")}]`,
+    configFormat: "json",
     notes: "Rides your ChatGPT/ Codex subscription plan.",
     detect: ({ home, exists }) => exists(path.join(home, ".codex")),
   },
@@ -107,6 +109,7 @@ export const CLIENTS: ClientAdapter[] = [
     install: "gemini mcp add murmur -- npx -y murmur-mcp",
     configPath: "~/.gemini/settings.json",
     configSnippet: (s) => jsonEntry(s),
+    configFormat: "json",
     notes: "Uses your Gemini plan quota.",
     detect: ({ home, exists }) => exists(path.join(home, ".gemini")),
   },
@@ -115,9 +118,11 @@ export const CLIENTS: ClientAdapter[] = [
     name: "Antigravity",
     kind: "ide",
     install: null,
-    configPath: "agent settings JSON (mcpServers block) — see Antigravity MCP docs for the exact file for your version",
+    configPath: "UNVERIFIED — agent settings JSON, the file differs by version; check Antigravity's own MCP docs",
     configSnippet: (s) => jsonEntry(s),
-    notes: "Google agentic IDE; paste the mcpServers entry into your agent configuration.",
+    configFormat: "json",
+    unverified: true,
+    notes: `Google agentic IDE. UNVERIFIED: check this client's own docs for the exact file and key. ${UNVERIFIED}`,
     detect: ({ home, cwd, exists }) => exists(path.join(home, ".antigravity")) || exists(path.join(cwd, ".antigravity")),
   },
   {
@@ -125,10 +130,10 @@ export const CLIENTS: ClientAdapter[] = [
     name: "OpenCode",
     kind: "cli",
     install: null,
-    configPath: "opencode.json (project root)",
-    configSnippet: (s) =>
-      `// opencode.json — merge the mcp block into your existing file\n${jsonEntry(s)}`,
-    notes: "Open client; works with any backing subscription.",
+    configPath: "opencode.json (project root) or ~/.config/opencode/opencode.json (user)",
+    configSnippet: (s) => opencodeMcp(s),
+    configFormat: "json",
+    notes: "OpenCode keys servers under mcp, not mcpServers: type is local|remote and command is an array. Open client; works with any backing subscription.",
     detect: ({ cwd, exists }) => exists(path.join(cwd, "opencode.json")),
   },
   {
@@ -136,19 +141,22 @@ export const CLIENTS: ClientAdapter[] = [
     name: "Hermes",
     kind: "cli",
     install: null,
-    configPath: "hermes config JSON (mcpServers block)",
+    configPath: "UNVERIFIED — Hermes config JSON, the file and key are not confirmed",
     configSnippet: (s) => jsonEntry(s),
-    notes: "Terminal-first agent — founding-requirement client. Paste into your Hermes MCP config.",
+    configFormat: "json",
+    unverified: true,
+    notes: `Terminal-first agent — founding-requirement client. UNVERIFIED: check this client's own docs for the exact file and key. ${UNVERIFIED}`,
     detect: ({ home, exists }) => exists(path.join(home, ".hermes")) || exists(path.join(home, "hermes.json")),
   },
   {
     id: "cursor",
     name: "Cursor",
     kind: "ide",
-    install: "cursor mcp add murmur -- npx -y murmur-mcp",
-    configPath: ".cursor/mcp.json (project) or global MCP settings",
+    install: null,
+    configPath: ".cursor/mcp.json (project) · user scope: Settings → Tools & Integrations → Add New MCP Server (the cursor-agent CLI has no mcp add — it only lists/logs in to existing servers)",
     configSnippet: (s) => jsonEntry(s),
-    notes: "Also works via the project .cursor/mcp.json file.",
+    configFormat: "json",
+    notes: "Install is a config-file edit, not a CLI one-liner. Add the object above under mcpServers.",
     detect: ({ cwd, exists }) => exists(path.join(cwd, ".cursor")),
   },
   {
@@ -158,6 +166,7 @@ export const CLIENTS: ClientAdapter[] = [
     install: null,
     configPath: "~/.codeium/windsurf/mcp_config.json",
     configSnippet: (s) => jsonEntry(s),
+    configFormat: "json",
     notes: "Cascade MCP settings entry.",
     detect: ({ home, cwd, exists }) => exists(path.join(home, ".codeium")) || exists(path.join(cwd, ".windsurf")),
   },
@@ -167,9 +176,12 @@ export const CLIENTS: ClientAdapter[] = [
     kind: "ide",
     install: null,
     configPath:
-      "Cline: VS Code globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json · Continue: ~/.continue/config.yaml (mcpServers)",
-    configSnippet: (s) => jsonEntry(s),
-    notes: "VS Code family via config templates.",
+      "Continue: ~/.continue/config.yaml (YAML) · Cline: VS Code globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json (JSON)",
+    configSnippet: (s) => continueYaml(s),
+    configFormat: "yaml",
+    unverified: true,
+    notes:
+      'UNVERIFIED: check each client\'s own docs for the exact file and key. The block above is Continue YAML — do NOT paste the JSON form into Continue (it silently loads nothing); do NOT paste the YAML into Cline, which uses an mcpServers object: {"mcpServers":{"murmur":{"command":"npx","args":["-y","murmur-mcp"]}}}.',
     detect: ({ cwd, home, exists }) => exists(path.join(cwd, ".vscode")) || exists(path.join(home, ".continue")),
   },
   {
@@ -177,9 +189,10 @@ export const CLIENTS: ClientAdapter[] = [
     name: "VS Code Copilot",
     kind: "ide",
     install: null,
-    configPath: ".vscode/mcp.json (workspace)",
-    configSnippet: (s) => jsonEntry(s),
-    notes: "GitHub Copilot agent mode, workspace-scoped.",
+    configPath: ".vscode/mcp.json (workspace) or ~/.copilot/mcp-config.json (user)",
+    configSnippet: (s) => vscodeServers(s),
+    configFormat: "json",
+    notes: "GitHub Copilot agent mode. Servers live under the top-level servers key with type stdio — mcpServers is a different tool's format and loads nothing here.",
     detect: ({ cwd, exists }) => exists(path.join(cwd, ".vscode")),
   },
 ];
@@ -229,13 +242,16 @@ export function detectClients(cwd: string, home = os.homedir()): Detection[] {
 
 /** Render the install instructions block for one client. */
 export function renderInstall(client: ClientAdapter, server: ServerCommand = NPM_SERVER): string {
-  const lines = [`# ${client.name} (${client.kind})`];
+  const cmd = commandLine(server);
+  const lines = [`# ${client.name} (${client.kind})${client.unverified ? " — UNVERIFIED" : ""}`];
   if (client.install) {
-    lines.push(`One-liner:  ${client.install.replace("npx -y murmur-mcp", `${server.command} ${server.args.join(" ")}`)}`);
+    lines.push(`One-liner:  ${client.install.replace("npx -y murmur-mcp", cmd)}`);
+  } else {
+    lines.push(`Command:    ${cmd}`);
   }
   lines.push(`Config file: ${client.configPath}`);
   lines.push("");
-  lines.push("```json");
+  lines.push(`\`\`\`${client.configFormat}`);
   lines.push(client.configSnippet(server));
   lines.push("```");
   if (client.notes) lines.push(`Note: ${client.notes}`);

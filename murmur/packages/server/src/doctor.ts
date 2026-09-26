@@ -84,6 +84,13 @@ export function printDoctor(report: DoctorReport): void {
     out.write(`${c.pass ? "✓" : "✗"} ${c.name} — ${c.detail}\n`);
   }
   out.write("\nInstall snippets for all supported clients:\n");
+  out.write(
+    "NOTE: these snippets use `npx -y murmur-mcp`, which only resolves once the murmur-mcp package is\n" +
+      "published on npm — until then npx returns a 404 and the client starts nothing. From a source\n" +
+      "checkout, run `npm install && npm run build` and use the direct command instead:\n" +
+      "  node <repo>/packages/server/dist/index.js\n" +
+      "`murmur-mcp init --client <id>` prints that form automatically when it can find a built checkout.\n",
+  );
   for (const c of CLIENTS) {
     out.write(`\n${renderInstall(c)}\n`);
   }
