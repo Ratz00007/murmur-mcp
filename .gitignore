@@ -28,7 +28,8 @@ murmur-demo/.murmur/*.db-shm
 tools/host-llm-run/dump/
 tools/host-llm-run/state.json
 
-# flagship-16x8: raw Claude Code session transcript is hook noise, not evidence
+# flagship-16x8: raw Claude Code session transcripts are hook noise, not evidence
+tools/flagship-16x8/**/transcript.jsonl
 tools/flagship-16x8/transcript.jsonl
 
 # Preserved original monorepo git dir (history was imported into this repo)
