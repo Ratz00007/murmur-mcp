@@ -1,0 +1,17 @@
+[
+  { "persona": "p_3", "actions": [
+    { "type": "like", "parent": "po_4" },
+    { "type": "reply", "parent": "po_4", "body": "@graceo this is the best argument on the thread and I still do not buy the conclusion. Uptime funded 20 points of that 40. Say so plainly and the remaining 20 is a much easier fight." }
+  ] },
+  { "persona": "p_9", "actions": [ { "type": "like", "parent": "po_5" } ] },
+  { "persona": "p_10", "actions": [
+    { "type": "post", "platform": "reddit", "title": "PSA: Acme Cloud pricing change, what it actually means for self-hosters", "body": "Writing this up properly because the thread is full of half-information.\n\nThe 40% is aimed at the segment with the worst contracts and the best leverage, which is us. So here is what is actually true:\n\n- Data export stays free forever. That is in the FAQ and it is the part that matters most for lock-in.\n- The free tier cut from 3 projects to 1 and 5000 requests/hr to 1000 hits student and hobby projects hardest.\n- Federation and on-prem are on the roadmap. Roadmap is not a contract.\n\nStackHaven has a pinned migration thread and I am seeing a genuine spike in interest, not a raid. If you are leaving, leave with your data and leave loudly. Do not pretend the FAQ does not say what it says." }
+  ] },
+  { "persona": "p_11", "actions": [
+    { "type": "quote", "parent": "po_4", "body": "The delivered-versus-future split is the only part of this that will decide churn. Enterprise renews, the mid-market hesitates, the bottom of the market churns. Three reactions to one announcement." }
+  ] },
+  { "persona": "p_12", "actions": [
+    { "type": "reply", "parent": "po_2", "body": "same here. i have 2 projects on the free tier and one is my portfolio. do student discounts actually apply automatically or is there a form? the FAQ says amnesty window but doesnt say how to claim it" },
+    { "type": "like", "parent": "po_3" }
+  ] }
+]

@@ -9,21 +9,39 @@ because a projected number in a results table is a fabricated number.
 |---|---|---|---|---|---|---|
 | `murmur-demo/` (bundled) | deterministic mock — **MOCK, not a product run** | n/a (mock) | 12 | 5 | n/a | `murmur-demo/.murmur/reports/pricing-reaction/report-1.html` |
 | `scale-benchmark-48x8/` | headless `tools/scale-benchmark.mjs` — **MOCK, engine measurement only** | n/a (mock) | 48 | 8 | ≈96.3k est. round trip | no report published (content quality not measured) |
-| `host-llm-run-01/` | headless `tools/host-llm-run/run.mjs` — **LLM-authored content, NOT a client-IDE session**: no agent transcript, no host LLM in the loop, no billed count | n/a (no model billed) | 12 | 4 | not recorded (no provider usage to bill) | `host-llm-run-01/report.html` |
-| `flagship-*` | **PENDING — first real-LLM run, not yet run.** Protocol: [`murmur-demo/FLAGSHIP-DEMO.md`](../murmur-demo/FLAGSHIP-DEMO.md) | _pending_ | **16** (target) | 8 | _pending — will be a billed count, not an estimate_ | _pending — `gallery/flagship-<client>-<model>/report-1.html` when it exists_ |
+| `llm-authored-run-12x4/` | headless `tools/host-llm-run/run.mjs` — **LLM-authored content, NOT a client-IDE session**: no agent transcript, no host LLM in the loop, no billed count. **Citation integrity 100%** (19/19 ids resolve). | n/a (no model billed) | 12 | 4 | not recorded (no provider usage to bill) | [`llm-authored-run-12x4/report-1.html`](llm-authored-run-12x4/report-1.html) |
+| `flagship-16x8` | **PENDING — client-IDE run attempted and BLOCKED.** Attempts logged in [`tools/flagship-16x8/RUN-LOG.md`](../tools/flagship-16x8/RUN-LOG.md): the only free client model (`deepseek-v4.1-flash:free`) emits empty `{}` tool arguments and cannot drive the pipeline; paid models return 402. | _blocked_ | **16** (target) | 8 | _pending_ | _pending_ |
 
 ## The pending row, in plain words
 
 **No real client-session run of Murmur has ever been published.** Two rows above
-are MOCK, one (`host-llm-run-01/`) is LLM-authored content driven headlessly
-rather than by an agent in Claude Code / Codex / Gemini — honest, and still not
-the demonstration. This pending row is the only blocker between this gallery and
-a real one, and the plan is deliberately small enough to finish:
+are MOCK, one (`llm-authored-run-12x4/`) is LLM-authored content driven
+headlessly rather than by an agent in Claude Code / Codex / Gemini — honest, and
+still not the demonstration. This pending row is the only blocker between this
+gallery and a real one.
+
+**This was attempted, twice, and failed for a reason outside Murmur.** The
+blocker is the *client model*, not the engine: the free tier here resolves to
+`deepseek-v4.1-flash:free`, which cannot reliably populate MCP tool arguments
+(it emits `{}` and retries the identical call instead of reading the error), and
+paid models on this account return `402 balance is at $0`. The same two attempts
+did surface two real Murmur defects, both fixed and documented — an ambiguous
+`MURMUR_WORKSPACE` contract that silently nested `.murmur/.murmur/`, and a run
+protocol that never stated argument shapes.
+
+To close this row, re-run with any model that reliably emits structured tool
+arguments (a paid tier, or a local model behind a client with MCP argument
+marshalling):
+
+```powershell
+claude -p --model <model> --output-format stream-json --verbose `
+  --mcp-config mcp-config.json --permission-mode acceptEdits `
+  --allowedTools "mcp__murmur__*" --max-turns 60 < probe.md > transcript.jsonl
+```
 
 - **16 personas × 8 rounds**, both platforms, one injection at round 4
 - **one real pricing page** as the seed material (fictional worked-example seeds
   are acceptable, but the entry must say which)
-- one real host LLM in a real client session (Claude Code / Codex CLI / Gemini CLI)
 - capture: verbatim transcript, `report-1.md`, `report-1.html`, **billed** token count
 
 Why 16 × 8 and not 48 × 8: the 48 × 8 shape is already covered above as a
