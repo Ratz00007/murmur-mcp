@@ -8,7 +8,7 @@
   · agent LLM         the "brain": drafts entities, personas, posts, reports
                     (played today by a deterministic mock — zero API keys)
   · murmur-mcp        deterministic engine: validates, simulates, aggregates
-  · workspace         /home/z/my-project/download/murmur-demo
+  · workspace         C:\Users\ratin\Desktop\murmur-mcp\murmur-demo
 
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -29,19 +29,19 @@
       …
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 1 · CREATE THE WORLD   (t+0.2s)
+  STAGE 1 · CREATE THE WORLD   (t+0.6s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ world_init({"name":"pricing-reaction","description":"How will developers react to the Pro plan price change?","seed":"acme-demo-2026"})
     world w_757ac236 · slug "pricing-reaction" · stage: created
     engine tells the agent what is next: seed_add_files / seed_add_text — attach source material to this world
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 2 · FEED IT YOUR DOCS (seeds)   (t+0.2s)
+  STAGE 2 · FEED IT YOUR DOCS (seeds)   (t+0.6s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ seed_add_files({"paths":["examples/pricing-page.md","examples/FAQ.md","examples/CHANGELOG.md"]})
-    examples/pricing-page.md   → sd_1 · 929 bytes
-    examples/FAQ.md            → sd_2 · 995 bytes
-    examples/CHANGELOG.md      → sd_3 · 500 bytes
+    examples\pricing-page.md   → sd_1 · 929 bytes
+    examples\FAQ.md            → sd_2 · 995 bytes
+    examples\CHANGELOG.md      → sd_3 · 500 bytes
     coverage: {"seeds":3,"totalBytes":2424,"largest":995,"notes":[]}
   ➜ seed_add_text({"title":"Competitive context brief","text":"«strategy brief — elided»"})
     sd_4 · 2079 bytes · digest: # Acme Cloud pricing change brief Acme Cloud is raising the price of its Pro plan by 40 pe…
@@ -54,7 +54,7 @@
     next: ontology_plan to turn this material into entities, motives and anchors
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 3 · ONTOLOGY — the brain extracts the entities   (t+0.2s)
+  STAGE 3 · ONTOLOGY — the brain extracts the entities   (t+0.7s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ ontology_plan()
     task t_1 · the brain sees 4 seed digests and is asked for entities + types + salience + motives + anchors
@@ -74,7 +74,7 @@
     next: graph_build
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 4 · TENSION GRAPH — deterministic derivation   (t+0.3s)
+  STAGE 4 · TENSION GRAPH — deterministic derivation   (t+0.7s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ graph_build()
     35 relations · 21 tensions > 0.5 · 13 communities (subreddits derived from entity types)
@@ -82,7 +82,7 @@
     top tension: "Pricing Release —opposition→ Free Tier (tension 0.8)"
     top tension: "Acme Cloud —opposition→ Nimbus Labs (tension 0.8)"
   ➜ graph_export_mermaid()
-    wrote .murmur/pricing-reaction/graph.mmd · 14 nodes · 35 edges — first lines:
+    wrote .murmur\pricing-reaction\graph.mmd · 14 nodes · 35 edges — first lines:
       graph LR
         e_1["Pro Plan Pricing (topic)"]
         e_2["Pricing FAQ (topic)"]
@@ -102,22 +102,22 @@
       … +47 more lines
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 5 · POPULATION — the brain drafts the personas   (t+0.3s)
+  STAGE 5 · POPULATION — the brain drafts the personas   (t+0.7s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ personas_plan({"count":12})
     task t_2 · archetype menu the engine offers: power user, casual scroller, pragmatic skeptic, passionate advocate, curious newcomer, industry professional
   ➜ personas_submit({ task_id: "t_2", result: 12 personas })
-    population 12 · platform mix {"twitter":6,"reddit":4,"both":2} · 39 follow edges · 18 community memberships
+    population 12 · platform mix {"twitter":6,"reddit":4,"both":2} · 33 follow edges · 18 community memberships
     archetypes {"power user":2,"passionate advocate":2,"curious newcomer":2,"industry professional":2,"casual scroller":2,"pragmatic skeptic":2}
   ➜ persona_inspect({"persona":"p_1"})
     Ada Okafor (@ada0) · power user · twitter
     persona card as the sim will see it (74 tokens, budget 120): {"traits":[["conscientiousness",0.99],["openness",0.91]],"stances":[["Pricing FAQ",0.62],["Acme Cloud",-0.64],["Pricing Release",-0.6]],"activity":0.59}
     stance detail: Pro Plan Pricing -0.01 · Pricing FAQ 0.62 · Pricing Release -0.6 · Acme Cloud -0.64
-    follows: @elena4, @ben1, @felix5, @jonas9
+    follows: @elena4, @ben1, @felix5
     recent posts: 0 (simulation not started yet)
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 6 · SIMULATION — 5 rounds on two platforms   (t+0.3s)
+  STAGE 6 · SIMULATION — 5 rounds on two platforms   (t+0.7s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ sim_configure({"rounds":5})
     5 rounds configured · stage: configured
@@ -131,46 +131,46 @@
       allowed actions: ["post ≤280c","reply ≤280c","repost","quote ≤280c","like"]
   ➜ sim_submit_generations({ task_id: "t_3", generations: 5 persona action sets })
     round 1 applied · 5 posts created · 5 personas acted, 0 lurked
-    stats: tw 3 · rd 3 · engagement 6 · "Acme Cloud" sentiment 0.87 · escalations 0
+    stats: tw 3 · rd 3 · engagement 5 · "Acme Cloud" sentiment 0.87 · escalations 0
   ➜ sim_inject_event({"text":"Nimbus Labs announces a one-click import tool that undercuts Acme Cloud pricing by 30%","round":3})
     event ev_9 queued for round 3 — activated personas will see it in their digest
   ➜ sim_next_batch → sim_submit_generations({ round 2, 5 personas })
-    round 2 · tw 6 · rd 0 · engagement 10 · "Acme Cloud" sentiment 0.12 +█ · escalations 0 · movers Pricing FAQ 0.82→0.84, Pricing FAQ 0.48→0.51
+    round 2 · tw 6 · rd 0 · engagement 9 · "Acme Cloud" sentiment -0.22 -██ · escalations 0 · movers Acme Cloud 0.73→0.69, Pricing FAQ 0.61→0.63
   ➜ sim_next_batch → sim_submit_generations({ round 3, 5 personas })
-    round 3 · tw 3 · rd 1 · engagement 2 · "Acme Cloud" sentiment -0.56 -██████ · escalations 0 · movers Pricing FAQ 0.62→0.5, Acme Cloud -0.77→-0.75
+    round 3 · tw 5 · rd 1 · engagement 4 · "Acme Cloud" sentiment -0.05 -█ · escalations 0 · movers Acme Cloud 0.7→0.72, Nimbus Labs -0.7→-0.54
   ➜ sim_next_batch → sim_submit_generations({ round 4, 5 personas })
-    round 4 · tw 3 · rd 1 · engagement 3 · "Acme Cloud" sentiment -0.4 -████ · escalations 0 · movers Acme Cloud -0.64→-0.67, Acme Cloud 0.77→0.73
+    round 4 · tw 4 · rd 1 · engagement 5 · "Acme Cloud" sentiment -0.44 -████ · escalations 0 · movers Acme Cloud -0.64→-0.67, Acme Cloud 0.69→0.65
   ➜ sim_next_batch → sim_submit_generations({ round 5, 5 personas })
-    round 5 · tw 3 · rd 2 · engagement 4 · "Acme Cloud" sentiment -0.58 -██████ · escalations 0 · movers Acme Cloud -0.73→-0.71, Pricing FAQ 0.8→0.66
+    round 5 · tw 3 · rd 2 · engagement 5 · "Acme Cloud" sentiment -0.17 -██ · escalations 0 · movers Pricing FAQ 0.8→0.66, Acme Cloud -0.67→-0.63
     simulation complete: true · stage: all rounds complete — call report_plan to draft the prediction report
   ➜ sim_timeline()
     round │  tw │  rd │ engagement │ sentiment toward "Acme Cloud"
-        1 │   3 │   3 │          6 │   0.87 +█████████
-        2 │   6 │   0 │         10 │   0.12 +█
-        3 │   3 │   1 │          2 │  -0.56 -██████
-        4 │   3 │   1 │          3 │  -0.40 -████
-        5 │   3 │   2 │          4 │  -0.58 -██████
+        1 │   3 │   3 │          2 │   0.87 +█████████
+        2 │   6 │   0 │         10 │  -0.22 -██
+        3 │   5 │   1 │          5 │  -0.05 -█
+        4 │   4 │   1 │          6 │  -0.44 -████
+        5 │   3 │   2 │          5 │  -0.17 -██
     engagement peaks (μ+2σ): []
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 7 · REPORT — the brain narrates, the engine grounds it   (t+0.4s)
+  STAGE 7 · REPORT — the brain narrates, the engine grounds it   (t+0.9s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ report_plan({"focus":"developer reaction to the pricing change"})
     task t_8 · the brain gets a stats pack + evidence posts and must cite real post ids in exactly 3 risks
   ➜ report_submit({ task_id: "t_8", draft: recap + findings + trajectory + 3 risks (mitigated) + recommendations + confidence })
     report v1 stored · engine verified every cited post id exists:
-      MEDIUM — Hype hardening around Pricing FAQ [po_4, po_7, po_9]
+      MEDIUM — Hype hardening around Pricing FAQ [po_4, po_9, po_1]
       HIGH — Platform-split narrative on Nimbus Labs [po_1, po_11]
-      LOW — Unmuted cluster around @kira10's tweet [po_10, po_11, po_7]
+      LOW — Unmuted cluster around @kira10's tweet [po_10, po_11, po_9]
   ➜ report_export()
-    wrote .murmur/reports/pricing-reaction/report-1.md (26320 bytes) + .murmur/reports/pricing-reaction/report-1.html (61588 bytes) — dashboard and full report:
-    open .murmur/reports/pricing-reaction/report-1.html in a browser: same numbers as the .md, same engine computation
+    wrote .murmur\reports\pricing-reaction\report-1.md (27404 bytes) + .murmur\reports\pricing-reaction\report-1.html (61735 bytes) — dashboard and full report:
+    open .murmur\reports\pricing-reaction\report-1.html in a browser: same numbers as the .md, same engine computation
 
 # Murmur Prediction Report — pricing-reaction
 
 > How will developers react to the Pro plan price change?
 
-**Version** 1 · **Scenario** `pricing-reaction` · **Generated** 2026-09-22 · **Seed** `acme-demo-2026`
+**Version** 1 · **Scenario** `pricing-reaction` · **Generated** 2026-09-26 · **Seed** `acme-demo-2026`
 
 **Rounds** 5 · **Population** 12 personas · **Ontology** 14 entities · **Platforms** Twitter + Reddit
 
@@ -184,28 +184,28 @@
 
 | Simulated posts | Total engagement | Escalation chains | Viral posts | Controversy | Momentum | Most-discussed entity |
 |---|---|---|---|---|---|---|
-| 23 | 25 | 0 | 0 | **contested** 41/100 | cooling (-44%) | Acme Cloud |
+| 24 | 28 | 0 | 0 | **contested** 44/100 | accelerating (+33%) | Acme Cloud |
 
-**Verdict —** 7 supporters vs 5 opponents around Acme Cloud (0 still undecided) — the population is deeply polarized. Controversy reads **contested** (41/100).
+**Verdict —** 7 supporters vs 5 opponents around Acme Cloud (0 still undecided) — the population is deeply polarized. Controversy reads **contested** (44/100).
 
 ## 1. Executive Summary
 
-The simulated crowd is contested (controversy 41/100): 7 supporters against 5 opponents around Acme Cloud, with 0 personas still undecided — the persuadable middle is 0% of the population. Sentiment toward Acme Cloud ended -0.58 (from +0.87, souring); engagement is cooling at -44% between halves of the run. No post crossed the virality threshold — reach stayed inside the follow graph, which limits how far any single frame can travel. The strongest signal in the run is hype hardening around Pricing FAQ; the risk register below details what to do about it before this plays out in public.
+The simulated crowd is contested (controversy 44/100): 7 supporters against 5 opponents around Acme Cloud, with 0 personas still undecided — the persuadable middle is 0% of the population. Sentiment toward Acme Cloud ended -0.17 (from +0.87, souring); engagement is accelerating at +33% between halves of the run. No post crossed the virality threshold — reach stayed inside the follow graph, which limits how far any single frame can travel. The strongest signal in the run is hype hardening around Pricing FAQ; the risk register below details what to do about it before this plays out in public.
 
 ## 2. Scenario & Population
 
-Simulated 12 personas across 14 ontology entities for 5 rounds of dual-platform mechanics, with 1 injected news event stress-testing the reaction. The population split 7 supporters vs 5 opponents (0 undecided) around Acme Cloud, producing 23 posts and 25 engagement events.
+Simulated 12 personas across 14 ontology entities for 5 rounds of dual-platform mechanics, with 1 injected news event stress-testing the reaction. The population split 7 supporters vs 5 opponents (0 undecided) around Acme Cloud, producing 24 posts and 28 engagement events.
 
 ### Entities under watch
 
 | Entity | Type | Salience | Mentions | Motive |
 |---|---|---|---|---|
 | Pro Plan Pricing | topic | 0.90 | 0 | the debate around Pro Plan Pricing turns on who pays for reliability |
-| Pricing FAQ | topic | 0.86 | 7 | the debate around Pricing FAQ turns on value versus lock-in |
-| Pricing Release | topic | 0.81 | 1 | the debate around Pricing Release turns on value versus lock-in |
-| Acme Cloud | org | 0.77 | 10 | Acme Cloud wants to avoid backlash |
-| Nimbus Labs | org | 0.72 | 10 | Nimbus Labs wants to avoid backlash |
-| Free Tier | topic | 0.68 | 1 | the debate around Free Tier turns on fairness to early users |
+| Pricing FAQ | topic | 0.86 | 5 | the debate around Pricing FAQ turns on value versus lock-in |
+| Pricing Release | topic | 0.81 | 3 | the debate around Pricing Release turns on value versus lock-in |
+| Acme Cloud | org | 0.77 | 15 | Acme Cloud wants to avoid backlash |
+| Nimbus Labs | org | 0.72 | 8 | Nimbus Labs wants to avoid backlash |
+| Free Tier | topic | 0.68 | 2 | the debate around Free Tier turns on fairness to early users |
 | Pricing Change | topic | 0.63 | 0 | the debate around Pricing Change turns on fairness to early users |
 | Existing Customers | topic | 0.59 | 0 | the debate around Existing Customers turns on who pays for reliability |
 
@@ -228,27 +228,26 @@ Simulated 12 personas across 14 ontology entities for 5 rounds of dual-platform 
 
 ## 3. Key Findings
 
-… +373 more lines (stance bars, post index) — see the file
+… +385 more lines (stance bars, post index) — see the file
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 8 · INTERROGATE THE WORLD (F7)   (t+0.4s)
+  STAGE 8 · INTERROGATE THE WORLD (F7)   (t+1.0s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ interview_agent({"persona":"p_1","question":"Why do you call the migration guide a paywall?"})
-    engine grounded the interview — Ada Okafor · 3 of their posts + 5 memories in the pack:
-      po_17 (r4, twitter, sentiment -0.93) Everyone dunking on the 30% increase is missing it: the free-tier limi
-      po_21 (r5, twitter, sentiment 0) Update from my last post: The 30% hike isn't even the problem. Shippin
+    engine grounded the interview — Ada Okafor · 5 of their posts + 5 memories in the pack:
+      po_19 (r4, twitter, sentiment -0.93) Everyone dunking on the 30% increase is missing it: the free-tier limi
       po_13 (r3, twitter, sentiment -0.54) Four years of advocating Acme Cloud in every architecture review, and 
-  ➜ interview_agent({ persona, question, answer: "«in-character answer citing " + po_17 + »" })
-    logged: true → .murmur/pricing-reaction/interviews.jsonl
+      po_18 (r3, twitter, sentiment -0.58) ↻ Following up from earlier: The 30% move puts Acme Cloud in an awkwar
+  ➜ interview_agent({ persona, question, answer: "«in-character answer citing " + po_19 + »" })
+    logged: true → .murmur\pricing-reaction\interviews.jsonl
   ➜ report_agent_ask({"question":"What are the posts behind the biggest risk, and how strong is the evidence?"})
     evidence pack (matched: []):
       po_8 @felix5 [tw] r2 sentiment -0.76 — Screaming into the void but: Advising my clients to model 30% churn ri
-      po_1 @ben1 [tw] r1 sentiment 0.58 — Screaming into the void but:  scrolled past 40 Pricing FAQ takes today
   ➜ report_agent_ask({ question, answer: "«answer citing " + po_8 + »" })
-    logged: true → .murmur/pricing-reaction/qa.jsonl
+    logged: true → .murmur\pricing-reaction\qa.jsonl
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 9 · CRASH-PROOF RESUME — brand-new session   (t+0.4s)
+  STAGE 9 · CRASH-PROOF RESUME — brand-new session   (t+1.1s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     killed the first client, spawned a fresh server process — the world persists in .murmur/murmur.db
   ➜ world_list()
@@ -256,25 +255,25 @@ Simulated 12 personas across 14 ontology entities for 5 rounds of dual-platform 
   ➜ world_open({"world":"w_757ac236"})
     active again · stage reported · next: report_export — write the report file, or interview_agent / report_agent_ask to interrogate the world
   ➜ world_status()
-    stage reported · counts {"seeds":4,"entities":14,"personas":12,"posts":25,"memories":34,"events":19,"reports":1} · next "report_export — write the report file, or interview_agent / report_agent_ask to interrogate the world"
+    stage reported · counts {"seeds":4,"entities":14,"personas":12,"posts":28,"memories":33,"events":19,"reports":1} · next "report_export — write the report file, or interview_agent / report_agent_ask to interrogate the world"
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ARTIFACTS ON DISK (everything is a plain file you can commit)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 pricing-reaction/
   artifacts/
-  audit.jsonl  (3265 B)
+  audit.jsonl  (3271 B)
   graph.mmd  (1827 B)
   interviews.jsonl  (433 B)
-  qa.jsonl  (339 B)
+  qa.jsonl  (295 B)
 reports/
   pricing-reaction/
-    report-1.html  (61588 B)
-    report-1.md  (26320 B)
-murmur.db  (307200 B)
+    report-1.html  (61735 B)
+    report-1.md  (27404 B)
+murmur.db  (303104 B)
 
   ──────────────────────────────────────────────────────────────────────────
-    tool calls this session: 34 · largest single response: 4645 tokens (budget 12,000) · wall time 0.6s
+    tool calls this session: 34 · largest single response: 5002 tokens (budget 12,000) · wall time 1.8s
     determinism: same seed + same generations ⇒ byte-identical replay (enforced by the golden test)
     in real use: YOUR coding agent (Claude Code, Codex, OpenCode, Antigravity, …) writes what the mock
     brain wrote here — the engine validates, simulates and aggregates. No API keys, ever.

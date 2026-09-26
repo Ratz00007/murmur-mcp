@@ -1,8 +1,8 @@
 # RELEASE CHECKLIST — Murmur
 
 Everything the *code* can do is done and verified (see "Verified" below). What
-remains is distribution and one piece of proof. Work top to bottom; steps 1–2
-are hard blockers, step 3 is the credibility blocker.
+remains is distribution and one piece of proof. Work top to bottom; step 2 is
+the hard blocker and step 3 is the credibility blocker.
 
 ## Verified in this repo (re-run any time)
 

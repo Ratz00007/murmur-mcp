@@ -89,6 +89,14 @@ describe("MCP server end-to-end", () => {
       const review = await call("seeds_review");
       expect(review.coverage.seeds).toBe(1);
 
+      // seed_add_files is jailed to the workspace root: a path resolving outside it is rejected
+      const outside = path.join(os.tmpdir(), "murmur-jail-probe.txt");
+      const jailed = await call("seed_add_files", { paths: [outside] });
+      expect((jailed.seeds as { ok: boolean }[])[0].ok).toBe(false);
+      fs.writeFileSync(path.join(cwd, "jail-probe.md"), "# in-workspace probe\n", "utf8");
+      const allowed = await call("seed_add_files", { paths: ["jail-probe.md"] });
+      expect((allowed.seeds as { ok: boolean }[])[0].ok).toBe(true);
+
       const ontPlan = await call("ontology_plan");
       const ontTask = ontPlan.task as { id: string };
       const ont = await call("ontology_submit", { task_id: ontTask.id, result: completeOntology(ontTask) });

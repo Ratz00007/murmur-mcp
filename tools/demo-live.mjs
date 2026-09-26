@@ -71,8 +71,10 @@ async function spawn() {
 }
 
 // ---------- workspace -----------------------------------------------------------
-fs.rmSync(DEMO, { recursive: true, force: true });
-fs.mkdirSync(DEMO, { recursive: true });
+// Only the generated state is wiped — never the whole demo directory, which also
+// holds tracked docs (FLAGSHIP-DEMO.md, flagship.config.json, TRY-IT.md).
+fs.rmSync(path.join(DEMO, ".murmur"), { recursive: true, force: true });
+fs.mkdirSync(path.join(DEMO, ".murmur"), { recursive: true });
 fs.cpSync(path.join(MURMUR, "examples"), path.join(DEMO, "examples"), { recursive: true });
 
 say("┌" + "─".repeat(W + 2) + "┐");

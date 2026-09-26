@@ -8,6 +8,15 @@ import type { ServerContext } from "../session.js";
 
 const TEXTUAL = new Set([".md", ".markdown", ".txt", ".text", ".csv", ".json", ".yml", ".yaml", ".log"]);
 
+class WorkspacePathError extends Error {}
+
+function assertInsideWorkspace(input: string, root: string, candidate: string): void {
+  const rel = path.relative(root, candidate);
+  if (rel && (rel === ".." || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel))) {
+    throw new WorkspacePathError(`path "${input}" resolves outside workspace "${root}" (${candidate}); absolute paths outside the workspace are not allowed — use a workspace-relative path`);
+  }
+}
+
 export function registerSeedTools(server: McpServer, ctx: ServerContext): void {
   server.tool(
     "seed_add_files",

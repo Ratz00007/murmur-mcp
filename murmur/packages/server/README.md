@@ -21,6 +21,6 @@ Then use the one-command prompts in your agent: `/murmur-predict`, `/murmur-simu
 
 The engine is deterministic and LLM-free; your agent's LLM does all generation through batched plan/submit tool pairs. Reports land in your repo as versioned Markdown + Mermaid. Same seed + same submissions replay byte-identically.
 
-Full documentation, the 29-tool catalog, the 10-client support matrix and the guarantees (no-egress release gate, client neutrality, resumability) live in the repository README: https://github.com/murmur-sim/murmur
+Full documentation, the 29-tool catalog, the 10-client support matrix and the guarantees (no-egress release gate, client neutrality, resumability) live in the repository README: https://github.com/Ratz00007/murmur-mcp
 
 License: Apache-2.0.

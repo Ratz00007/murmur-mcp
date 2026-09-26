@@ -1,105 +1,32 @@
-# Murmur — Complete Project Bundle · v1.0.0
+# Murmur
 
-<!-- Badge row. The repo URL is assumed to be github.com/Ratz00007/murmur-mcp
-     (same path as murmur/packages/server/package.json). If you publish under a
-     different org/repo, update these URLs and those three package.json fields. -->
 [![build](https://img.shields.io/github/actions/workflow/status/Ratz00007/murmur-mcp/ci.yml?branch=main)](https://github.com/Ratz00007/murmur-mcp/actions)
 [![npm](https://img.shields.io/npm/v/murmur-mcp.svg)](https://www.npmjs.com/package/murmur-mcp)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](murmur/LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-server%20%C2%B7%2029%20tools-brightgreen.svg)](murmur/README.md)
 
-**Murmur** (`murmur-mcp`) is a zero-key social-simulation MCP server: point your
-coding agent (Claude Code, Codex, Gemini CLI, Cursor, Windsurf, …) at it, and it
-simulates how a crowd reacts to your news — pricing changes, launches, policy
-updates, crises — then writes an analyst-style report (simulated perspective,
-not a validated forecast) with a shareable HTML dashboard. All inference rides on the LLM you already pay for;
-the server itself is deterministic, fully offline, and needs **no API keys**.
+**Before you publish a pricing or launch change, see how a panel of simulated users reacts inside the coding agent you already use—with no extra API keys or Murmur network calls, and every risk tied to the simulated post behind it.**
 
-This zip is the whole project as built: source, tests, git history, demo world,
-docs, and dev tooling.
+> [!IMPORTANT]
+> Murmur produces a **simulated perspective**, not validated evidence of what real users will do. The included demo is mock-driven; it shows the workflow, not a live-model result.
 
-> **NOTE** — Murmur reports are simulated perspectives grounded in the engine's
-> recorded stats, not validated forecasts.
+## What you get
 
-## Why Murmur — the agent-native crowd-sim
+- **Pressure-test the reaction** to a pricing, launch, policy, or crisis decision before your audience responds.
+- **Stay in your coding workflow** with Claude Code, Codex, Gemini CLI, Cursor, Windsurf, and other MCP clients.
+- **Add no API keys or Murmur network calls**; model use stays inside the host agent you already use.
+- **Trace every risk to the simulated post behind it**, so you can inspect the argument instead of trusting a summary.
+- **Replay the same seed, inputs, and host model** to reproduce the same run.
 
-Murmur occupies one specific niche: **crowd-reaction simulation that runs
-inside your AI coding agent**, with the receipts to back it up:
+**See the shipped dashboard in 3 clicks**
 
-- **Agent-native** — the whole pipeline (seeds → personas → rounds →
-  interviews → report) is 29 MCP tools plus prompt playbooks. There is no
-  separate app, no hosted dashboard, no second subscription.
-- **Reproducible** — seeded RNG everywhere (mulberry32 + FNV streams).
-  Same seed + same inputs = same world and the same report, byte for byte,
-  enforced by golden replay tests. Live-LLM competitors cannot offer this.
-- **Evidence-cited** — every risk cites real `po_N` post ids that resolve to
-  stored posts; a CI test (`tests/golden/citation-integrity.test.ts`) asserts
-  100% citation integrity and recomputes the headline stats from the database.
-  Claims you cannot click through to a post do not ship in the report.
-- **Zero-key, zero-egress** — the server never calls a model and ships no
-  network code; it works fully offline under Apache-2.0. All inference rides
-  the host LLM you already pay for (see "Token cost" — zero-key is not
-  zero-cost, and the cost is published there).
-- **Uncertainty, not point forecasts** — the projection is a seeded ensemble
-  (P10–P90 bands across N runs), labeled as a simulated perspective.
+1. **Get the repository.** Clone it or download the repository archive.
+2. **Reveal the hidden folder.** `.murmur` is a dot-folder, so macOS Finder hides it by default: choose **Go → Go to Folder** (`Cmd+Shift+G`), paste `murmur-demo/.murmur/reports/pricing-reaction`, and press Return. From the repository root, `open murmur-demo/.murmur/reports/pricing-reaction/report-1.html` also works on macOS; in Windows PowerShell use `start .\murmur-demo\.murmur\reports\pricing-reaction\report-1.html`; on Linux use `xdg-open murmur-demo/.murmur/reports/pricing-reaction/report-1.html`.
+3. **Open `report-1.html`.** Double-click it to open the self-contained dashboard in your browser; no build or local server is required.
 
-How that compares, factually:
+The 61 KB report covers Acme Cloud's 30% price increase with 7 supporters versus 5 opponents, five rounds of reaction, platform divergence, persona spotlights, risks with the simulated posts behind them, recommendations, limitations, and a post index. It makes no external requests and works offline.
 
-| | Murmur | Hosted crowd sims | A raw "simulate a crowd" prompt |
-|---|---|---|---|
-| API keys required | none | yes (LLM + memory/hosting keys) | none |
-| Works offline | yes (after `npm install`) | no | n/a (lives in your chat) |
-| Reproducible (same-seed replay) | yes, byte-identical, tested | no — live API calls | no |
-| Evidence trail (claim → stored post) | yes, CI-checked | sometimes (exported logs) | no |
-| Cost transparency | published token methodology | vendor billing | hidden in your quota |
-| Scale | dozens of personas, 8–40 rounds | up to millions of agents | whatever the context window holds |
-
-Murmur does not try to out-scale hosted simulators — it is the instrument you
-reach for when you want a **checkable, replayable reaction read inside the
-editor**, before the announcement goes out.
-
-## What's in this zip
-
-```text
-murmur-complete-v1.0.0/
-├── README.md                  ← this file
-├── PROJECT-WORKLOG.md         ← the full build journal (9 tasks, every design decision)
-├── .github/                   ← CI (Node 20/22/24) + npm release automation + issue templates
-├── murmur/                    ← the monorepo — RUNNABLE (source + built dist + git history)
-│   ├── packages/engine/       ← deterministic swarm engine: analytics, reports, HTML dashboard
-│   ├── packages/server/       ← murmur-mcp: 29 MCP tools, CLI (serve/doctor/init/templates)
-│   ├── packages/prompts/      ← 4 prompt playbooks (predict/simulate/interview/resume)
-│   ├── packages/adapters/     ← install snippets for 10 coding agents
-│   ├── packages/templates/    ← 5 scenario packs (launch/policy/crisis/finance/fiction)
-│   ├── tests/                 ← unit · golden byte-replay · e2e over stdio · cleanroom gate
-│   ├── docs/Murmur-PRD-Technical-Plan-v1.0.pdf   ← the original 24-page product/tech plan
-│   └── examples/              ← paste-ready sample inputs (pricing page, FAQ, changelog)
-├── murmur-demo/               ← a finished demo run you can open right now
-│   ├── DEMO-TRANSCRIPT.md     ← narrated 34-tool-call session, start to report
-│   ├── examples/              ← the inputs the demo ingested
-│   └── .murmur/
-│       ├── reports/pricing-reaction/report-1.html   ← ★ the dashboard — open this first
-│       ├── reports/pricing-reaction/report-1.md     ← same report as diffable Markdown
-│       └── graph.mmd · *.jsonl                      ← world state (murmur.db is runtime state — regenerated by a replay, not shipped)
-└── tools/                     ← dev utilities (paths are portable — see below)
-    ├── demo-live.mjs          ← replay the whole demo end-to-end through real MCP stdio
-    ├── preview-report.mjs     ← run the pipeline fresh and print a new report
-    ├── test-sentiment.mjs     ← sentiment-scorer scratchpad
-    ├── lexicon-audit.cjs      ← lexicon coverage audit of the voice templates
-    ├── audit-voices.mjs       ← voice-template polarity audit
-    └── scale-benchmark.mjs    ← token-budget + wall-time benchmark at any scale
-```
-
-`murmur/` ships with `dist/` pre-built **in the zip**, so no TypeScript build step
-is ever needed there — and on a fresh clone `npm install` builds it for you (the
-root `prepare` script runs `npm run build`). Either way the package needs its
-three runtime deps (`@modelcontextprotocol/sdk`, `better-sqlite3`, `zod`)
-fetched once with npm. `node_modules/` (97 MB) is excluded from the zip.
-Requires Node ≥ 20.
-
-**This layout is also the repository layout** — the repo root is the bundle
-root, because `tools/` resolves `murmur/` and `murmur-demo/` as siblings. Push
-this directory as-is and every path in this README keeps working.
+**Viewing on GitHub:** GitHub displays this file as source rather than rendering it. Use **Raw → Download raw file**, then open the downloaded `report-1.html` locally.
 
 ## ① Open the demo dashboard (10 seconds)
 
