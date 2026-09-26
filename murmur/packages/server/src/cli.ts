@@ -74,7 +74,10 @@ In your coding agent, use prompts: /murmur-predict, /murmur-simulate, /murmur-in
 See the README for the full 10-client support matrix and the .murmur/ directory layout.
 
 Environment:
-  MURMUR_WORKSPACE   Override the workspace root (default: git repo root or cwd)
+  MURMUR_WORKSPACE   Project root that CONTAINS the .murmur/ directory
+                     (default: nearest ancestor with .murmur/ or .git/, else cwd).
+                     Do NOT point this at the .murmur directory itself — the
+                     server appends .murmur, which would nest .murmur/.murmur/.
   MURMUR_LOG         stderr log level: debug|info|warn|error (default warn)
 `);
 }

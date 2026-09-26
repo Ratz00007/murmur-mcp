@@ -20,12 +20,17 @@ Entry header (every entry MUST include):
 - **2 MOCK rows** — the bundled demo and the 48 × 8 scale benchmark. These
   exercise the engine end to end with a deterministic mock brain. They prove the
   plumbing. They prove nothing about content quality, and they say so.
+- **1 headless, LLM-authored row** — `host-llm-run-01/`. Real model-written
+  personas and posts, but driven by `tools/host-llm-run/run.mjs`: no client
+  session, no agent transcript, no billed tokens. Useful and honest, and still
+  not the demonstration.
 - **1 PENDING row** — the flagship real-LLM run (16 personas × 8 rounds). Not
   run yet. It has no numbers, because a projected number in a results table is a
   fabricated number.
 
-So: **no real-LLM run has been published.** That is the gallery's one open
-credibility gap, and it is small — one run, one real pricing page, one sitting.
+So: **no real client-session run has been published.** That is the gallery's one
+open credibility gap, and it is small — one run, one real pricing page, one
+sitting.
 
 ## Rules
 

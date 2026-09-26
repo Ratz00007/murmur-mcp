@@ -5,7 +5,7 @@
 First stable release.
 
 - **HTML dashboard**: `report_export` gains `format: "md" | "html" | "both"` — a self-contained dark-theme dashboard (inline CSS + SVG charts, KPI cards, quote banks, risk register) written next to the Markdown report. Zero JavaScript, zero external requests; shares one engine computation with the `.md`.
-- Analyst-grade prediction reports: faction analysis, persona arcs, attributed quote bank, controversy index, cross-platform divergence, momentum and trajectory projection, amplification and narrative timeline, risk register with early-warning triggers, and 5 evidence appendices.
+- Evidence-cited scenario reports (a simulated read of your material, not a validated forecast): faction analysis, persona arcs, attributed quote bank, controversy index, cross-platform divergence, momentum and trajectory projection, amplification and narrative timeline, risk register with early-warning triggers, and 5 evidence appendices.
 - Sentence-level sentiment attribution toward the focus entity — praise for a competitor never leaks into the focus entity's score.
 - Sentiment scorer v2: sentence-aware negation, community-slang safe ("no notes" stays praise, "never crashes" reads positive), expanded inflection lexicon.
 - Release workflow: npm publish gated on the full test + cleanroom matrix, with provenance.
@@ -18,4 +18,4 @@ First release candidate: the complete five-stage pipeline, Host-Powered Inferenc
 - **Server** (`murmur-mcp`): 29 MCP tools, 3 resources, 4 prompt playbooks, stdio transport, stderr-only logging, sampling as an opt-in accelerator (`use_sampling`), CLI (`serve` default, `doctor`, `init`, `templates`, `version`).
 - **Adapters** (`@murmur/adapters`): install snippets + config templates for the 10-client launch matrix, with detection.
 - **Templates** (`@murmur/templates`): scenario packs — launch, policy, crisis, finance, fiction.
-- **Tests**: 42 tests — unit (rng determinism, sentiment, PDF, storage roundtrips, platform mechanics, submit validation), golden runs (byte-identical replay, F1–F6 acceptance, injection-shift effect, crash resume), real MCP client↔server e2e over stdio, and the cleanroom release gate (no egress, no keys, clean dependency closure, time-to-first-world, workspace isolation).
+- **Tests**: 66 tests — unit (rng determinism, sentiment, PDF, storage roundtrips, platform mechanics, submit validation), golden runs (byte-identical replay, F1–F6 acceptance, injection-shift effect, crash resume), real MCP client↔server e2e over stdio, and the cleanroom release gate (no egress, no keys, clean dependency closure, time-to-first-world, workspace isolation).

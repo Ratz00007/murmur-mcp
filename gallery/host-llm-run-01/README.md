@@ -55,4 +55,5 @@ combined. The crowd is not hostile; it is confused and undecided.
   diffusion model was exercised by authored reply behavior rather than by its
   own mechanics.
 - **Scale is deliberately modest** (12×4) so the run is completable and
-  auditable, not impressive. The flagship target is 48×8 in a real client.
+  auditable, not impressive. The flagship target is 16×8 in a real client
+  session (`../../murmur-demo/FLAGSHIP-DEMO.md`).
