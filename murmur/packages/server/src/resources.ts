@@ -1,7 +1,9 @@
 /** MCP resources: murmur://worlds, murmur://world/{id}/state, murmur://world/{id}/report/{rid}. */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { renderReportMarkdown, worldListRow, worldStatus } from "@murmur/engine";
+import { log } from "./logging.js";
 import type { ServerContext } from "./session.js";
 
 export function registerResources(server: McpServer, ctx: ServerContext): void {
@@ -40,7 +42,11 @@ export function registerResources(server: McpServer, ctx: ServerContext): void {
           contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify(worldStatus(ctx.storage, world)) }],
         };
       } catch (e) {
-        return { contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify({ error: String(e) }) }] };
+        // Error signaling, not data: a failed read surfaces as a JSON-RPC
+        // error so hosts can distinguish failure from a payload.
+        const message = e instanceof Error ? e.message : String(e);
+        log.warn(`resource read failed (world state): ${message}`);
+        throw new McpError(ErrorCode.InternalError, message);
       }
     }
   );
@@ -74,7 +80,9 @@ export function registerResources(server: McpServer, ctx: ServerContext): void {
           contents: [{ uri: uri.href, mimeType: "text/markdown", text: renderReportMarkdown(ctx.storage, world, record) }],
         };
       } catch (e) {
-        return { contents: [{ uri: uri.href, mimeType: "text/plain", text: String(e) }] };
+        const message = e instanceof Error ? e.message : String(e);
+        log.warn(`resource read failed (report): ${message}`);
+        throw new McpError(ErrorCode.InternalError, message);
       }
     }
   );

@@ -10,6 +10,7 @@ export function registerGraphTools(server: McpServer, ctx: ServerContext): void 
     "Stage 3: derive typed relations (alliance, opposition, influence, ownership) with tension scores from the ontology, and build " +
       "reddit-style communities. Deterministic — no LLM needed for this step.",
     { world: z.string().optional().describe("World id/slug (default: active world)") },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async ({ world }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -52,6 +53,7 @@ export function registerGraphTools(server: McpServer, ctx: ServerContext): void 
       depth: z.number().int().min(1).max(3).optional().describe("Hops from anchor (default 1)"),
       token_budget: z.number().int().min(500).max(8000).optional().describe("Response budget (default 4000)"),
     },
+    { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     async (args) => {
       try {
         const w = ctx.resolveWorld(args.world);
@@ -76,6 +78,7 @@ export function registerGraphTools(server: McpServer, ctx: ServerContext): void 
       world: z.string().optional().describe("World id/slug (default: active world)"),
       scope: z.enum(["all", "hot"]).optional().describe("'hot' = only high-tension relations (default all)"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async ({ world, scope }) => {
       try {
         const w = ctx.resolveWorld(world);

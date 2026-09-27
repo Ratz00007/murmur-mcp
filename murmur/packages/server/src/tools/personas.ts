@@ -1,8 +1,20 @@
 /** Persona tools: personas_plan, personas_submit, persona_inspect, persona_edit. */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { applyPersonas, buildPersonasTask, personaCard, personaPatch, type Persona } from "@murmur/engine";
+import { applyPersonas, buildPersonasTask, CONFIG_LIMITS, personaCard, personaPatch, type Persona } from "@murmur/engine";
 import { coerceJson, type ServerContext } from "../session.js";
+
+/** Mirrors the task.outputSchema the engine attaches to personas tasks (engine/src/personas.ts). */
+const personaDraftItem = z.object({
+  name: z.string().max(80).describe("Full display name, e.g. 'Ada Okafor'"),
+  handle: z.string().max(40).optional().describe("Platform handle (@name or u/name; generated from the name when omitted)"),
+  archetype: z.string().max(40).describe("One of the archetype names from the task instructions"),
+  bio: z.string().max(200).optional().describe("One line of backstory"),
+  traits: z.record(z.number()).optional().describe("Big-Five-lite traits: openness, conscientiousness, extraversion, agreeableness, emotionalStability (0-1)"),
+  stances: z.record(z.number().min(-1).max(1)).optional().describe("Stance toward each entity by name: {EntityName: -1..1}"),
+  platform: z.enum(["twitter", "reddit", "both"]).describe("twitter | reddit | both"),
+  activity: z.number().min(0.05).max(1).optional().describe("Posting activity (0.05-1, default 0.5)"),
+});
 
 export function registerPersonaTools(server: McpServer, ctx: ServerContext): void {
   server.tool(
@@ -14,6 +26,7 @@ export function registerPersonaTools(server: McpServer, ctx: ServerContext): voi
       count: z.number().int().min(8).max(128).optional().describe("Population size (default 24, range 8-128)"),
       hint: z.string().max(300).optional().describe("Optional platform-mix hint, e.g. 'mostly reddit'"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     async ({ world, count, hint }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -37,11 +50,26 @@ export function registerPersonaTools(server: McpServer, ctx: ServerContext): voi
 
   server.tool(
     "personas_submit",
-    "Stage 4 · SUBMIT: validate and store the population (8-128 personas). Bad personas are itemized; the population also gets its follow graph and community memberships wired here.",
+    "Stage 4 · SUBMIT: validate and store the population (8-128 personas). Bad personas are itemized; the population also gets its follow graph and community memberships wired here. " +
+      "Resubmitting the same task_id skips already-inserted names.",
     {
       task_id: z.string().describe("Task id from personas_plan"),
-      result: z.unknown().describe("Your drafting result: { personas: [{name, handle, archetype, bio, traits, stances, platform, activity}] }"),
+      result: z
+        .union([
+          z
+            .object({
+              personas: z
+                .array(personaDraftItem)
+                .min(CONFIG_LIMITS.population.min)
+                .max(CONFIG_LIMITS.population.max)
+                .describe(`The population (min ${CONFIG_LIMITS.population.min}, max ${CONFIG_LIMITS.population.max}) mirroring the task.outputSchema the engine returned`),
+            })
+            .describe("Your drafting result: { personas: [...] }"),
+          z.string().describe("The same result as a JSON string (parsed server-side)"),
+        ])
+        .describe("Your drafting result: { personas: [{name, handle, archetype, bio, traits, stances, platform, activity}] }"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async ({ task_id, result }) => {
       try {
         const task = ctx.storage.getTask(task_id);
@@ -85,6 +113,7 @@ export function registerPersonaTools(server: McpServer, ctx: ServerContext): voi
       persona: z.string().describe("Persona id or handle (e.g. p_3 or @ada)"),
       world: z.string().optional().describe("World id/slug (default: active world)"),
     },
+    { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     async ({ persona, world }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -122,9 +151,26 @@ export function registerPersonaTools(server: McpServer, ctx: ServerContext): voi
     "Fix an individual persona before (or during) a run: rename, re-voice, retarget stances, change platform or activity. Surgical — only provided fields change.",
     {
       persona: z.string().describe("Persona id or handle"),
-      patch: z.unknown().describe("Partial persona: {name?, handle?, archetype?, bio?, traits?, stances?: {EntityName: -1..1}, platform?, activity?}"),
+      patch: z
+        .union([
+          z
+            .object({
+              name: z.string().max(80).optional().describe("New display name"),
+              handle: z.string().max(40).optional().describe("New platform handle"),
+              archetype: z.string().max(40).optional().describe("New archetype name"),
+              bio: z.string().max(200).optional().describe("New backstory line"),
+              traits: z.record(z.number()).optional().describe("Trait overrides: {openness?, conscientiousness?, extraversion?, agreeableness?, emotionalStability?} (0-1)"),
+              stances: z.record(z.number().min(-1).max(1)).optional().describe("Stance overrides by entity name: {EntityName: -1..1}"),
+              platform: z.enum(["twitter", "reddit", "both"]).optional().describe("New platform: twitter | reddit | both"),
+              activity: z.number().min(0.05).max(1).optional().describe("New activity (0.05-1)"),
+            })
+            .describe("Partial persona — only provided fields change"),
+          z.string().describe("The same patch as a JSON string (parsed server-side)"),
+        ])
+        .describe("Partial persona: {name?, handle?, archetype?, bio?, traits?, stances?: {EntityName: -1..1}, platform?, activity?}"),
       world: z.string().optional().describe("World id/slug (default: active world)"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async ({ persona, patch, world }) => {
       try {
         const w = ctx.resolveWorld(world);

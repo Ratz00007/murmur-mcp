@@ -35,8 +35,31 @@ items that this goal now owns.*
 - [x] Flagship protocol resized to 16 personas × 8 rounds + gallery scaffold ready
 - [x] Full verification green: `npm test` 66/66 · `npm run test:e2e` 2/2 · `npm run cleanroom` GATE GREEN · typecheck exit 0
 
-**Status:** blocked — all agent-executable work is done and verified; the two remaining
-criteria require the user's npm account and their own LLM session (listed below).
+**Status:** active — Phase 0/1 complete (repo public, pushed, CI green). User extended scope:
+**ALL phases (2 + 3) must reach 100%.** Executing Phase 2 now.
+
+## Phase 2 — Product, not demo (agent-executable)
+- [ ] MCP spec depth: server `instructions` field; annotate all 29 tools (`readOnlyHint`/
+      `idempotentHint`/`destructiveHint`); project the engine's existing `outputSchema`s into
+      the 5 `*_submit`/`persona_edit` `z.unknown()` inputs; fix the dead sampling bridge
+      (`server.ts:36` probes a property that does not exist); `/mcp__murmur__…` slash-command
+      claims corrected; structured `outputSchema` on tool responses
+- [ ] Determinism foundation: world-scoped transactional ID minting (replace global
+      `COUNT(*)`-based `mintId`), committed golden fixture hash, cross-Node hash comparison in CI
+- [ ] Cleanroom gate hardened: allowlist-based closure (denylist → allowlist), add
+      `child_process`/`eval`/dynamic-import patterns, scan `.map` + packed tarball, fail loudly
+      when `node_modules` missing
+- [ ] Science firewall: label P10–P90 as slope-jitter sensitivity until a real ensemble exists;
+      ban uncited "historically…" claims in report prose
+- [ ] Merge duplicate `world_config`/`sim_configure` config surface
+- [ ] CI: Windows e2e + typecheck + cleanroom leg; macOS leg
+
+## Phase 3 — Day-2 loop + launch (agent-executable parts)
+- [ ] `murmur-diff`: re-run same seed on edited seed file → line-level delta report (code + tests)
+- [ ] MurmurBench scaffold: backtest harness + scoring vs naive baselines + documented events
+      format (curation of real events may need user input)
+- [ ] Launch-wave drafts: MCP registry `server.json` manifest + directory submission drafts
+      (actual submission needs npm publish — blocked on user)
 
 ## Blocked on the user (cannot be done from here)
 1. **`npm login` + publish** — the `murmur-mcp` name is still unclaimed, so every `npx` install

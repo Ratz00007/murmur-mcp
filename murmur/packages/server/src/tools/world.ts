@@ -1,8 +1,9 @@
-/** World management tools: world_init, world_list, world_open, world_status, world_config. */
+/** World management tools: world_init, world_list, world_open, world_status, world_config (thin alias for sim_configure). */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { CONFIG_LIMITS, NEXT_TOOL, worldStatus, type MurmurConfig, type World } from "@murmur/engine";
+import { CONFIG_LIMITS, NEXT_TOOL, worldStatus, type World } from "@murmur/engine";
 import type { ServerContext } from "../session.js";
+import { applyWorldConfig } from "./sim.js";
 
 export function registerWorldTools(server: McpServer, ctx: ServerContext): void {
   server.tool(
@@ -14,6 +15,7 @@ export function registerWorldTools(server: McpServer, ctx: ServerContext): void 
       description: z.string().max(400).optional().describe("One line: what question this world should answer"),
       seed: z.string().max(120).optional().describe("Determinism seed — same seed + same submissions replays identically. Omit for auto."),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     async ({ name, description, seed }) => {
       try {
         const world = ctx.storage.createWorld({ name, description, seed });
@@ -36,6 +38,7 @@ export function registerWorldTools(server: McpServer, ctx: ServerContext): void 
     "world_list",
     "List every saved world in this workspace with stage and progress.",
     {},
+    { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     async () => {
       try {
         const worlds = ctx.storage.listWorlds();
@@ -62,6 +65,7 @@ export function registerWorldTools(server: McpServer, ctx: ServerContext): void 
     "world_open",
     "Reopen a saved world and resume at its stage boundary (resumability is a core promise).",
     { world: z.string().describe("World id or slug (see world_list)") },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async ({ world }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -81,6 +85,7 @@ export function registerWorldTools(server: McpServer, ctx: ServerContext): void 
     "world_status",
     "Single source of truth for session state: stage, counts, pending task, trending entities and the next recommended tool.",
     { world: z.string().optional().describe("World id/slug (default: active world)") },
+    { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     async ({ world }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -93,7 +98,8 @@ export function registerWorldTools(server: McpServer, ctx: ServerContext): void 
 
   server.tool(
     "world_config",
-    "Tune world parameters: rounds (1-40, default 8), batch sizes and platform limits. Safe to call any time before or during a run.",
+    "Backward-compatible alias for sim_configure — the canonical world-parameter setter. Forwards every parameter (rounds, batch sizes, virality " +
+      "threshold, response budget) to the same core; the canonical pipeline calls sim_configure after personas_submit, before the first sim_next_batch.",
     {
       world: z.string().optional().describe("World id/slug (default: active world)"),
       rounds: z.number().int().min(1).max(40).optional().describe("Total simulation rounds (default 8, max 40)"),
@@ -102,22 +108,11 @@ export function registerWorldTools(server: McpServer, ctx: ServerContext): void 
       max_response_tokens: z.number().int().min(2000).max(24000).optional().describe("Tool response budget (default 12000)"),
       virality_threshold: z.number().min(1).max(100).optional().describe("Twitter virality trigger (default 12)"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async (args) => {
       try {
-        const w = ctx.resolveWorld(args.world);
-        const config: MurmurConfig = structuredClone(w.config);
-        if (args.rounds !== undefined) {
-          if (args.rounds < w.round) throw new Error(`cannot reduce rounds below the completed round count (${w.round})`);
-          config.rounds = args.rounds;
-        }
-        if (args.max_personas_per_batch !== undefined) config.batch.maxPersonas = args.max_personas_per_batch;
-        if (args.max_feed_items !== undefined) config.batch.maxFeedItems = args.max_feed_items;
-        if (args.max_response_tokens !== undefined) config.context.maxResponseTokens = args.max_response_tokens;
-        if (args.virality_threshold !== undefined) config.engagement.viralityThreshold = args.virality_threshold;
-        ctx.storage.updateWorld(w.id, { config });
-        if (ctx.storage.countPersonas(w.id) > 0) ctx.storage.setStage(w.id, "configured");
-        ctx.audit(w, { op: "world_config", args });
-        const updated = ctx.storage.getWorld(w.id)!;
+        const updated = applyWorldConfig(ctx, args);
+        ctx.audit(updated, { op: "world_config", args });
         return ctx.reply({
           ok: true,
           config: { rounds: updated.config.rounds, batch: updated.config.batch, context: updated.config.context },

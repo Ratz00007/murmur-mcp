@@ -68,46 +68,58 @@ export class ServerContext {
    * Render a tool result. If the JSON body exceeds the context budget
    * (default 12,000 tokens), the full payload is written to the world's
    * artifacts directory and the response becomes a pointer receipt.
+   * The stable response shape ({ok, next, ...}) is also returned as
+   * structuredContent so hosts can consume it without re-parsing text
+   * (with the same JSON mirrored in a text block for compatibility).
    */
-  reply(data: unknown, world?: World | null): { content: { type: "text"; text: string }[] } {
+  reply(
+    data: unknown,
+    world?: World | null
+  ): { content: { type: "text"; text: string }[]; structuredContent?: Record<string, unknown> } {
     const maxTokens = (world?.config.context.maxResponseTokens ?? 12000);
     const body = JSON.stringify(data);
+    const structured = asRecord(data);
     if (estTokens(body) <= maxTokens) {
-      return { content: [{ type: "text", text: body }] };
+      return {
+        content: [{ type: "text", text: body }],
+        ...(structured ? { structuredContent: structured } : {}),
+      };
     }
     if (!world) {
+      const err = { ok: false, error: "response exceeds context budget", hint: "narrow the request (fewer items, tighter query)" };
       return {
-        content: [
-          { type: "text", text: JSON.stringify({ ok: false, error: "response exceeds context budget", hint: "narrow the request (fewer items, tighter query)" }) },
-        ],
+        content: [{ type: "text", text: JSON.stringify(err) }],
+        structuredContent: err,
       };
     }
     const name = `oversize-${Date.now().toString(36)}.json`;
     const file = this.workspace.artifactPath(world.slug, name);
     this.workspace.writeAtomic(file, JSON.stringify(data, null, 2));
     const ok = (data as { ok?: boolean })?.ok !== false;
+    const receipt: Record<string, unknown> = {
+      ok,
+      truncated: true,
+      reason: "payload exceeded the response token budget",
+      artifact: this.workspace.rel(file),
+      fullTokens: estTokens(JSON.stringify(data, null, 2)),
+      next: "read the artifact file for the full payload, then continue",
+    };
     return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify({
-            ok,
-            truncated: true,
-            reason: "payload exceeded the response token budget",
-            artifact: this.workspace.rel(file),
-            fullTokens: estTokens(JSON.stringify(data, null, 2)),
-            next: "read the artifact file for the full payload, then continue",
-          }),
-        },
-      ],
+      content: [{ type: "text", text: JSON.stringify(receipt) }],
+      structuredContent: receipt,
     };
   }
 
-  fail(error: unknown): { content: { type: "text"; text: string }[]; isError: boolean } {
+  fail(error: unknown): { content: { type: "text"; text: string }[]; isError: boolean; structuredContent: Record<string, unknown> } {
     const message = error instanceof Error ? error.message : String(error);
     log.warn(`tool error: ${message}`);
-    return { content: [{ type: "text", text: JSON.stringify({ ok: false, error: message }) }], isError: true };
+    const payload = { ok: false, error: message };
+    return { content: [{ type: "text", text: JSON.stringify(payload) }], isError: true, structuredContent: payload };
   }
+}
+
+function asRecord(v: unknown): Record<string, unknown> | null {
+  return v !== null && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
 }
 
 /** Coerce a tool argument that may arrive as a JSON string or an object. */

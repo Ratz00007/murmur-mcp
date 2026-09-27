@@ -1,8 +1,18 @@
 /** Ontology tools: ontology_plan, ontology_submit (the plan/submit pair for stage 2). */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { applyOntology, buildOntologyTask, estTokens } from "@murmur/engine";
+import { applyOntology, buildOntologyTask, ENTITY_TYPES, estTokens } from "@murmur/engine";
 import { coerceJson, type ServerContext } from "../session.js";
+
+/** Mirrors the task.outputSchema the engine attaches to ontology tasks (engine/src/ontology.ts). */
+const ontologyEntity = z.object({
+  name: z.string().max(80).describe("Entity name, e.g. 'Acme Cloud'"),
+  type: z.enum(ENTITY_TYPES).describe("person | org | product | topic | place | event | idea"),
+  description: z.string().max(400).optional().describe("One sentence: what this entity is in the scenario"),
+  salience: z.number().min(0).max(1).optional().describe("Prominence in the source material (0-1)"),
+  anchors: z.array(z.string().max(300)).max(6).optional().describe("Verbatim quotes from the seeds anchoring this entity"),
+  motives: z.array(z.string().max(200)).max(6).optional().describe("What the entity wants or how the crowd reads it"),
+});
 
 export function registerOntologyTools(server: McpServer, ctx: ServerContext): void {
   server.tool(
@@ -10,6 +20,7 @@ export function registerOntologyTools(server: McpServer, ctx: ServerContext): vo
     "Stage 2 · PLAN: compose the extraction task over all seeds (digests + strict JSON schema). Read the returned task, complete it yourself " +
       "(you are the LLM), and return the result via ontology_submit. One call extracts the whole corpus.",
     { world: z.string().optional().describe("World id/slug (default: active world)") },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     async ({ world }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -33,11 +44,26 @@ export function registerOntologyTools(server: McpServer, ctx: ServerContext): vo
 
   server.tool(
     "ontology_submit",
-    "Stage 2 · SUBMIT: validate and store the extracted ontology. Invalid entities are itemized for surgical retry; valid ones are applied immediately.",
+    "Stage 2 · SUBMIT: validate and store the extracted ontology. Invalid entities are itemized for surgical retry; valid ones are applied immediately. " +
+      "Resubmitting the same task_id skips already-applied entities.",
     {
       task_id: z.string().describe("Task id from ontology_plan"),
-      result: z.unknown().describe("Your extraction result: { entities: [{name, type, description, salience, anchors, motives}] }"),
+      result: z
+        .union([
+          z
+            .object({
+              entities: z
+                .array(ontologyEntity)
+                .min(5)
+                .max(60)
+                .describe("5-60 extracted entities mirroring the task.outputSchema the engine returned"),
+            })
+            .describe("Your extraction result: { entities: [...] }"),
+          z.string().describe("The same result as a JSON string (parsed server-side)"),
+        ])
+        .describe("Your extraction result: { entities: [{name, type, description, salience, anchors, motives}] }"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async ({ task_id, result }) => {
       try {
         const task = ctx.storage.getTask(task_id);

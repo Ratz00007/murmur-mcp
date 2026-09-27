@@ -1,35 +1,72 @@
-/** Simulation tools: sim_configure, sim_next_batch, sim_submit_generations, sim_inject_event, sim_round_summary, sim_timeline. */
+/** Simulation tools: sim_configure (the canonical world-parameter setter), sim_next_batch, sim_submit_generations, sim_inject_event, sim_round_summary, sim_timeline. */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { batchBrief, buildSimBatch, roundSummary, submitGenerations, timeline, engagementPeaks, type SimGeneration } from "@murmur/engine";
 import { coerceJson, type ServerContext } from "../session.js";
 
+/** Mirrors the task.outputSchema the engine attaches to sim batches (sim/batch.ts). */
+const simGenerationItem = z.object({
+  persona: z.string().min(1).describe("Persona id from the batch task, e.g. 'p_3'"),
+  actions: z
+    .array(z.object({ type: z.string() }).passthrough())
+    .max(3)
+    .describe("1-3 action objects (post/reply/like/comment/upvote/downvote/quote) — see the task instructions for exact fields"),
+});
+
+/**
+ * Shared core behind sim_configure (the canonical setter) and its
+ * world_config alias: applies one guard logic, updates the world config and
+ * moves the stage to "configured" once personas exist.
+ */
+export function applyWorldConfig(
+  ctx: ServerContext,
+  args: {
+    world?: string;
+    rounds?: number;
+    virality_threshold?: number;
+    max_personas_per_batch?: number;
+    max_feed_items?: number;
+    max_response_tokens?: number;
+  }
+) {
+  const w = ctx.resolveWorld(args.world);
+  const config = structuredClone(w.config);
+  if (args.rounds !== undefined) {
+    if (args.rounds < w.round) throw new Error(`cannot reduce rounds below the completed round count (${w.round})`);
+    config.rounds = args.rounds;
+  }
+  if (args.virality_threshold !== undefined) config.engagement.viralityThreshold = args.virality_threshold;
+  if (args.max_personas_per_batch !== undefined) config.batch.maxPersonas = args.max_personas_per_batch;
+  if (args.max_feed_items !== undefined) config.batch.maxFeedItems = args.max_feed_items;
+  if (args.max_response_tokens !== undefined) config.context.maxResponseTokens = args.max_response_tokens;
+  ctx.storage.updateWorld(w.id, { config });
+  if (ctx.storage.countPersonas(w.id) > 0) ctx.storage.setStage(w.id, "configured");
+  return ctx.storage.getWorld(w.id)!;
+}
+
+const CONFIG_SHAPE = {
+  world: z.string().optional().describe("World id/slug (default: active world)"),
+  rounds: z.number().int().min(1).max(40).optional().describe("Total simulation rounds (default 8, max 40)"),
+  virality_threshold: z.number().min(1).max(100).optional().describe("Twitter virality trigger (default 12)"),
+  max_personas_per_batch: z.number().int().min(1).max(128).optional().describe("Activated personas per sim_next_batch (default 20)"),
+  max_feed_items: z.number().int().min(3).max(15).optional().describe("Feed items per persona digest (default 8)"),
+  max_response_tokens: z.number().int().min(2000).max(24000).optional().describe("Tool response budget (default 12000)"),
+};
+
+const CONFIG_ANNOTATIONS = { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const;
+
 export function registerSimTools(server: McpServer, ctx: ServerContext): void {
   server.tool(
     "sim_configure",
-    "Stage 5 setup: set rounds (default 8, max 40) and platform parameters. Call after personas_submit (before the first sim_next_batch).",
-    {
-      world: z.string().optional().describe("World id/slug (default: active world)"),
-      rounds: z.number().int().min(1).max(40).optional().describe("Total rounds (default 8, max 40)"),
-      virality_threshold: z.number().min(1).max(100).optional().describe("Twitter virality trigger (default 12)"),
-      max_personas_per_batch: z.number().int().min(1).max(128).optional().describe("Activated personas per round batch (default 20)"),
-      max_feed_items: z.number().int().min(3).max(15).optional().describe("Feed items per persona digest (default 8)"),
-    },
+    "The canonical world-parameter setter: tune rounds (default 8, max 40), batch sizes, platform limits and the response budget in one call. " +
+      "The pipeline calls it after personas_submit, before the first sim_next_batch — but it is safe any time before or during a run " +
+      "(world_config is a thin alias that forwards here).",
+    CONFIG_SHAPE,
+    CONFIG_ANNOTATIONS,
     async (args) => {
       try {
-        const w = ctx.resolveWorld(args.world);
-        const config = structuredClone(w.config);
-        if (args.rounds !== undefined) {
-          if (args.rounds < w.round) throw new Error(`cannot reduce rounds below completed rounds (${w.round})`);
-          config.rounds = args.rounds;
-        }
-        if (args.virality_threshold !== undefined) config.engagement.viralityThreshold = args.virality_threshold;
-        if (args.max_personas_per_batch !== undefined) config.batch.maxPersonas = args.max_personas_per_batch;
-        if (args.max_feed_items !== undefined) config.batch.maxFeedItems = args.max_feed_items;
-        ctx.storage.updateWorld(w.id, { config });
-        if (ctx.storage.countPersonas(w.id) > 0) ctx.storage.setStage(w.id, "configured");
-        const updated = ctx.storage.getWorld(w.id)!;
-        ctx.audit(w, { op: "sim_configure", rounds: updated.config.rounds });
+        const updated = applyWorldConfig(ctx, args);
+        ctx.audit(updated, { op: "sim_configure", rounds: updated.config.rounds });
         return ctx.reply(
           {
             ok: true,
@@ -50,6 +87,7 @@ export function registerSimTools(server: McpServer, ctx: ServerContext): void {
     "One round of simulation · PLAN: activates a weighted persona subset and composes their personalized digests (persona card ≤120 tokens, ranked feed, " +
       "working memory, collective view, allowed actions). Complete the task by writing each persona's actions, then submit via sim_submit_generations.",
     { world: z.string().optional().describe("World id/slug (default: active world)") },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     async ({ world }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -75,13 +113,19 @@ export function registerSimTools(server: McpServer, ctx: ServerContext): void {
     "sim_submit_generations",
     "One round of simulation · SUBMIT: ingests the generated posts/replies/votes, applies platform mechanics (feed ranking, virality, vote gravity), " +
       "runs organic engagement, updates memories and stances, computes round stats and advances the round. Invalid items are itemized; the round holds " +
-      "until you fix them or pass finalize.",
+      "until you fix them or pass finalize. Resubmitting the same task_id skips already-applied personas.",
     {
       task_id: z.string().describe("Task id from sim_next_batch"),
-      generations: z.unknown().describe("Array of { persona: id, actions: [...] } — see the task instructions for action formats"),
+      generations: z
+        .union([
+          z.array(simGenerationItem).describe("Array of { persona: id, actions: [...] } — mirrors the task.outputSchema the engine returned"),
+          z.string().describe("The same array as a JSON string (parsed server-side)"),
+        ])
+        .describe("Array of { persona: id, actions: [...] } — see the task instructions for action formats"),
       finalize: z.boolean().optional().describe("Force the round to advance even with rejected items (missing personas become lurkers)"),
       use_sampling: z.boolean().optional().describe("Opt-in accelerator: if the client supports MCP sampling, missing personas' actions are generated via sampling"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async ({ task_id, generations, finalize, use_sampling }) => {
       try {
         const task = ctx.storage.getTask(task_id);
@@ -148,6 +192,7 @@ export function registerSimTools(server: McpServer, ctx: ServerContext): void {
       scope: z.string().max(120).optional().describe("Who notices: 'all' (default), 'twitter', 'reddit', an entity or community name"),
       world: z.string().optional().describe("World id/slug (default: active world)"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     async ({ text, round, type, scope, world }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -180,6 +225,7 @@ export function registerSimTools(server: McpServer, ctx: ServerContext): void {
       round: z.number().int().min(1).max(40).optional().describe("Round number (default: latest)"),
       world: z.string().optional().describe("World id/slug (default: active world)"),
     },
+    { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     async ({ round, world }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -197,6 +243,7 @@ export function registerSimTools(server: McpServer, ctx: ServerContext): void {
     "sim_timeline",
     "The whole trajectory: per-round posts, engagement, sentiment per entity, escalations and injections — plus engagement peaks (mean + 2σ).",
     { world: z.string().optional().describe("World id/slug (default: active world)") },
+    { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     async ({ world }) => {
       try {
         const w = ctx.resolveWorld(world);

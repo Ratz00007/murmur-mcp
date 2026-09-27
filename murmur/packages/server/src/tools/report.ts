@@ -4,6 +4,47 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { buildReportTask, renderReportHtml, renderReportMarkdown, storeReport, validateReportDraft } from "@murmur/engine";
 import { coerceJson, type ServerContext } from "../session.js";
 
+/** Mirrors the task.outputSchema the engine attaches to report tasks (engine/src/report.ts). */
+const reportDraft = z.object({
+  scenarioRecap: z.string().min(60).optional().describe("One short paragraph restating the question and what was simulated"),
+  executiveSummary: z.string().min(120).describe("The verdict: 100-170 words with the key numbers and the biggest risk"),
+  keyFindings: z.array(z.string()).min(3).max(5).describe("3-5 one-sentence findings, each anchored to a number"),
+  trajectory: z.string().min(120).describe("Where this goes next: projection slope, momentum, escalation chains, the realistic branch"),
+  risks: z
+    .array(
+      z.object({
+        title: z.string().describe("Short risk title"),
+        rationale: z.string().describe("Why this is a risk, citing concrete posts and numbers"),
+        severity: z.enum(["high", "medium", "low"]).describe("high | medium | low"),
+        likelihood: z.enum(["high", "medium", "low"]).optional().describe("high | medium | low (default medium)"),
+        mitigation: z.string().describe("The concrete action that blunts this risk"),
+        trigger: z.string().optional().describe("The earliest observable signal that this risk is materializing"),
+        postIds: z.array(z.string()).describe("2-3 real post ids from the evidence pack backing this risk"),
+      })
+    )
+    .min(3)
+    .max(3)
+    .describe("Exactly 3 risks, each citing 2-3 real post ids"),
+  recommendations: z
+    .array(
+      z.object({
+        title: z.string().describe("Short recommendation title"),
+        action: z.string().describe("What to do, specifically"),
+        expectedImpact: z.string().describe("What this changes, and for whom"),
+      })
+    )
+    .min(2)
+    .max(4)
+    .describe("2-4 prioritized recommendations"),
+  confidence: z
+    .object({
+      strongSignals: z.array(z.string()).describe("What the run demonstrates consistently"),
+      contested: z.array(z.string()).describe("What is contested or unmeasured"),
+    })
+    .describe("Evidence confidence: strong signals vs contested findings"),
+  limitations: z.array(z.string()).max(3).optional().describe("Up to 3 known limits of this analysis"),
+});
+
 export function registerReportTools(server: McpServer, ctx: ServerContext): void {
   server.tool(
     "report_plan",
@@ -13,6 +54,7 @@ export function registerReportTools(server: McpServer, ctx: ServerContext): void
       world: z.string().optional().describe("World id/slug (default: active world)"),
       focus: z.string().max(200).optional().describe("Optional focus for the report, e.g. 'developer reaction to the pricing change'"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     async ({ world, focus }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -39,8 +81,14 @@ export function registerReportTools(server: McpServer, ctx: ServerContext): void
     "Stage 6 · SUBMIT: validate the narrative (sections, severities, post-id citations must exist), version and store it. Invalid fields are itemized for surgical retry.",
     {
       task_id: z.string().describe("Task id from report_plan"),
-      draft: z.unknown().describe("Your draft: {scenarioRecap, executiveSummary, keyFindings, trajectory, risks: [{title, rationale, severity, likelihood, mitigation, trigger, postIds}], recommendations: [{title, action, expectedImpact}], confidence: {strongSignals, contested}, limitations}"),
+      draft: z
+        .union([
+          reportDraft.describe("Your draft — mirrors the task.outputSchema the engine returned"),
+          z.string().describe("The same draft as a JSON string (parsed server-side)"),
+        ])
+        .describe("Your draft: {scenarioRecap, executiveSummary, keyFindings, trajectory, risks: [{title, rationale, severity, likelihood, mitigation, trigger, postIds}], recommendations: [{title, action, expectedImpact}], confidence: {strongSignals, contested}, limitations}"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     async ({ task_id, draft }) => {
       try {
         const task = ctx.storage.getTask(task_id);
@@ -86,6 +134,7 @@ export function registerReportTools(server: McpServer, ctx: ServerContext): void
       version: z.number().int().min(1).optional().describe("Report version (default: latest)"),
       format: z.enum(["md", "html", "both"]).optional().describe("Output format: md (default), html dashboard, or both"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async ({ world, version, format }) => {
       try {
         const w = ctx.resolveWorld(world);

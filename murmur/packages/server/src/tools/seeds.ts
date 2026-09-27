@@ -26,6 +26,7 @@ export function registerSeedTools(server: McpServer, ctx: ServerContext): void {
       paths: z.array(z.string()).min(1).max(50).describe("Repo-relative (or absolute) file paths"),
       world: z.string().optional().describe("World id/slug (default: active world)"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async ({ paths, world }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -85,6 +86,7 @@ export function registerSeedTools(server: McpServer, ctx: ServerContext): void {
       title: z.string().max(200).optional().describe("Human title for the digest list"),
       world: z.string().optional().describe("World id/slug (default: active world)"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async ({ url, text, title, world }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -112,6 +114,7 @@ export function registerSeedTools(server: McpServer, ctx: ServerContext): void {
       text: z.string().min(1).describe("The material itself"),
       world: z.string().optional().describe("World id/slug (default: active world)"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async ({ title, text, world }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -135,6 +138,7 @@ export function registerSeedTools(server: McpServer, ctx: ServerContext): void {
     "seeds_review",
     "Pre-flight check before ontology: list every seed with its digest and coverage notes. Show this to the user before proceeding.",
     { world: z.string().optional().describe("World id/slug (default: active world)") },
+    { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     async ({ world }) => {
       try {
         const w = ctx.resolveWorld(world);

@@ -15,6 +15,7 @@ export function registerInteractTools(server: McpServer, ctx: ServerContext): vo
       answer: z.string().max(4000).optional().describe("Your in-character answer — provide to log the exchange"),
       world: z.string().optional().describe("World id/slug (default: active world)"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     async ({ persona, question, answer, world }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -55,6 +56,7 @@ export function registerInteractTools(server: McpServer, ctx: ServerContext): vo
       answer: z.string().max(6000).optional().describe("Your cited answer — provide to log the exchange"),
       world: z.string().optional().describe("World id/slug (default: active world)"),
     },
+    { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     async ({ question, answer, world }) => {
       try {
         const w = ctx.resolveWorld(world);
