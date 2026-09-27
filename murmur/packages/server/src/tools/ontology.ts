@@ -17,7 +17,7 @@ const ontologyEntity = z.object({
 export function registerOntologyTools(server: McpServer, ctx: ServerContext): void {
   server.tool(
     "ontology_plan",
-    "Stage 2 · PLAN: compose the extraction task over all seeds (digests + strict JSON schema). Read the returned task, complete it yourself " +
+    "Stage 2 Â· PLAN: compose the extraction task over all seeds (digests + strict JSON schema). Read the returned task, complete it yourself " +
       "(you are the LLM), and return the result via ontology_submit. One call extracts the whole corpus.",
     { world: z.string().optional().describe("World id/slug (default: active world)") },
     { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
@@ -44,7 +44,7 @@ export function registerOntologyTools(server: McpServer, ctx: ServerContext): vo
 
   server.tool(
     "ontology_submit",
-    "Stage 2 · SUBMIT: validate and store the extracted ontology. Invalid entities are itemized for surgical retry; valid ones are applied immediately. " +
+    "Stage 2 Â· SUBMIT: validate and store the extracted ontology. Invalid entities are itemized for surgical retry; valid ones are applied immediately. " +
       "Resubmitting the same task_id skips already-applied entities.",
     {
       task_id: z.string().describe("Task id from ontology_plan"),
@@ -66,8 +66,9 @@ export function registerOntologyTools(server: McpServer, ctx: ServerContext): vo
     { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async ({ task_id, result }) => {
       try {
-        const task = ctx.storage.getTask(task_id);
-        if (!task) throw new Error(`unknown task id: ${task_id}`);
+        const wActive = ctx.resolveWorld(undefined);
+        const task = ctx.storage.getTask(wActive.id, task_id);
+        if (!task) throw new Error(`unknown task id: ${task_id} (no such task in the active world ${wActive.id})`);
         const w = ctx.storage.getWorld(task.worldId);
         if (!w) throw new Error("world for task not found");
         const submitted = coerceJson(result);
@@ -80,7 +81,7 @@ export function registerOntologyTools(server: McpServer, ctx: ServerContext): vo
             inserted: out.insertedCount,
             entities: out.entities.slice(0, 40).map((e) => ({ id: e.id, name: e.name, type: e.type, salience: e.salience })),
             skippedExisting: out.skippedExisting,
-            ...(out.rejected.length ? { rejected: out.rejected, hint: "fix the rejected entities and resubmit the same task_id — valid ones already applied and will be skipped" } : {}),
+            ...(out.rejected.length ? { rejected: out.rejected, hint: "fix the rejected entities and resubmit the same task_id â€” valid ones already applied and will be skipped" } : {}),
             next: okAll && out.insertedCount + out.skippedExisting.length > 0 ? "graph_build" : "fix rejected items and resubmit, or add more seeds and re-run ontology_plan",
           },
           w

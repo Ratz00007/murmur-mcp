@@ -70,7 +70,7 @@ export function buildPersonasTask(storage: Storage, world: World, opts: { count?
 
   const relations = storage.listRelations(world.id);
   const task: GenerationTask = {
-    id: storage.nextTaskId(),
+    id: storage.nextTaskId(world.id),
     worldId: world.id,
     kind: "personas",
     round: null,

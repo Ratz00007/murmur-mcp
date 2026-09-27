@@ -19,7 +19,7 @@ const personaDraftItem = z.object({
 export function registerPersonaTools(server: McpServer, ctx: ServerContext): void {
   server.tool(
     "personas_plan",
-    "Stage 4 · PLAN: compose the population-drafting task (count + archetype distribution derived from the ontology + stance hints per entity). " +
+    "Stage 4 Â· PLAN: compose the population-drafting task (count + archetype distribution derived from the ontology + stance hints per entity). " +
       "Complete it and return the result via personas_submit.",
     {
       world: z.string().optional().describe("World id/slug (default: active world)"),
@@ -50,7 +50,7 @@ export function registerPersonaTools(server: McpServer, ctx: ServerContext): voi
 
   server.tool(
     "personas_submit",
-    "Stage 4 · SUBMIT: validate and store the population (8-128 personas). Bad personas are itemized; the population also gets its follow graph and community memberships wired here. " +
+    "Stage 4 Â· SUBMIT: validate and store the population (8-128 personas). Bad personas are itemized; the population also gets its follow graph and community memberships wired here. " +
       "Resubmitting the same task_id skips already-inserted names.",
     {
       task_id: z.string().describe("Task id from personas_plan"),
@@ -72,8 +72,9 @@ export function registerPersonaTools(server: McpServer, ctx: ServerContext): voi
     { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async ({ task_id, result }) => {
       try {
-        const task = ctx.storage.getTask(task_id);
-        if (!task) throw new Error(`unknown task id: ${task_id}`);
+        const wActive = ctx.resolveWorld(undefined);
+        const task = ctx.storage.getTask(wActive.id, task_id);
+        if (!task) throw new Error(`unknown task id: ${task_id} (no such task in the active world ${wActive.id})`);
         const w = ctx.storage.getWorld(task.worldId);
         if (!w) throw new Error("world for task not found");
         const submitted = coerceJson(result);
@@ -95,7 +96,7 @@ export function registerPersonaTools(server: McpServer, ctx: ServerContext): voi
             archetypeBreakdown: out.archetypeBreakdown,
             followEdges: out.followEdges,
             communityMemberships: out.memberships,
-            ...(out.rejected.length ? { rejected: out.rejected, hint: "fix rejected personas and resubmit the same task_id — already-inserted names are skipped" } : {}),
+            ...(out.rejected.length ? { rejected: out.rejected, hint: "fix rejected personas and resubmit the same task_id â€” already-inserted names are skipped" } : {}),
             next: okAll ? "persona_inspect to audit individuals (recommended), or sim_configure" : "fix and resubmit",
           },
           w
@@ -148,7 +149,7 @@ export function registerPersonaTools(server: McpServer, ctx: ServerContext): voi
 
   server.tool(
     "persona_edit",
-    "Fix an individual persona before (or during) a run: rename, re-voice, retarget stances, change platform or activity. Surgical — only provided fields change.",
+    "Fix an individual persona before (or during) a run: rename, re-voice, retarget stances, change platform or activity. Surgical â€” only provided fields change.",
     {
       persona: z.string().describe("Persona id or handle"),
       patch: z
@@ -164,7 +165,7 @@ export function registerPersonaTools(server: McpServer, ctx: ServerContext): voi
               platform: z.enum(["twitter", "reddit", "both"]).optional().describe("New platform: twitter | reddit | both"),
               activity: z.number().min(0.05).max(1).optional().describe("New activity (0.05-1)"),
             })
-            .describe("Partial persona — only provided fields change"),
+            .describe("Partial persona â€” only provided fields change"),
           z.string().describe("The same patch as a JSON string (parsed server-side)"),
         ])
         .describe("Partial persona: {name?, handle?, archetype?, bio?, traits?, stances?: {EntityName: -1..1}, platform?, activity?}"),

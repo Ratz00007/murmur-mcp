@@ -10,7 +10,7 @@ const simGenerationItem = z.object({
   actions: z
     .array(z.object({ type: z.string() }).passthrough())
     .max(3)
-    .describe("1-3 action objects (post/reply/like/comment/upvote/downvote/quote) — see the task instructions for exact fields"),
+    .describe("1-3 action objects (post/reply/like/comment/upvote/downvote/quote) â€” see the task instructions for exact fields"),
 });
 
 /**
@@ -59,7 +59,7 @@ export function registerSimTools(server: McpServer, ctx: ServerContext): void {
   server.tool(
     "sim_configure",
     "The canonical world-parameter setter: tune rounds (default 8, max 40), batch sizes, platform limits and the response budget in one call. " +
-      "The pipeline calls it after personas_submit, before the first sim_next_batch — but it is safe any time before or during a run " +
+      "The pipeline calls it after personas_submit, before the first sim_next_batch â€” but it is safe any time before or during a run " +
       "(world_config is a thin alias that forwards here).",
     CONFIG_SHAPE,
     CONFIG_ANNOTATIONS,
@@ -84,7 +84,7 @@ export function registerSimTools(server: McpServer, ctx: ServerContext): void {
 
   server.tool(
     "sim_next_batch",
-    "One round of simulation · PLAN: activates a weighted persona subset and composes their personalized digests (persona card ≤120 tokens, ranked feed, " +
+    "One round of simulation Â· PLAN: activates a weighted persona subset and composes their personalized digests (persona card â‰¤120 tokens, ranked feed, " +
       "working memory, collective view, allowed actions). Complete the task by writing each persona's actions, then submit via sim_submit_generations.",
     { world: z.string().optional().describe("World id/slug (default: active world)") },
     { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
@@ -111,25 +111,26 @@ export function registerSimTools(server: McpServer, ctx: ServerContext): void {
 
   server.tool(
     "sim_submit_generations",
-    "One round of simulation · SUBMIT: ingests the generated posts/replies/votes, applies platform mechanics (feed ranking, virality, vote gravity), " +
+    "One round of simulation Â· SUBMIT: ingests the generated posts/replies/votes, applies platform mechanics (feed ranking, virality, vote gravity), " +
       "runs organic engagement, updates memories and stances, computes round stats and advances the round. Invalid items are itemized; the round holds " +
       "until you fix them or pass finalize. Resubmitting the same task_id skips already-applied personas.",
     {
       task_id: z.string().describe("Task id from sim_next_batch"),
       generations: z
         .union([
-          z.array(simGenerationItem).describe("Array of { persona: id, actions: [...] } — mirrors the task.outputSchema the engine returned"),
+          z.array(simGenerationItem).describe("Array of { persona: id, actions: [...] } â€” mirrors the task.outputSchema the engine returned"),
           z.string().describe("The same array as a JSON string (parsed server-side)"),
         ])
-        .describe("Array of { persona: id, actions: [...] } — see the task instructions for action formats"),
+        .describe("Array of { persona: id, actions: [...] } â€” see the task instructions for action formats"),
       finalize: z.boolean().optional().describe("Force the round to advance even with rejected items (missing personas become lurkers)"),
       use_sampling: z.boolean().optional().describe("Opt-in accelerator: if the client supports MCP sampling, missing personas' actions are generated via sampling"),
     },
     { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async ({ task_id, generations, finalize, use_sampling }) => {
       try {
-        const task = ctx.storage.getTask(task_id);
-        if (!task) throw new Error(`unknown task id: ${task_id}`);
+        const wActive = ctx.resolveWorld(undefined);
+        const task = ctx.storage.getTask(wActive.id, task_id);
+        if (!task) throw new Error(`unknown task id: ${task_id} (no such task in the active world ${wActive.id})`);
         const w = ctx.storage.getWorld(task.worldId);
         if (!w) throw new Error("world for task not found");
         let subs = (Array.isArray(coerceJson(generations)) ? coerceJson(generations) : []) as SimGeneration[];
@@ -183,8 +184,8 @@ export function registerSimTools(server: McpServer, ctx: ServerContext): void {
 
   server.tool(
     "sim_inject_event",
-    "God's-eye variable injection: drop an external event (competitor price cut, leaked memo, celebrity opinion…) into the world between rounds. " +
-      "Activated personas see it in their next digest and their reactions shift the trajectory — measurable in the next round summary.",
+    "God's-eye variable injection: drop an external event (competitor price cut, leaked memo, celebrity opinionâ€¦) into the world between rounds. " +
+      "Activated personas see it in their next digest and their reactions shift the trajectory â€” measurable in the next round summary.",
     {
       text: z.string().min(4).max(600).describe("The event, one sentence: 'Competitor undercuts price by 30%'"),
       round: z.number().int().min(1).max(40).optional().describe("Round in which the event lands (default: next round)"),
@@ -197,7 +198,7 @@ export function registerSimTools(server: McpServer, ctx: ServerContext): void {
       try {
         const w = ctx.resolveWorld(world);
         if (w.round >= w.config.rounds) {
-          throw new Error(`all ${w.config.rounds} rounds complete — extend with sim_configure({rounds: N}) before injecting`);
+          throw new Error(`all ${w.config.rounds} rounds complete â€” extend with sim_configure({rounds: N}) before injecting`);
         }
         const targetRound = Math.max(round ?? w.round + 1, w.round + 1);
         const ev = ctx.storage.addEvent(w.id, targetRound, "injection", { text, subtype: type ?? "news" }, scope ?? "all");
@@ -241,7 +242,7 @@ export function registerSimTools(server: McpServer, ctx: ServerContext): void {
 
   server.tool(
     "sim_timeline",
-    "The whole trajectory: per-round posts, engagement, sentiment per entity, escalations and injections — plus engagement peaks (mean + 2σ).",
+    "The whole trajectory: per-round posts, engagement, sentiment per entity, escalations and injections â€” plus engagement peaks (mean + 2Ïƒ).",
     { world: z.string().optional().describe("World id/slug (default: active world)") },
     { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     async ({ world }) => {
@@ -269,7 +270,7 @@ export function registerSimTools(server: McpServer, ctx: ServerContext): void {
 // ---------------------------------------------------------------------------
 // MCP sampling accelerator (opt-in). Fills actions for personas the host
 // skipped, via the client's sampling capability. Produces identical
-// artifacts to the plan/submit path — it's an accelerator, not a dependency.
+// artifacts to the plan/submit path â€” it's an accelerator, not a dependency.
 // ---------------------------------------------------------------------------
 
 async function fillViaSampling(
@@ -299,7 +300,7 @@ async function fillViaSampling(
       out.push({ persona: personaId, actions });
       added++;
     } catch {
-      // sampling failed for this persona — it will simply lurk
+      // sampling failed for this persona â€” it will simply lurk
     }
   }
   void worldId;

@@ -18,7 +18,7 @@ export function worldStatus(storage: Storage, world: World): WorldStatus {
     .listTasks(world.id)
     .reverse()
     .find((t) => {
-      const verdicts = storage.getTaskVerdicts(t.id);
+      const verdicts = storage.getTaskVerdicts(t.worldId, t.id);
       return !verdicts;
     });
   return {

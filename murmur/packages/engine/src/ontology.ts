@@ -42,7 +42,7 @@ export function buildOntologyTask(storage: Storage, world: World): GenerationTas
     return { title: s.title, kind: s.kind, ref: s.ref, bytes: s.bytes, text: `<seed>${digest}</seed>` };
   });
   const task: GenerationTask = {
-    id: storage.nextTaskId(),
+    id: storage.nextTaskId(world.id),
     worldId: world.id,
     kind: "ontology",
     round: null,

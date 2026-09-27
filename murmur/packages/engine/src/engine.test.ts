@@ -321,9 +321,9 @@ describe("storage", () => {
       outputSchema: {}, items: [], createdAt: new Date().toISOString(),
     };
     db.saveTask(task);
-    expect(db.getTask("t_1")?.id).toBe("t_1");
-    db.completeTask("t_1", { x: 1 }, { taskId: "t_1", applied: ["p_1"], rejected: [] }, "submitted");
-    expect(db.getTaskVerdicts("t_1")?.applied).toEqual(["p_1"]);
+    expect(db.getTask(world.id, "t_1")?.id).toBe("t_1");
+    db.completeTask(world.id, "t_1", { x: 1 }, { taskId: "t_1", applied: ["p_1"], rejected: [] }, "submitted");
+    expect(db.getTaskVerdicts(world.id, "t_1")?.applied).toEqual(["p_1"]);
 
     // dump is stable across a reopen (timestamps normalized, content identical)
     const dump1 = db.dumpWorld(world.id);

@@ -88,7 +88,7 @@ export function buildSimBatch(storage: Storage, world: World): BatchBuildResult 
   }
 
   const task: GenerationTask = {
-    id: storage.nextTaskId(),
+    id: storage.nextTaskId(world.id),
     worldId: world.id,
     kind: "sim",
     round: targetRound,

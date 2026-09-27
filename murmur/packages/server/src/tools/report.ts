@@ -48,7 +48,7 @@ const reportDraft = z.object({
 export function registerReportTools(server: McpServer, ctx: ServerContext): void {
   server.tool(
     "report_plan",
-    "Stage 6 · PLAN: compose the report-drafting task — deterministic analytics (sentiment curves + projection, factions, controversy index, platform divergence, escalation chains, quote bank, timeline moments) " +
+    "Stage 6 Â· PLAN: compose the report-drafting task â€” deterministic analytics (sentiment curves + projection, factions, controversy index, platform divergence, escalation chains, quote bank, timeline moments) " +
       "plus an evidence pack of the strongest posts. Draft the senior-analyst narrative from that evidence and return it via report_submit.",
     {
       world: z.string().optional().describe("World id/slug (default: active world)"),
@@ -78,12 +78,12 @@ export function registerReportTools(server: McpServer, ctx: ServerContext): void
 
   server.tool(
     "report_submit",
-    "Stage 6 · SUBMIT: validate the narrative (sections, severities, post-id citations must exist), version and store it. Invalid fields are itemized for surgical retry.",
+    "Stage 6 Â· SUBMIT: validate the narrative (sections, severities, post-id citations must exist), version and store it. Invalid fields are itemized for surgical retry.",
     {
       task_id: z.string().describe("Task id from report_plan"),
       draft: z
         .union([
-          reportDraft.describe("Your draft — mirrors the task.outputSchema the engine returned"),
+          reportDraft.describe("Your draft â€” mirrors the task.outputSchema the engine returned"),
           z.string().describe("The same draft as a JSON string (parsed server-side)"),
         ])
         .describe("Your draft: {scenarioRecap, executiveSummary, keyFindings, trajectory, risks: [{title, rationale, severity, likelihood, mitigation, trigger, postIds}], recommendations: [{title, action, expectedImpact}], confidence: {strongSignals, contested}, limitations}"),
@@ -91,8 +91,9 @@ export function registerReportTools(server: McpServer, ctx: ServerContext): void
     { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     async ({ task_id, draft }) => {
       try {
-        const task = ctx.storage.getTask(task_id);
-        if (!task) throw new Error(`unknown task id: ${task_id}`);
+        const wActive = ctx.resolveWorld(undefined);
+        const task = ctx.storage.getTask(wActive.id, task_id);
+        if (!task) throw new Error(`unknown task id: ${task_id} (no such task in the active world ${wActive.id})`);
         const w = ctx.storage.getWorld(task.worldId);
         if (!w) throw new Error("world for task not found");
         const { draft: clean, rejected } = validateReportDraft(ctx.storage, w, coerceJson(draft));
@@ -102,7 +103,7 @@ export function registerReportTools(server: McpServer, ctx: ServerContext): void
             {
               ok: false,
               rejected,
-              hint: "fix the rejected fields and resubmit the same task_id — risks must cite real post ids from the evidence pack",
+              hint: "fix the rejected fields and resubmit the same task_id â€” risks must cite real post ids from the evidence pack",
               next: "report_submit (retry)",
             },
             w
@@ -114,7 +115,7 @@ export function registerReportTools(server: McpServer, ctx: ServerContext): void
           {
             ok: true,
             version: record.version,
-            risks: clean.risks.map((r) => `${r.severity.toUpperCase()} — ${r.title} [${r.postIds.join(", ")}]`),
+            risks: clean.risks.map((r) => `${r.severity.toUpperCase()} â€” ${r.title} [${r.postIds.join(", ")}]`),
             next: `report_export to write report-${record.version}.md into the repo`,
           },
           w
@@ -127,7 +128,7 @@ export function registerReportTools(server: McpServer, ctx: ServerContext): void
 
   server.tool(
     "report_export",
-    "Write the versioned report into .murmur/reports/{world}/ — Markdown+Mermaid (diffable, renders on any git forge) and/or a self-contained HTML dashboard (inline CSS+SVG, no external requests; open it in a browser). " +
+    "Write the versioned report into .murmur/reports/{world}/ â€” Markdown+Mermaid (diffable, renders on any git forge) and/or a self-contained HTML dashboard (inline CSS+SVG, no external requests; open it in a browser). " +
       "Reports regenerate (never mutate), so two scenarios can be diffed line by line.",
     {
       world: z.string().optional().describe("World id/slug (default: active world)"),
@@ -139,7 +140,7 @@ export function registerReportTools(server: McpServer, ctx: ServerContext): void
       try {
         const w = ctx.resolveWorld(world);
         const record = version ? ctx.storage.reportByVersion(w.id, version) : ctx.storage.latestReport(w.id);
-        if (!record) throw new Error("no stored report — run report_plan / report_submit first");
+        if (!record) throw new Error("no stored report â€” run report_plan / report_submit first");
         const fmt = format ?? "md";
         const written: { path: string; bytes: number }[] = [];
         let mdPath: string | null = null;
@@ -166,7 +167,7 @@ export function registerReportTools(server: McpServer, ctx: ServerContext): void
             version: record.version,
             files: written,
             ...(htmlPath
-              ? { open: htmlPath, hint: `open ${htmlPath} in a browser — the dashboard shares every number with the .md report (same engine computation)` }
+              ? { open: htmlPath, hint: `open ${htmlPath} in a browser â€” the dashboard shares every number with the .md report (same engine computation)` }
               : {}),
             next: htmlPath
               ? `open the dashboard (${htmlPath}) and the report${mdPath ? ` (${mdPath})` : ""}, then interview_agent / report_agent_ask to interrogate the world behind them`

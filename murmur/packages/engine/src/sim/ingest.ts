@@ -34,7 +34,7 @@ export function submitGenerations(
   submissions: SimGeneration[],
   opts: { finalize?: boolean } = {}
 ): SimSubmitResult {
-  const task = storage.getTask(taskId);
+  const task = storage.getTask(world.id, taskId);
   if (!task || task.worldId !== world.id || task.kind !== "sim") {
     throw new Error(`unknown sim task: ${taskId}`);
   }
@@ -53,7 +53,7 @@ export function submitGenerations(
   const itemPersona = new Map<string, Persona>(activated.map((p) => [p.id, p]));
   for (const p of activated) itemPersona.set(p.handle.toLowerCase(), p);
 
-  const priorVerdicts = storage.getTaskVerdicts(taskId);
+  const priorVerdicts = storage.getTaskVerdicts(world.id, taskId);
   const alreadyApplied = new Set(priorVerdicts?.applied ?? []);
 
   const rejected: ItemError[] = [];
@@ -146,7 +146,7 @@ export function submitGenerations(
     const completed = targetRound >= config.rounds;
     storage.setStage(world.id, completed ? "completed" : "running");
     const verdict: TaskVerdict = { taskId, applied: [...appliedPersonas], rejected: mergedRejected };
-    storage.completeTask(taskId, raw, verdict, "submitted");
+    storage.completeTask(world.id, taskId, raw, verdict, 'submitted');
     void organic;
     return {
       taskId,
@@ -165,7 +165,7 @@ export function submitGenerations(
   }
 
   const verdict: TaskVerdict = { taskId, applied: [...appliedPersonas], rejected: mergedRejected };
-  storage.completeTask(taskId, raw, verdict, "held");
+  storage.completeTask(world.id, taskId, raw, verdict, 'held');
   return {
     taskId,
     round: null,

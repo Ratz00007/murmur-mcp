@@ -178,7 +178,7 @@ export function buildReportTask(storage: Storage, world: World, focus: string | 
   });
 
   const task: import("./types.js").GenerationTask = {
-    id: storage.nextTaskId(),
+    id: storage.nextTaskId(world.id),
     worldId: world.id,
     kind: "report",
     round: world.round,
