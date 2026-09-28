@@ -40,6 +40,7 @@ import {
   type TimelineMoment,
 } from "./analytics.js";
 import { engagementScore } from "./util/engagement.js";
+import { verifyNumericClaims } from "./report-claims.js";
 import { ensembleIntervals, projectionEnsemble, type EnsembleInterval } from "./dynamics/ensemble.js";
 import { clamp, escapeMermaid, estTokens, nowIso, round2Safe, sentimentLabel, stanceBar, truncate } from "./util/text.js";
 
@@ -309,6 +310,29 @@ export function validateReportDraft(storage: Storage, world: World, draft: unkno
     confidence: { strongSignals: strongSignals.slice(0, 4), contested: contested.slice(0, 3) },
     limitations: limitations.length > 0 ? limitations : undefined,
   };
+
+  // Numeric claim integrity: post ids are checked above, but nothing used to
+  // check a NUMBER. The instructions said "never invent numbers" and that was
+  // unenforceable — a draft could state any figure in the executive summary, a
+  // finding or a risk rationale and it would be rendered verbatim into the
+  // dashboard. Now every numeric token must resolve to a value this run
+  // actually produced.
+  //
+  // `collectReportData` reads only `focus` and `createdAt` from its record
+  // argument, so a minimal object is passed rather than fabricating a full
+  // ReportRecord.
+  const verdict = verifyNumericClaims(
+    collectReportData(storage, world, { focus: "", createdAt: world.createdAt } as ReportRecord),
+    out,
+    { rounds: world.config.rounds, population: storage.countPersonas(world.id) },
+  );
+  for (const bad of verdict.unverified.slice(0, 6)) {
+    rejected.push({
+      ref: bad.ref,
+      message: `unverified number "${bad.token}" — this run does not contain that value. Use only figures from the stats pack (${verdict.available}), or state the claim without a number.`,
+    });
+  }
+
   return { draft: out, rejected };
 }
 
@@ -941,3 +965,4 @@ export function clampReportFocus(focus: string | undefined): string {
 }
 
 export type { Post, World, Persona };
+

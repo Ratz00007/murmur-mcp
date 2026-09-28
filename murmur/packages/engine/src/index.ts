@@ -90,6 +90,13 @@ export {
 } from "./report.js";
 export { renderReportHtml } from "./report-html.js";
 export {
+  verifyNumericClaims,
+  extractNumbers,
+  allowedNumbers,
+  type ClaimVerdict,
+  type NumericClaim,
+} from "./report-claims.js";
+export {
   buildInterviewPack,
   buildAskPack,
   qaEntry,
@@ -97,3 +104,4 @@ export {
   ASK_INSTRUCTIONS,
 } from "./interact.js";
 export { worldStatus, roundSummary, worldListRow } from "./stats.js";
+

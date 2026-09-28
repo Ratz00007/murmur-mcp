@@ -69,7 +69,7 @@ Every snippet is also printed by `npx murmur-mcp doctor` (which also checks Node
 
 That prompt is a playbook: your agent drives all 29 tools in order, shows you digests for approval, writes the report, and every receipt tells it the next step.
 
-> **What a run actually costs.** Zero keys, but not zero time: a default 8-round world puts the order of *hundreds* of generations in front of your host model, so wall time is set by the model and the batch size, not by Murmur. Nothing has been published end-to-end with a real LLM yet — the 71-test suite (golden byte-identical replays plus the cleanroom release gate) runs against mock generations, and `npm run demo` exercises the full pipeline headless. Treat your first real run as a rehearsal, and start with fewer rounds.
+> **What a run actually costs.** Zero keys, but not zero time: a default 8-round world puts the order of *hundreds* of generations in front of your host model, so wall time is set by the model and the batch size, not by Murmur. Nothing has been published end-to-end with a real LLM yet — the 83-test suite (golden byte-identical replays plus the cleanroom release gate) runs against mock generations, and `npm run demo` exercises the full pipeline headless. Treat your first real run as a rehearsal, and start with fewer rounds.
 
 Mid-run experimentation:
 
@@ -158,9 +158,10 @@ tests/
 examples/      a ready-to-run demo scenario + paste-ready prompts
 ```
 
-Develop: `npm install && npm run build && npm test` (71 tests) · `npm run test:e2e` · `npm run cleanroom` · `npm run demo` (headless full pipeline, no LLM needed).
+Develop: `npm install && npm run build && npm test` (83 tests) · `npm run test:e2e` · `npm run cleanroom` · `npm run demo` (headless full pipeline, no LLM needed).
 
 ## License & provenance
 
 Apache-2.0. Murmur is a clean-room implementation: no code, prompts or configuration from any AGPL-licensed project were copied (see `CONTRIBUTING.md` for the policy that binds every contribution). "MiroFish" is a third-party trademark used only in factual comparisons.
+
 
