@@ -1,0 +1,9 @@
+# bench — MurmurBench-0
+#
+# Data is NOT tracked. Every artifact under data*/ is regenerable from the
+# committed scripts, and committing it would let a later run silently differ
+# from the audited one. RESULTS.md carries the numbers; the data is rebuilt
+# by re-running the pipeline.
+data/
+data-pairs/
+data-arms/
