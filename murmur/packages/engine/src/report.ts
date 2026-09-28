@@ -711,8 +711,8 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
     // Ensemble UQ: seeded P10–P50–P90 bands replace the old 2-point line.
     const runs = world.config.ensemble?.runCount ?? 5;
     L.push(
-      `**Simulated projection — seeded ensemble of ${runs} runs.** Each run refits the observed curve with per-run slope jitter (seeds \`${world.seed}:0\`…\`${world.seed}:${runs - 1}\`). ` +
-        `Recorded rounds are identical in every run, so the band only opens on projected rounds — it quantifies model spread, not real-world uncertainty.`
+      `**Simulated projection — slope-jitter sensitivity around the recorded run.** No re-simulation: the ensemble least-squares-fits the observed curve and jitters the fitted slope across ${runs} refits (seeds \`${world.seed}:0\`…\`${world.seed}:${runs - 1}\`). ` +
+        `Recorded rounds are identical in every run, so the band only opens on projected rounds — it quantifies model spread against a ±0.06 slope perturbation, not real-world uncertainty.`
     );
     L.push("");
     L.push("| Round | P10 | P50 | P90 |");

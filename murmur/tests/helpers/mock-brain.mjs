@@ -660,7 +660,7 @@ export function completeReportTask(task) {
     {
       title: "Answer the loudest cluster with specifics",
       action: `Take the strongest ${risks[0] && risks[0].severity === "high" ? "and most-cited" : ""} grievance thread head-on: publish the grandfathering math, name the amnesty terms, and route the FAQ to the critics' platform of choice within 48 hours of the real announcement.`,
-      expectedImpact: `Converts a share of the ${pct(oppShare)} opposition before it hardens; historically blunts the first-week backlash curve.`,
+      expectedImpact: `Converts a share of the ${pct(oppShare)} opposition before it hardens; designed to blunt the first-week backlash curve.`,
     },
     {
       title: `Arm the ${sup && sup.leaders && sup.leaders[0] ? sup.leaders[0].handle : "champion"} cohort`,

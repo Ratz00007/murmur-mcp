@@ -590,9 +590,9 @@ export function renderReportHtml(storage: Storage, world: World, report: ReportR
       const last = D.ensemble[D.ensemble.length - 1];
       const opened = D.ensemble.some((b) => b.p10 !== b.p90);
       H.push(
-        `<p class="chart-note">Simulated projection — seeded ensemble of ${runs} runs (least-squares trend with per-run slope jitter): recorded rounds carry no band (every run shares the recorded history); the band opens on projected rounds. ` +
+        `<p class="chart-note">Simulated projection — slope-jitter sensitivity around the recorded run (no re-simulation; ${runs} refits of the least-squares trend): recorded rounds carry no band (every run shares the recorded values); the band opens on projected rounds. ` +
           (opened ? `Round ${last.round}: P10 ${fmt(last.p10)} · P50 ${fmt(last.p50)} · P90 ${fmt(last.p90)}. ` : "") +
-          `Spread reflects model jitter only — a simulated perspective, not a claim about the future.</p>`
+          `Spread reflects the ±0.06 slope jitter only — a simulated perspective, not a claim about the future.</p>`
       );
     } else {
       H.push(`<div class="panel"><h4>Outlook — ${esc(D.focusEntity.name)} <span style="float:right;font-weight:400;text-transform:none;letter-spacing:0">dashed = extrapolated</span></h4>${projectionChart(actual, proj)}</div>`);
