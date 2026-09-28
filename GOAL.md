@@ -37,22 +37,22 @@ coding session** — by showing its work, including where it is bad.
 ## Success criteria
 
 ### A. Truth and safety — no real defects remain
-- [ ] A1 `assertInsideWorkspace` called from `seed_add_files`, using `realpath`
+- [x] A1 `assertInsideWorkspace` called from `seed_add_files`, using `realpath`
       so a symlink cannot escape; negative test creates a real file outside the
       root and asserts it is refused
-- [ ] A2 `createMessage` bound at `murmur/packages/server/src/server.ts:49`; the
+- [x] A2 `createMessage` bound at `murmur/packages/server/src/server.ts:49`; the
       sampling accelerator is reachable; test proves it
-- [ ] A3 `patchPersona` and `deleteMemories` carry a `world_id` predicate
+- [x] A3 `patchPersona` and `deleteMemories` carry a `world_id` predicate
       (`murmur/packages/engine/src/store/storage.ts:421,487`) — today a `p_1`
       in two worlds is overwritten in both
-- [ ] A4 Zero hardcoded test counts in docs; a script generates them and CI
+- [x] A4 Zero hardcoded test counts in docs; a script generates them and CI
       fails on disagreement
-- [ ] A5 `*.db`, `*.db-wal`, `*.db-shm` gitignored
-- [ ] A6 The committed `murmur-demo/.murmur/` and `gallery/` reports match the
-      code that generates them (CI is currently green while they contradict it)
+- [x] A5 `*.db`, `*.db-wal`, `*.db-shm` gitignored
+- [x] A6 The committed `murmur-demo/.murmur/` and `gallery/` reports match the
+      code that generates them
 
 ### B. Credibility core
-- [ ] B1 `claim_verify` rejects a report draft containing a number not in the
+- [x] B1 `claim_verify` rejects a report draft containing a number not in the
       stats pack; negative-control test included
 - [ ] B2 Tautological metrics (`organicEngagementShare` — structurally zero by
       construction at `sim/ingest.ts:462` — plus `polarization`, `controversy`,
@@ -60,8 +60,7 @@ coding session** — by showing its work, including where it is bad.
       or removed from both renderers
 - [ ] B3 `METHODOLOGY.md` states plainly that personas are invented, the band is
       slope sensitivity not uncertainty, and nothing is a measurement
-- [ ] B4 "ensemble" renamed to sensitivity everywhere, including the relabel
-      currently sitting uncommitted in the working tree
+- [ ] B4 "ensemble" renamed to sensitivity everywhere
 
 ### C. The Objection Dossier
 - [ ] C1 New report artifact: ranked objections with steelman, evidence, blast
@@ -141,3 +140,33 @@ coding session** — by showing its work, including where it is bad.
   prevent. Next: find pairs by searching vendor *names* rather than searching for
   announcements, and/or move ground truth to GitHub issues and HN where the
   reaction thread and the announcement share a URL by construction.
+- 2026-09-28 — **A1–A6 complete, each with a regression test proven to fail on
+  the old code.** A1 the workspace jail was never wired; the e2e test that
+  "covered" it passed because the canary file did not exist. Now called twice —
+  literal resolution plus `realpathOfNearestExisting` for symlink escapes — and
+  the test creates the canary, asserts the error text, adds a symlink case, and
+  asserts the secret never reached the world. A2 `createMessage` was detached
+  and called unbound, so every sampling call threw into a swallowed catch and
+  `fillViaSampling` was unreachable while the capability probe reported success;
+  bound, with a test that fails on the old code with the exact
+  `_clientCapabilities` signature. A3 `patchPersona`/`deleteMemories` updated
+  rows in every world holding the same id; now world-scoped, all five callers
+  updated. Also fixed a latent id collision: `mintId` used `COUNT(*)`, which
+  `compactIfNeeded`'s deletes could invalidate — now `MAX(n)`, which is
+  byte-identical on the replay path and confirmed so by the golden test.
+  A4 `tools/verify-claims.mjs` measures the suite and fails CI when a
+  present-tense claim disagrees; it distinguishes current claims from dated
+  records, so history is reported rather than rewritten. A5 SQLite state ignored
+  everywhere. A6 the demo report said "seeded ensemble" while the code emitted
+  "slope-jitter sensitivity" and CI stayed green; replayed.
+- 2026-09-28 — **B1 complete: the engine now verifies every NUMBER in the
+  report, not just post ids.** It previously instructed the model "never invent
+  numbers" and enforced nothing, so any figure the model liked reached the
+  dashboard. Two false-positive classes were found by running the verifier
+  against the existing mock brain: persona handles (`@grace6` → the token `6`)
+  and a character-class bug (`[@\/u]` matches a LITERAL `u`, which shredded
+  "simulated" and swallowed every number after it). Both fixed, both pinned by
+  tests, because a verifier that drops numbers is worse than none.
+  VERIFIED: typecheck exit 0 · 83/83 unit+golden · 2/2 e2e · cleanroom GATE
+  GREEN · claim check GREEN at 83 tests and 29 tools · golden byte-identical
+  replay still passes.
