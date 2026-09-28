@@ -653,7 +653,7 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
   }
   L.push("```");
   L.push("");
-  L.push(`Polarization: **${(factions.polarization * 100).toFixed(0)}/100** — ${factions.polarization >= 0.6 ? "the population has hardened into opposing camps" : factions.polarization >= 0.35 ? "camps are forming but the middle is still contested" : "the population has not yet hardened"}.`);
+  L.push(`Polarization: **${(factions.polarization * 100).toFixed(0)}/100** — ${factions.polarization >= 0.6 ? "the population has hardened into opposing camps" : factions.polarization >= 0.35 ? "camps are forming but the middle is still contested" : "the population has not yet hardened"}. This is *derived* from the faction sizes above, not an independent measurement: it is (committed ÷ population) × (0.5 + 0.5 × camp balance).`);
   L.push("");
   for (const f of factions.factions) {
     if (f.size === 0) continue;
@@ -906,7 +906,11 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
     L.push("No post crossed the virality threshold this run — reach stayed inside the follow graph.");
     L.push("");
   }
-  L.push(`Organic (engine-simulated bystander) engagement share: **${Math.round(amp.organicEngagementShare * 100)}%** — the rest came from activated personas engaging each other's content.`);
+  L.push(
+    amp.organicEngagementShare === null
+      ? `Organic (engine-simulated bystander) engagement share: **not reported** — only ${amp.organicPostCount} organic repost${amp.organicPostCount === 1 ? "" : "s"} occurred, too few for the ratio to be meaningful.`
+      : `Organic (engine-simulated bystander) engagement share: **${Math.round(amp.organicEngagementShare * 100)}%** across ${amp.organicPostCount} organic reposts — the rest came from activated personas engaging each other's content.`,
+  );
   L.push("");
 
   // ---- appendix D ----------------------------------------------------------------------------------------------
@@ -944,7 +948,13 @@ function engineFindings(factions: FactionAnalysis, controversy: ControversyAnaly
   out.push(`Controversy index ${controversy.score}/100 (${controversy.label}) — ${controversy.drivers.map((d) => d.label).join("; ")}.`);
   out.push(`Engagement is ${mom.trend} (${mom.pct > 0 ? "+" : ""}${Math.round(mom.pct * 100)}% second half vs first half).`);
   if (cross.maxDivergence && cross.maxDivergence.value >= 0.15) out.push(`Platforms disagree most on ${cross.maxDivergence.entity} (Δ ${cross.maxDivergence.value.toFixed(2)} between Twitter and Reddit sentiment).`);
-  if (amp.viralPosts.length > 0) out.push(`${amp.viralPosts.length} post${amp.viralPosts.length === 1 ? "" : "s"} crossed the virality threshold; organic bystanders contributed ${Math.round(amp.organicEngagementShare * 100)}% of engagement.`);
+  if (amp.viralPosts.length > 0) {
+    out.push(
+      amp.organicEngagementShare === null
+        ? `${amp.viralPosts.length} post${amp.viralPosts.length === 1 ? "" : "s"} crossed the virality threshold; too few organic reposts (${amp.organicPostCount}) to report an organic share.`
+        : `${amp.viralPosts.length} post${amp.viralPosts.length === 1 ? "" : "s"} crossed the virality threshold; organic bystanders contributed ${Math.round(amp.organicEngagementShare * 100)}% of engagement.`,
+    );
+  }
   return out.slice(0, 5);
 }
 

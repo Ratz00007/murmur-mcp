@@ -82,6 +82,23 @@ export interface MurmurConfig {
     maxResponseTokens: number;
   };
   engagement: {
+    /**
+     * Engagement score (likes + 2×reposts) a Twitter post must reach in one
+     * round to count as viral, before the population/24 scaling in
+     * `checkVirality`.
+     *
+     * Calibrated by measurement, not chosen by feel. Over 30 deterministic
+     * 8-round, 24-persona runs (240 rounds, 1,497 posts) the per-round maximum
+     * engagement was p50 4, p90 6, p95 7, p99 9, max 11. The previous default
+     * of 12 was ABOVE the observed maximum, so no post could ever go viral:
+     * `checkVirality` never fired, `amplification()` always returned an empty
+     * list, report Appendix C always printed "no virality", and the
+     * viral-posts KPI was permanently 0 — a dead feature with a live-looking
+     * surface. 8 puts the event at the ~96th percentile of observed rounds
+     * (3.8%), which is rare but actually happens, and the population scaling
+     * holds up: at 48 personas an effective threshold of 16 lands at a
+     * comparable rarity.
+     */
     viralityThreshold: number;
     organicLikeBase: number;
     organicCapPerPost: number;
@@ -139,7 +156,7 @@ export const DEFAULT_CONFIG: MurmurConfig = {
     itemTokens: 1400,
   },
   context: { maxResponseTokens: 12000 },
-  engagement: { viralityThreshold: 12, organicLikeBase: 0.08, organicCapPerPost: 0.6, hotThreshold: 10 },
+  engagement: { viralityThreshold: 8, organicLikeBase: 0.08, organicCapPerPost: 0.6, hotThreshold: 10 },
   cascade: { maxHops: 2, base: 0.1, factor: 0.6, maxProb: 0.8, threshold: 12, attenuation: 0.4 },
   memory: { episodicMaxRecords: 40, episodicKeep: 20 },
   // Deffuant bounded confidence: ε = interaction radius, μ = pull rate,

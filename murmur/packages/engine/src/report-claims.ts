@@ -21,6 +21,7 @@
  * thing to say — only whether it is a number this run produced.
  */
 import type { ReportData } from "./report.js";
+import { engagementScore } from "./util/engagement.js";
 
 /**
  * Numbers that are structural rather than statistical: the round count, the
@@ -111,6 +112,10 @@ export function allowedNumbers(d: ReportData, rounds: number, population: number
   push(d.mom.secondHalf);
   push(d.mom.pct);
   push(d.projection?.slope ?? null);
+  // Entity and persona counts: the scenario recap legitimately states "N
+  // personas across M ontology entities", and both appear in the stats pack.
+  push(d.entities.length);
+  push(d.personas.length);
 
   for (const f of d.factions.factions) {
     push(f.size);
@@ -176,6 +181,18 @@ export function allowedNumbers(d: ReportData, rounds: number, population: number
   for (const e of d.entities) {
     push(e.salience);
     push(d.mentionCount(e.id));
+  }
+  // Per-post sentiment and engagement. The risk register is explicitly
+  // required to cite concrete posts with their scores, and the quote bank and
+  // post index already render these, so excluding them would reject a draft
+  // that only says things the report itself displays.
+  for (const p of d.posts) {
+    for (const m of p.mentions ?? []) push(m.score);
+    push(engagementScore(p.metrics));
+  }
+  for (const q of [...d.quotes.positive, ...d.quotes.negative, ...d.quotes.mixed]) {
+    push(q.sentiment);
+    push(q.engagement);
   }
 
   return [...vals];

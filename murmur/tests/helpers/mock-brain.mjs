@@ -488,7 +488,7 @@ export function completeReportTask(task) {
   const mom = stats.momentum || { trend: "steady", pct: 0 };
   const proj = stats.projection;
   const cross = stats.crossPlatform || { totals: {}, rows: [], maxDivergence: null };
-  const amp = stats.amplification || { viralPosts: [], organicEngagementShare: 0 };
+  const amp = stats.amplification || { viralPosts: [], organicEngagementShare: null, organicPostCount: 0 };
   const trends = stats.entityTrends || [];
   const chains = stats.escalationChains || [];
   const topPosts = stats.topPosts || [];
@@ -543,7 +543,7 @@ export function completeReportTask(task) {
     const r1Count = negative ? (opp && opp.size) || 0 : (sup && sup.size) || 0;
     risks.push({
       title: `${negative ? "Backlash" : "Hype"} hardening around ${r1c.entity}`,
-      rationale: `Across ${rounds.length} rounds, posts about ${r1c.entity} clustered at sentiment ${n2(strongest.sentiment)} (strongest: ${strongest.id} by ${strongest.by}, engagement ${strongest.engagement ?? 0}), and ${r1Count} of ${stats.population} personas now ${r1Count === 1 ? "sits" : "sit"} ${negative ? "in opposition" : "in support"}. ${negative ? `Organic engagement amplified the negative cluster — ${amp.organicEngagementShare ? pct(amp.organicEngagementShare) + " of all engagement came from bystanders" : "bystander engagement is still forming"}.` : `The supportive cluster is collecting engagement faster than the critics (${sup ? sup.engagement : 0} vs ${opp ? opp.engagement : 0}), which hardens the champion narrative.`} If this pattern survives contact with the real launch, it becomes the default framing within days.`,
+      rationale: `Across ${rounds.length} rounds, posts about ${r1c.entity} clustered at sentiment ${n2(strongest.sentiment)} (strongest: ${strongest.id} by ${strongest.by}, engagement ${strongest.engagement ?? 0}), and ${r1Count} of ${stats.population} personas now ${r1Count === 1 ? "sits" : "sit"} ${negative ? "in opposition" : "in support"}. ${negative ? `Organic engagement amplified the negative cluster — ${amp.organicEngagementShare !== null ? pct(amp.organicEngagementShare) + " of all engagement came from bystanders" : "bystander engagement is still forming"}.` : `The supportive cluster is collecting engagement faster than the critics (${sup ? sup.engagement : 0} vs ${opp ? opp.engagement : 0}), which hardens the champion narrative.`} If this pattern survives contact with the real launch, it becomes the default framing within days.`,
       severity: sev,
       likelihood: controversy.score >= 45 ? "high" : controversy.score >= 25 ? "medium" : "low",
       mitigation: negative
@@ -629,7 +629,7 @@ export function completeReportTask(task) {
   const executiveSummary =
     `The simulated crowd is ${controversy.label} (controversy ${controversy.score}/100): ${sup ? sup.size : 0} supporters against ${opp ? opp.size : 0} opponents around ${focusName}, with ${und ? und.size : 0} personas still undecided — the persuadable middle is ${pct(und ? und.share : 0)} of the population. ` +
     `Sentiment toward ${focusName} ended ${n2(focusTrend.last)} (from ${n2(focusTrend.first)}, ${directionWord}); engagement is ${mom.trend} at ${mom.pct > 0 ? "+" : ""}${pct(mom.pct).replace("%", "")}% between halves of the run. ` +
-    `${amp.viralPosts.length > 0 ? `${amp.viralPosts.length} post${amp.viralPosts.length === 1 ? "" : "s"} crossed the virality threshold and organic bystanders contributed ${pct(amp.organicEngagementShare)} of all engagement — the crowd is amplifying itself without prompting. ` : `No post crossed the virality threshold — reach stayed inside the follow graph, which limits how far any single frame can travel. `}` +
+    `${amp.viralPosts.length > 0 ? `${amp.viralPosts.length} post${amp.viralPosts.length === 1 ? "" : "s"} crossed the virality threshold and organic bystanders contributed ${amp.organicEngagementShare !== null ? pct(amp.organicEngagementShare) + " of all engagement" : "too few organic reposts to quantify"} of all engagement — the crowd is amplifying itself without prompting. ` : `No post crossed the virality threshold — reach stayed inside the follow graph, which limits how far any single frame can travel. `}` +
     `The strongest signal in the run is ${risks[0] ? risks[0].title.charAt(0).toLowerCase() + risks[0].title.slice(1) : "the sentiment cluster"}; the risk register below details what to do about it before this plays out in public.`;
 
   const keyFindings = [
@@ -639,7 +639,7 @@ export function completeReportTask(task) {
       ? `Engagement is ${mom.trend} (${mom.pct > 0 ? "+" : ""}${pct(mom.pct)} second half vs first) — ${mom.trend === "accelerating" ? "the crowd is leaning in, not tuning out" : mom.trend === "cooling" ? "attention is decaying faster than sentiment is resolving" : "attention is stable while sentiment settles"}.`
       : `Engagement stayed low throughout — the scenario has not earned the crowd's adrenaline yet.`,
     amp.viralPosts.length > 0
-      ? `${amp.viralPosts.length} viral post${amp.viralPosts.length === 1 ? "" : "s"} carried the run; organic bystanders supplied ${pct(amp.organicEngagementShare)} of engagement.`
+      ? `${amp.viralPosts.length} viral post${amp.viralPosts.length === 1 ? "" : "s"} carried the run; organic bystanders supplied ${amp.organicEngagementShare !== null ? pct(amp.organicEngagementShare) : "too few organic reposts to quantify"} of engagement.`
       : `Zero viral posts: the run's reach is bounded by the follow graph — narratives are competing in a closed room.`,
   ];
   if (div && div.value >= 0.15) keyFindings.push(`Twitter and Reddit disagree most on ${div.entity} (Δ ${Number(div.value).toFixed(2)}) — the same facts are producing different verdicts per platform.`);
@@ -678,7 +678,7 @@ export function completeReportTask(task) {
     `Sentiment toward ${focusName} is ${directionWord} with per-round consistency (${n2(focusTrend.first)} → ${n2(focusTrend.last)}).`,
     `Engagement concentrated on a small set of high-salience voices (${(stats.leaderboards || []).slice(0, 3).map((l) => l.handle).join(", ") || "see leaderboards"}).`,
   ];
-  if (amp.viralPosts.length > 0) strongSignals.push(`${amp.viralPosts.length} viral post${amp.viralPosts.length === 1 ? "" : "s"} with ${pct(amp.organicEngagementShare)} organic engagement share — amplification is self-sustaining.`);
+  if (amp.viralPosts.length > 0) strongSignals.push(`${amp.viralPosts.length} viral post${amp.viralPosts.length === 1 ? "" : "s"} with ${amp.organicEngagementShare !== null ? pct(amp.organicEngagementShare) : "too few organic reposts to quantify"} organic engagement share — amplification is self-sustaining.`);
   if (chains.length > 0) strongSignals.push(`${chains.length} escalation chain${chains.length === 1 ? " was" : "s were"} recorded — disagreement reliably threads and intensifies.`);
 
   const contested = [
@@ -713,3 +713,4 @@ export function parseToolResult(res) {
   const text = res?.content?.[0]?.text;
   return JSON.parse(text);
 }
+

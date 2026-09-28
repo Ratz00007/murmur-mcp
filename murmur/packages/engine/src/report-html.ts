@@ -498,7 +498,8 @@ export function renderReportHtml(storage: Storage, world: World, report: ReportR
       ? "the population has hardened into opposing camps."
       : D.factions.polarization >= 0.35
         ? "camps are forming but the middle is still contested."
-        : "the population has not yet hardened.") + `</p>` +
+        : "the population has not yet hardened.") +
+    ` <span class="dim">Derived from the faction sizes above, not an independent measurement.</span></p>` +
     `<ul class="pl dim">${D.controversy.drivers.map((x) => `<li>${esc(x.label)}</li>`).join("")}</ul></div>`
   );
   H.push(`</div>`);
@@ -693,7 +694,12 @@ export function renderReportHtml(storage: Storage, world: World, report: ReportR
   } else {
     H.push(`<p class="chart-note">No post crossed the virality threshold this run — reach stayed inside the follow graph.</p>`);
   }
-  H.push(`<p class="chart-note">Organic (engine-simulated bystander) engagement share: <b>${Math.round(D.amp.organicEngagementShare * 100)}%</b> — the rest came from activated personas engaging each other's content.</p>`);
+  const amp = D.amp;
+  H.push(
+    amp.organicEngagementShare === null
+      ? `<p class="chart-note">Organic (engine-simulated bystander) engagement share: <b>not reported</b> — only ${amp.organicPostCount} organic repost${amp.organicPostCount === 1 ? "" : "s"} occurred, too few for the ratio to be meaningful.</p>`
+      : `<p class="chart-note">Organic (engine-simulated bystander) engagement share: <b>${Math.round(amp.organicEngagementShare * 100)}%</b> across ${amp.organicPostCount} organic reposts — the rest came from activated personas engaging each other's content.</p>`,
+  );
   H.push(`</div></details>`);
 
   H.push(`<details><summary>Appendix D — Post index (top 25 by engagement)</summary><div class="inner">`);

@@ -574,7 +574,19 @@ export function projectCurve(curve: { round: number; value: number }[], ahead = 
 
 export interface AmplificationInfo {
   viralPosts: { id: string; by: string; round: number; engagement: number; body: string; amplifiers: string[] }[];
-  organicEngagementShare: number;
+  /**
+   * Share of engagement attributable to organic (engine-generated) reposts, or
+   * null when too few such reposts exist for the ratio to mean anything.
+   *
+   * Measured over 30 runs: organic reposts number between 1 and 5 per run while
+   * total posts run to hundreds, so the ratio is a quotient of noise. An early
+   * audit called it "structurally zero" — that was wrong, it measured 0.05–0.10
+   * on some runs — and the real defect is the denominator. Callers must handle
+   * null and say so rather than printing a percentage off five posts.
+   */
+  organicEngagementShare: number | null;
+  /** How many organic reposts the share is computed from, for transparency. */
+  organicPostCount: number;
 }
 
 export function amplification(storage: Storage, world: World): AmplificationInfo {
@@ -602,8 +614,17 @@ export function amplification(storage: Storage, world: World): AmplificationInfo
       amplifiers: [...new Set(childrenOf.get(p.id) ?? [])].slice(0, 5),
     }));
   const totalEng = posts.reduce((a, p) => a + engagementOf(p), 0);
-  const organicEng = posts.filter((p) => p.origin === "organic").reduce((a, p) => a + engagementOf(p), 0);
-  return { viralPosts, organicEngagementShare: totalEng > 0 ? round2Safe(organicEng / totalEng) : 0 };
+  const organicPosts = posts.filter((p) => p.origin === "organic");
+  const organicEng = organicPosts.reduce((a, p) => a + engagementOf(p), 0);
+  // Below this many organic reposts the ratio is dominated by individual draws
+  // and is reported as absent rather than as a precise-sounding percentage.
+  const MIN_ORGANIC_FOR_SHARE = 10;
+  return {
+    viralPosts,
+    organicEngagementShare:
+      totalEng > 0 && organicPosts.length >= MIN_ORGANIC_FOR_SHARE ? round2Safe(organicEng / totalEng) : null,
+    organicPostCount: organicPosts.length,
+  };
 }
 
 // ---------------------------------------------------------------------------
