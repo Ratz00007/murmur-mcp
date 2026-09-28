@@ -274,5 +274,117 @@ This is a small, narrow benchmark and will be treated as such:
 
 ## 11. Amendments
 
-None at time of seal. Any later amendment appears here with a timestamp, the
-old text, the new text, and the reason.
+### AMENDMENT 1 — 2026-09-28 — commit 79045c2
+
+**Added:** `prescreen.mjs`, the semantic half of the §4 inclusion rule.
+
+**Why:** the sealed mechanical filters (`is_self`, `>=10 comments`, pre-seal
+date) are necessary but not sufficient. Applied to the first selection run they
+admitted a freelancer *asking* how to price a first gig, a sysadmin *asking*
+about an E3→E5 migration, and a self-hoster *asking* how to run Proxmox
+without a subscription. 0/3 passed "announces a change to its users". The
+mechanical rules cannot express a question-versus-announcement distinction.
+
+**Observed before the amendment:** no objection content. Titles, bodies, and
+comment counts only.
+
+---
+
+### AMENDMENT 2 — 2026-09-28 — commit 42ef5d5
+
+**Added:** first-party speaker test to the screen.
+
+**Why:** the verb test alone admitted bystanders, not vendors. Observed false
+positives, all of which contained a valid announcement verb:
+
+| id | title | why it is not a vendor announcement |
+|---|---|---|
+| t1 | "Teams Phone massive price increase expected?" | speculation about a third party |
+| t3 | "Just bought Roku Ultra 2025 on Amazon and the price dropped $4" | bystander reporting a retail change |
+| t4 | "Bootstrapping against Ahrefs/Semrush: I built an SEO SaaS" | self-promotion |
+
+**The circularity this prevents.** In a real price-increase thread most posts
+are bystanders *reacting*, not the party announcing. Bystanders reacting is
+exactly the population Murmur claims to model, so scoring a bystander thread as
+ground truth would make the benchmark largely circular: the thread would
+mostly contain the reactions under test, handed over as the answer key.
+
+**Known over-correction, recorded not tuned away:** the test requires
+first-party voice, which rejects legitimate third-person announcements such as
+*"Scaleway announces price hike effective June 1st, 2026"* where the speaker is
+named rather than "we". Yield fell to 3 candidates against a target of N=5.
+
+**Deliberate refusal to tune further.** The screen has now been revised four
+times against observed candidates. Continuing to adjust it until exactly five
+threads survive would defeat the purpose of pre-registration, even if every
+individual revision were correct. AMENDMENT 3 replaces the screen rather than
+loosening it.
+
+---
+
+### AMENDMENT 3 — 2026-09-28 — the structural fix
+
+**Problem.** AMENDMENT 2's over-correction exposed the real defect, which is
+not the screen. **Reddit's public archive is dense with people reacting to
+changes and very thin on the parties announcing them.** Companies announce on
+their own blogs and changelogs; Reddit is where the fallout lands. The
+original §4 asked Reddit for the wrong half of the conversation. No amount of
+screen tuning fixes that — it is a corpus problem.
+
+**Change.** The announcement and the reaction are separated into two artifacts
+from two different places:
+
+| Artifact | Source | Role |
+|---|---|---|
+| **Announcement** | The vendor's own blog post, changelog entry, or pricing page | The **blind input**. What a founder actually holds before shipping. |
+| **Reaction thread** | Reddit / HN / GitHub issues | The **ground truth**. What objections people actually raised. |
+
+**Why this is more faithful, not merely more convenient.** It is the exact
+founder scenario the ICP describes: *here is my changelog entry, what goes
+wrong?* The previous design asked a model to infer an announcement from a
+bystander's description of one, which is both unrealistic and circular.
+
+**Retrieval compliance.** The engine's zero-network guarantee is unchanged.
+The **host** fetches the announcement — that is what `seed_add_url` already
+does, and what the MCP client does natively. Murmur ingests text it is handed.
+No fetch capability is added to the server.
+
+**Linking rule, pre-registered.** A reaction thread qualifies only if it
+**links to, or names, a resolvable first-party announcement** (a vendor
+domain, an official changelog, or the vendor's own account). A thread with no
+resolvable announcement is dropped as `no_resolvable_announcement`. The
+announcement must be retrievable and must describe the same change.
+
+**New drop reasons introduced here:** `no_resolvable_announcement`,
+`announcement_unretrievable`, `announcement_mismatch`.
+
+**New control, declared before running: pre-emption rate.** A prepared vendor
+announcement often names its own tradeoffs ("we know this is expensive;
+here's the math"). Those objections are *free* for either arm to produce,
+because both arms receive the announcement as input. This inflates absolute
+recall for both arms.
+
+Therefore the following is reported as a first-class control:
+
+> **pre-emption rate** = the fraction of ground-truth objections that are
+> already stated, anticipated, or directly answered in the announcement text
+> itself.
+
+Read as follows:
+
+- **Both arms' absolute recall is inflated by the pre-empted subset.** It must
+  never be reported without the pre-emption rate beside it.
+- **The primary metric is the arm DIFFERENCE, not absolute recall.** A
+  pre-emption confound that hits both arms equally does not bias the
+  comparison, which is the decision the kill criterion rests on.
+- **Recall on the un-pre-empted subset is the discriminating metric.** That is
+  the set of objections neither arm could read off the page, and it is where
+  Arm B's generation could plausibly add something over Arm A's reading.
+
+A high pre-emption rate is a finding about the benchmark, not a defect to be
+hidden: it would mean the benchmark is largely measuring "can you list the
+risks this document acknowledges", which is close to trivial, and the results
+should be reported with that stated plainly.
+
+**Kill criterion is unchanged.** Arm B must beat Arm A by ≥0.15 absolute
+recall@10, or the simulation engine is cut.
