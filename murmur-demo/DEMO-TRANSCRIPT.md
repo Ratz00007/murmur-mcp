@@ -12,7 +12,7 @@
 
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 0 · CONNECT — server spawn + contract   (t+0.0s)
+  STAGE 0 · CONNECT — server spawn + contract   (t+0.1s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     connected over stdio · 29 tools · 4 prompt playbooks (murmur-predict, murmur-simulate, murmur-interview, murmur-resume)
     the /murmur-predict playbook your agent expands — first lines:
@@ -29,14 +29,14 @@
       …
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 1 · CREATE THE WORLD   (t+1.5s)
+  STAGE 1 · CREATE THE WORLD   (t+1.9s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ world_init({"name":"pricing-reaction","description":"How will developers react to the Pro plan price change?","seed":"acme-demo-2026"})
     world w_757ac236 · slug "pricing-reaction" · stage: created
     engine tells the agent what is next: seed_add_files / seed_add_text — attach source material to this world
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 2 · FEED IT YOUR DOCS (seeds)   (t+1.5s)
+  STAGE 2 · FEED IT YOUR DOCS (seeds)   (t+1.9s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ seed_add_files({"paths":["examples/pricing-page.md","examples/FAQ.md","examples/CHANGELOG.md"]})
     examples\pricing-page.md   → sd_1 · 929 bytes
@@ -54,7 +54,7 @@
     next: ontology_plan to turn this material into entities, motives and anchors
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 3 · ONTOLOGY — the brain extracts the entities   (t+1.8s)
+  STAGE 3 · ONTOLOGY — the brain extracts the entities   (t+2.4s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ ontology_plan()
     task t_1 · the brain sees 4 seed digests and is asked for entities + types + salience + motives + anchors
@@ -74,7 +74,7 @@
     next: graph_build
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 4 · TENSION GRAPH — deterministic derivation   (t+2.0s)
+  STAGE 4 · TENSION GRAPH — deterministic derivation   (t+2.5s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ graph_build()
     35 relations · 21 tensions > 0.5 · 13 communities (subreddits derived from entity types)
@@ -102,7 +102,7 @@
       … +47 more lines
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 5 · POPULATION — the brain drafts the personas   (t+2.2s)
+  STAGE 5 · POPULATION — the brain drafts the personas   (t+2.6s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ personas_plan({"count":12})
     task t_2 · archetype menu the engine offers: power user, casual scroller, pragmatic skeptic, passionate advocate, curious newcomer, industry professional
@@ -117,7 +117,7 @@
     recent posts: 0 (simulation not started yet)
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 6 · SIMULATION — 5 rounds on two platforms   (t+2.4s)
+  STAGE 6 · SIMULATION — 5 rounds on two platforms   (t+2.7s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ sim_configure({"rounds":5})
     5 rounds configured · stage: configured
@@ -153,7 +153,7 @@
     engagement peaks (μ+2σ): []
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 7 · REPORT — the brain narrates, the engine grounds it   (t+3.5s)
+  STAGE 7 · REPORT — the brain narrates, the engine grounds it   (t+3.3s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ report_plan({"focus":"developer reaction to the pricing change"})
     task t_8 · the brain gets a stats pack + evidence posts and must cite real post ids in exactly 3 risks
@@ -163,7 +163,7 @@
       HIGH â€” Platform-split narrative on Nimbus Labs [po_1, po_11]
       LOW â€” Unmuted cluster around @kira10's tweet [po_10, po_11, po_9]
   ➜ report_export()
-    wrote .murmur\reports\pricing-reaction\report-1.md (27778 bytes) + .murmur\reports\pricing-reaction\report-1.html (62277 bytes) — dashboard and full report:
+    wrote .murmur\reports\pricing-reaction\report-1.md (27936 bytes) + .murmur\reports\pricing-reaction\report-1.html (62386 bytes) — dashboard and full report:
     open .murmur\reports\pricing-reaction\report-1.html in a browser: same numbers as the .md, same engine computation
 
 # Murmur Reaction Simulation Report — pricing-reaction
@@ -231,7 +231,7 @@ Simulated 12 personas across 14 ontology entities for 5 rounds of dual-platform 
 … +387 more lines (stance bars, post index) — see the file
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 8 · INTERROGATE THE WORLD (F7)   (t+6.4s)
+  STAGE 8 · INTERROGATE THE WORLD (F7)   (t+3.9s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ➜ interview_agent({"persona":"p_1","question":"Why do you call the migration guide a paywall?"})
     engine grounded the interview — Ada Okafor · 5 of their posts + 5 memories in the pack:
@@ -247,7 +247,7 @@ Simulated 12 personas across 14 ontology entities for 5 rounds of dual-platform 
     logged: true → .murmur\pricing-reaction\qa.jsonl
 
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STAGE 9 · CRASH-PROOF RESUME — brand-new session   (t+6.9s)
+  STAGE 9 · CRASH-PROOF RESUME — brand-new session   (t+3.9s)
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     killed the first client, spawned a fresh server process — the world persists in .murmur/murmur.db
   ➜ world_list()
@@ -268,12 +268,12 @@ pricing-reaction/
   qa.jsonl  (295 B)
 reports/
   pricing-reaction/
-    report-1.html  (62277 B)
-    report-1.md  (27778 B)
+    report-1.html  (62386 B)
+    report-1.md  (27936 B)
 murmur.db  (303104 B)
 
   ──────────────────────────────────────────────────────────────────────────
-    tool calls this session: 34 · largest single response: 5002 tokens (budget 12,000) · wall time 9.8s
+    tool calls this session: 34 · largest single response: 5008 tokens (budget 12,000) · wall time 5.9s
     determinism: same seed + same generations ⇒ byte-identical replay (enforced by the golden test)
     in real use: YOUR coding agent (Claude Code, Codex, OpenCode, Antigravity, …) writes what the mock
     brain wrote here — the engine validates, simulates and aggregates. No API keys, ever.

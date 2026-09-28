@@ -149,7 +149,7 @@ pie showData
     "Opponents of Acme Cloud (5)" : 5
 ```
 
-Polarization: **92/100** — the population has hardened into opposing camps.
+Polarization: **92/100** — the population has hardened into opposing camps. This is *derived* from the faction sizes above, not an independent measurement: it is (committed ÷ population) × (0.5 + 0.5 × camp balance).
 
 ### Supporters of Acme Cloud — 7 personas (58%)
 
@@ -408,7 +408,7 @@ No escalation chains formed this run — disagreement stayed at post level inste
 
 No post crossed the virality threshold this run — reach stayed inside the follow graph.
 
-Organic (engine-simulated bystander) engagement share: **0%** — the rest came from activated personas engaging each other's content.
+Organic (engine-simulated bystander) engagement share: **not reported** — only 4 organic reposts occurred, too few for the ratio to be meaningful.
 
 ## Appendix D — Post Index (evidence)
 
