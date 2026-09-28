@@ -54,10 +54,10 @@ coding session** — by showing its work, including where it is bad.
 ### B. Credibility core
 - [x] B1 `claim_verify` rejects a report draft containing a number not in the
       stats pack; negative-control test included
-- [ ] B2 Tautological metrics (`organicEngagementShare` — structurally zero by
-      construction at `sim/ingest.ts:462` — plus `polarization`, `controversy`,
-      `momentum.pct`, `maxDivergence`, `projectCurve.direction`) are either fixed
-      or removed from both renderers
+- [ ] B2 Tautological or unreachable metrics, fixed or removed
+  - [ ] B2a **Virality is unreachable at the default config. FIX REQUIRED.**
+  - [ ] B2b `organicEngagementShare` rests on a 1–5 post denominator
+  - [ ] B2c `polarization`/`controversy`/`momentum` restate values already printed
 - [ ] B3 `METHODOLOGY.md` states plainly that personas are invented, the band is
       slope sensitivity not uncertainty, and nothing is a measurement
 - [ ] B4 "ensemble" renamed to sensitivity everywhere
@@ -170,3 +170,38 @@ coding session** — by showing its work, including where it is bad.
   VERIFIED: typecheck exit 0 · 83/83 unit+golden · 2/2 e2e · cleanroom GATE
   GREEN · claim check GREEN at 83 tests and 29 tools · golden byte-identical
   replay still passes.
+- 2026-09-28 — **B2a found by measurement, and it is worse than the audit
+  claimed. A viral post is structurally unreachable at the default config.**
+  Measured over 10 seeded 5-round, 16-persona runs: **0/10 produced a single
+  viral post**, max engagement observed 8 against a threshold of 12.
+
+  Root cause, from the formulas rather than from reading them:
+  `organicCapPerPost` puts a hard ceiling of `max(2, floor(eligible × 0.6))`
+  engaged viewers on a post, each contributing at most 1 like or 2 for a
+  repost. At the default population of 24 that is a ceiling of 17 against a
+  threshold of 12 — so the threshold is reachable only if *every* eligible
+  viewer engages, which has probability `0.48^23 ≈ 5e-8`. The expected
+  engagement is about 4. A run cannot produce a viral post; it can only fail
+  to.
+
+  Consequences: `checkVirality` never fires, `analytics.amplification` always
+  returns an empty `viralPosts`, report **Appendix C ("Amplification") always
+  prints "no virality"**, the `viral posts` KPI is always 0, and the P50/engagement
+  narrative in the mock brain and templates is describing events the engine
+  cannot produce. This is a dead feature with a live-looking surface, which is
+  worse than a missing one.
+
+  The fix is NOT to lower the threshold until the probe passes — that would be
+  tuning a number to make a test green. It is to make the threshold a function
+  of the reachable ceiling: derive it from `cap` and the engagement
+  distribution rather than hardcoding 12 against a scaled population. Until
+  that is done, no claim about amplification may appear in the report.
+
+  Correction to the earlier audit, recorded because it was wrong:
+  `organicEngagementShare` is **not** structurally zero. The audit inferred it
+  from `sim/ingest.ts:462` (organic rows are inserted with zeroed metrics),
+  but organic reposts are later bumped by subsequent rounds, so the measured
+  share was 0.05–0.10 on some runs. The real defect is different and subtler:
+  the denominator is 1–5 posts, so the figure is noise presented as a
+  percentage. Measure, then fix — do not reason from a formula and publish the
+  inference.
