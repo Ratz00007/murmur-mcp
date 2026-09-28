@@ -66,6 +66,27 @@ jobs:
       - run: npm run test:e2e
       - run: npm run cleanroom
 
+  # A phase of this project was spent "fixing doc lies" and shipped with the
+  # test count wrong in the very commit that claimed it fixed — 66 was quoted
+  # in nine files for weeks against a real 69, and PROJECT-WORKLOG.md still
+  # said 42. Recounting by hand does not survive, so the count is measured and
+  # CI fails when a present-tense claim disagrees. Dated records (CHANGELOG,
+  # the build journal) are reported but never rewritten: a number that was true
+  # when written is history, not a lie.
+  claims:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: murmur/package-lock.json
+      - run: npm ci
+        working-directory: murmur
+      - name: Fail if any advertised count or tool total is wrong
+        run: node tools/verify-claims.mjs
+
   # Guards the published gallery against drift. A stale copy of report-1.md once
   # shipped citing po_20, a post id absent from the database; the engine's own
   # citation test cannot catch that because it validates a freshly generated
