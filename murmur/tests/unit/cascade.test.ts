@@ -83,9 +83,9 @@ function runRound(): RoundOutcome {
   const B = nonAuthor.slice(0, 2);
   const C = nonAuthor.slice(2, 6);
   const D = nonAuthor.slice(6, 8);
-  for (const id of B) db.patchPersona(id, { follows: [author] });
-  C.forEach((id, i) => db.patchPersona(id, { follows: [B[i % 2]] }));
-  D.forEach((id, i) => db.patchPersona(id, { follows: [C[i]] }));
+  for (const id of B) db.patchPersona(world2.id, id, { follows: [author] });
+  C.forEach((id, i) => db.patchPersona(world2.id, id, { follows: [B[i % 2]] }));
+  D.forEach((id, i) => db.patchPersona(world2.id, id, { follows: [C[i]] }));
 
   const subs: SimGeneration[] = activated.map((id) =>
     id === author

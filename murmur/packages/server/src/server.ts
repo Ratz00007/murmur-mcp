@@ -43,13 +43,19 @@ export function buildServer(ctx: ServerContext): McpServer {
   // Plan/submit remains the universal default path on every client. Sampling
   // is a method on the low-level Server (reachable as `server.server` in the
   // SDK's McpServer), not a property — probe for createMessage explicitly.
+  //
+  // It must be BOUND. `createMessage` is a prototype method that reads
+  // `this._clientCapabilities`; extracting it into a bare const and calling it
+  // unbound sets `this` to undefined, so every call threw a TypeError that the
+  // catch below swallowed into a one-time warning. The probe succeeded, which
+  // is exactly what hid the bug: `use_sampling: true` silently no-opped and
+  // the whole `fillViaSampling` path was unreachable.
   const lowLevel = (server as unknown as { server?: { createMessage?: unknown } }).server;
   if (typeof lowLevel?.createMessage === "function") {
-    log.info("sampling bridge: client sampling reachable via Server.createMessage");
-    const createMessage = lowLevel.createMessage as (
-      req: unknown,
-      opts?: unknown
-    ) => Promise<{ content?: { type: string; text?: string } }>;
+    const createMessage = (
+      lowLevel.createMessage as (this: unknown, req: unknown, opts?: unknown) => Promise<{ content?: { type: string; text?: string } }>
+    ).bind(lowLevel);
+    log.info("sampling bridge: client sampling reachable via Server.createMessage (bound)");
     let warned = false;
     ctx.sampling = async (prompt, system, maxTokens) => {
       try {

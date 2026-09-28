@@ -67,7 +67,7 @@ export function compactIfNeeded(storage: Storage, world: World, persona: Persona
     `Compacted ${toCompact.length} episodes (rounds ${toCompact[0].round}-${toCompact[toCompact.length - 1].round}). ` +
     `Most salient: ${lines.join(" | ")}`;
   storage.appendMemory(world.id, persona.id, "episodic", "summary", content, 0.9, toCompact[toCompact.length - 1].round);
-  storage.deleteMemories(toCompact.map((m) => m.id));
+  storage.deleteMemories(world.id, toCompact.map((m) => m.id));
   return { compacted: toCompact.length };
 }
 

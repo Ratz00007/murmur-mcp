@@ -194,7 +194,7 @@ export function buildGraph(storage: Storage, world: World): { relations: number;
     const follows = new Map(buildFollowGraph(world, personas).map((f) => [f.personaId, f.follows]));
     for (const p of personas) {
       const membership = communitiesFor(p, communities, entities);
-      storage.patchPersona(p.id, { follows: follows.get(p.id) ?? p.follows, communityIds: membership });
+      storage.patchPersona(world.id, p.id, { follows: follows.get(p.id) ?? p.follows, communityIds: membership });
     }
   }
   storage.setStage(world.id, "graphed");
@@ -336,3 +336,4 @@ function push2(m: Map<string, string[]>, k: string, v: string): void {
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
+

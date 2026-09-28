@@ -89,13 +89,40 @@ describe("MCP server end-to-end", () => {
       const review = await call("seeds_review");
       expect(review.coverage.seeds).toBe(1);
 
-      // seed_add_files is jailed to the workspace root: a path resolving outside it is rejected
+      // seed_add_files is jailed to the workspace root.
+      //
+      // The probe file MUST be created. The previous version referenced a path
+      // that was never written, so the read failed with ENOENT and the
+      // assertion passed for the wrong reason — a false positive that made an
+      // unwired jail look like a working one. It also asserts the error text,
+      // so a future regression cannot pass on any unrelated failure.
       const outside = path.join(os.tmpdir(), "murmur-jail-probe.txt");
+      fs.writeFileSync(outside, "SECRET-OUTSIDE-THE-WORKSPACE\n", "utf8");
       const jailed = await call("seed_add_files", { paths: [outside] });
-      expect((jailed.seeds as { ok: boolean }[])[0].ok).toBe(false);
+      const jailResult = (jailed.seeds as { ok: boolean; error?: string }[])[0];
+      expect(jailResult.ok).toBe(false);
+      expect(jailResult.error).toMatch(/outside workspace/i);
+
+      // A symlink INSIDE the workspace pointing outside it must also be
+      // refused: string containment alone would accept it.
+      const symlinkProbe = path.join(cwd, "jail-symlink-probe.md");
+      try {
+        fs.symlinkSync(outside, symlinkProbe);
+        const symlinked = await call("seed_add_files", { paths: ["jail-symlink-probe.md"] });
+        expect((symlinked.seeds as { ok: boolean; error?: string }[])[0].ok).toBe(false);
+        expect((symlinked.seeds as { error?: string }[])[0].error).toMatch(/outside workspace/i);
+      } catch (e) {
+        // Windows without developer mode cannot create symlinks; the
+        // containment path is still covered by the absolute-path case above.
+        if (!/EPERM|EACCES|privilege/i.test(String(e))) throw e;
+      }
+
       fs.writeFileSync(path.join(cwd, "jail-probe.md"), "# in-workspace probe\n", "utf8");
       const allowed = await call("seed_add_files", { paths: ["jail-probe.md"] });
       expect((allowed.seeds as { ok: boolean }[])[0].ok).toBe(true);
+      // The out-of-workspace secret must never have reached the world.
+      const seeds = await call("seeds_review");
+      expect(JSON.stringify(seeds)).not.toContain("SECRET-OUTSIDE-THE-WORKSPACE");
 
       const ontPlan = await call("ontology_plan");
       const ontTask = ontPlan.task as { id: string };

@@ -10,11 +10,38 @@ const TEXTUAL = new Set([".md", ".markdown", ".txt", ".text", ".csv", ".json", "
 
 class WorkspacePathError extends Error {}
 
+/**
+ * Containment check. Two levels, because string containment alone is not
+ * enough: a symlink *inside* the workspace can point outside it, so the real
+ * path of the nearest existing ancestor is checked as well.
+ *
+ * The nearest *existing* ancestor is used because the target may not exist
+ * yet, and `realpathSync` throws ENOENT in that case. Walking up to the first
+ * existing segment still catches a symlinked parent directory, which is the
+ * escape that matters.
+ */
 function assertInsideWorkspace(input: string, root: string, candidate: string): void {
   const rel = path.relative(root, candidate);
   if (rel && (rel === ".." || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel))) {
     throw new WorkspacePathError(`path "${input}" resolves outside workspace "${root}" (${candidate}); absolute paths outside the workspace are not allowed — use a workspace-relative path`);
   }
+}
+
+function realpathOfNearestExisting(target: string): string {
+  const tail: string[] = [];
+  let current = target;
+  for (let i = 0; i < 64; i++) {
+    try {
+      const real = fs.realpathSync(current);
+      return tail.length === 0 ? real : path.join(real, ...tail.slice().reverse());
+    } catch {
+      const parent = path.dirname(current);
+      if (parent === current) return target;
+      tail.push(path.basename(current));
+      current = parent;
+    }
+  }
+  return target;
 }
 
 export function registerSeedTools(server: McpServer, ctx: ServerContext): void {
@@ -39,6 +66,11 @@ export function registerSeedTools(server: McpServer, ctx: ServerContext): void {
           let note = "";
           const ext = path.extname(abs).toLowerCase();
           try {
+            // Containment, before any filesystem read: literal resolution
+            // catches `../` and absolute escapes, and the real path catches a
+            // symlink inside the workspace pointing outside it.
+            assertInsideWorkspace(p, ctx.workspace.root, abs);
+            assertInsideWorkspace(p, ctx.workspace.root, realpathOfNearestExisting(abs));
             const stat = fs.statSync(abs);
             if (stat.size > MAX_SEED_BYTES) throw new Error(`file too large (${Math.round(stat.size / 1024 / 1024)} MB > 50 MB envelope)`);
             if (ext === ".pdf") {

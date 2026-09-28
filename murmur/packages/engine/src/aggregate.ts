@@ -45,7 +45,7 @@ export function computeMovers(storage: Storage, world: World, resolve: (id: stri
         movers.push({ personaId, entity: entityNames.get(entity.id) ?? entity.id, from: round2Safe(current), to: next });
       }
     }
-    storage.patchPersona(persona.id, { stances: persona.stances });
+    storage.patchPersona(world.id, persona.id, { stances: persona.stances });
   }
 
   // Pairwise influence step — Deffuant bounded-confidence dynamics over the
@@ -68,7 +68,7 @@ export function computeMovers(storage: Storage, world: World, resolve: (id: stri
     }
     for (const id of new Set(dyn.changed.map((m) => m.personaId))) {
       const p = byDynId.get(id);
-      if (p) storage.patchPersona(p.id, { stances: p.stances });
+      if (p) storage.patchPersona(world.id, p.id, { stances: p.stances });
     }
   }
   return movers;
@@ -282,3 +282,4 @@ export function topPostsByEngagement(storage: Storage, world: World, limit = 10,
     .slice(0, limit)
     .map((s) => ({ post: s.post, sentiment: round2Safe(s.sentiment) }));
 }
+

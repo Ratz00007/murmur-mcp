@@ -226,7 +226,7 @@ export function applyPersonas(storage: Storage, world: World, taskId: string, su
     const membership = communitiesFor(p, communities, entities);
     followEdges += follows.length;
     memberships += membership.length;
-    storage.patchPersona(p.id, { follows, communityIds: membership });
+    storage.patchPersona(world.id, p.id, { follows, communityIds: membership });
   }
 
   storage.setStage(world.id, "populated");
@@ -331,7 +331,7 @@ export function personaPatch(
     out.stances = s;
   }
   if (rejected.length > 0) return { persona, rejected };
-  storage.patchPersona(persona.id, out);
+  storage.patchPersona(world.id, persona.id, out);
   return { persona: storage.getPersona(world.id, persona.id), rejected: [] };
 }
 
@@ -340,3 +340,4 @@ function clampNum(v: unknown, dflt: number, lo = 0, hi = 1): number {
   if (!Number.isFinite(n)) return dflt;
   return Math.max(lo, Math.min(hi, n));
 }
+

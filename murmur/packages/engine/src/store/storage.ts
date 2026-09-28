@@ -232,17 +232,28 @@ export class Storage {
   }
 
   /**
-   * Deterministic, restart-safe id: world-scoped count per table.
+   * Deterministic, restart-safe id: world-scoped per table.
+   *
    * Ids are stable for a fixed world no matter what other worlds exist in the
    * same database — a global COUNT(*) shifted every id whenever another world
    * was created first, which broke the same-seed replay contract in
-   * multi-world workspaces. In a fresh single-world database the minted ids
-   * are identical to what a global counter produced, so the golden replay is
-   * unchanged. Callers that do not already run inside a transaction wrap the
+   * multi-world workspaces.
+   *
+   * Derived from MAX(n) rather than COUNT(*), because COUNT(*) is only
+   * collision-free while every row is minted in one uninterrupted sequence.
+   * `memories` is not: `compactIfNeeded` deletes folded rows and then appends
+   * a summary, so a COUNT-based counter re-minted an id that was still in use
+   * and violated the composite primary key. For any world that has never had a
+   * row deleted — which is every world during a normal run and every golden
+   * fixture — COUNT and MAX are equal, so this change is byte-identical on the
+   * replay path. Callers that do not already run inside a transaction wrap the
    * mint + insert in one, so two concurrent sessions cannot mint the same id.
    */
   private mintId(prefix: string, table: string, worldId: string): string {
-    const n = (this.db.prepare(`SELECT COUNT(*) AS c FROM ${table} WHERE world_id = ?`).get(worldId) as { c: number }).c;
+    const row = this.db
+      .prepare(`SELECT MAX(CAST(substr(id, ${prefix.length + 2}) AS INTEGER)) AS m FROM ${table} WHERE world_id = ?`)
+      .get(worldId) as { m: number | null } | undefined;
+    const n = row?.m ?? 0;
     return `${prefix}_${n + 1}`;
   }
 
@@ -417,12 +428,18 @@ export class Storage {
     return r ? personaFromRow(r) : null;
   }
 
-  patchPersona(id: string, patch: Partial<Pick<Persona, "name" | "handle" | "archetype" | "bio" | "traits" | "stances" | "platform" | "activity" | "communityIds" | "follows">>): void {
-    const r = this.db.prepare("SELECT * FROM personas WHERE id=?").get(id) as Row | undefined;
+  /**
+   * `worldId` is required. Personas use the composite key (world_id, id), so
+   * `p_1` exists independently in every world; the previous world-less
+   * `WHERE id=?` read and update therefore matched — and overwrote — the same
+   * persona in every world that happened to hold that id.
+   */
+  patchPersona(worldId: string, id: string, patch: Partial<Pick<Persona, "name" | "handle" | "archetype" | "bio" | "traits" | "stances" | "platform" | "activity" | "communityIds" | "follows">>): void {
+    const r = this.db.prepare("SELECT * FROM personas WHERE world_id=? AND id=?").get(worldId, id) as Row | undefined;
     if (!r) return;
     const cur = personaFromRow(r);
     this.db
-      .prepare("UPDATE personas SET name=?, handle=?, archetype=?, bio=?, traits=?, stances=?, platform=?, activity=?, community_ids=?, follows=? WHERE id=?")
+      .prepare("UPDATE personas SET name=?, handle=?, archetype=?, bio=?, traits=?, stances=?, platform=?, activity=?, community_ids=?, follows=? WHERE world_id=? AND id=?")
       .run(
         patch.name ?? cur.name,
         patch.handle ?? cur.handle,
@@ -434,6 +451,7 @@ export class Storage {
         clamp(patch.activity ?? cur.activity, 0.01, 1),
         JSON.stringify(patch.communityIds ?? cur.communityIds),
         JSON.stringify(patch.follows ?? cur.follows),
+        worldId,
         id
       );
   }
@@ -481,10 +499,15 @@ export class Storage {
     return (this.db.prepare("SELECT COUNT(*) AS c FROM memories WHERE world_id=? AND persona_id=? AND tier=?").get(worldId, personaId, tier) as { c: number }).c;
   }
 
-  deleteMemories(ids: string[]): void {
+  /**
+   * Memories use the composite key (world_id, id), so `worldId` is required.
+   * A world-less `DELETE ... WHERE id=?` would remove the same memory from
+   * every world holding that id.
+   */
+  deleteMemories(worldId: string, ids: string[]): void {
     if (!ids.length) return;
     const tx = this.db.transaction(() => {
-      for (const id of ids) this.db.prepare("DELETE FROM memories WHERE id=?").run(id);
+      for (const id of ids) this.db.prepare("DELETE FROM memories WHERE world_id=? AND id=?").run(worldId, id);
     });
     tx();
   }
