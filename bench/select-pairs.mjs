@@ -54,20 +54,38 @@ const RESET = process.argv.includes("--reset");
  * match screens correctly rejected 3 (an affiliate link, a pricing page
  * behind a 403, and a drive-comparison catalog).
  */
+/**
+ * PROTOCOL.md §4 as amended 2026-09-28 / amended 3, then widened again after
+ * the provenance screen.
+ *
+ * Under AMENDMENT 3 the reaction thread only has to LINK to a first-party
+ * announcement. Measured yield is low because most threads link to news
+ * articles about a change rather than the change itself — which is the whole
+ * reason the provenance screen exists. Subreddits were chosen on measured
+ * yield (comment counts, titles, link domains only; no comment body and no
+ * objection content was read at any point).
+ *
+ * r/gaming and r/CordCutters are included for VOLUME but yield almost entirely
+ * news links (videogameschronicle, gamingbible, mp1st, nintendolife,
+ * pushsquare), all correctly rejected by the provenance screen. r/linux and
+ * r/selfhosted yield the most genuine vendor announcements because software
+ * vendors publish their own changelogs and licence notices.
+ */
 const QUERIES = [
-  { subreddit: "sysadmin", title: "price" },
-  { subreddit: "selfhosted", title: "price" },
-  { subreddit: "CordCutters", title: "price" },
+  { subreddit: "linux", title: "license" },
   { subreddit: "linux", title: "telemetry" },
+  { subreddit: "selfhosted", title: "price" },
+  { subreddit: "sysadmin", title: "price" },
   { subreddit: "SaaS", title: "pricing" },
   { subreddit: "smallbusiness", title: "subscription" },
   { subreddit: "startups", title: "pricing" },
   { subreddit: "programming", title: "deprecat" },
-  { subreddit: "linux", title: "license" },
   { subreddit: "privacy", title: "telemetry" },
+  { subreddit: "opensourcesucks", title: "license" },
+  { subreddit: "linux", title: "terms" },
+  { subreddit: "fedora", title: "telemetry" },
   { subreddit: "gaming", title: "price" },
-  { subreddit: "consoles", title: "price" },
-  { subreddit: "mildlyinfuriating", title: "fee" },
+  { subreddit: "CordCutters", title: "price" },
   { subreddit: "raspberry_pi", title: "price" },
 ];
 
@@ -268,5 +286,6 @@ async function main() {
 }
 
 await main();
+
 
 

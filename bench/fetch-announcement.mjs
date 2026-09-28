@@ -91,13 +91,59 @@ function screenHead(text) {
 }
 
 /**
+ * PROVENANCE. An announcement is authored by the party making the change. A
+ * news article about a price hike is a REACTION, and treating one as the
+ * blind input would collapse the two artifacts this protocol separates.
+ *
+ * Domain lists cannot do this reliably. A 60-host publisher denylist let
+ * videogameschronicle.com, gamingbible.com, mp1st.com, nintendolife.com and
+ * pushsquare.com all pass, because no denylist anticipates the next gaming
+ * outlet. The structural test is whether the document speaks AS the party
+ * about ITS OWN offering:
+ *
+ *   1. the vendor's own name (from the domain) appears near the top
+ *   2. institutional first-person voice about its own product
+ *   3. no third-party reporting markers — a report attributes to others
+ */
+function vendorTokens(host) {
+  return (host ?? "")
+    .toLowerCase()
+    .replace(/\.(com|net|org|io|co|uk|de|fr|it|eu|ai|dev|app|docs|www)\b/g, "")
+    .split(/[.\-_]/)
+    .filter((t) => t.length >= 4 && !["docs", "blog", "news", "www", "help", "support", "status", "legal"].includes(t));
+}
+
+/** "According to", "reportedly", "sources say", quotes attributed to others. */
+const REPORTING_MARKERS =
+  /\b(according to|reportedly|sources (?:say|says|told)|it is reported|we(?:'ve| have) learned|has confirmed|have confirmed|is expected to|are expected to|has announced|have announced|is set to|are set to|said in a statement|in a statement)\b/i;
+
+function screenProvenance(host, text) {
+  const head = text.slice(0, HEAD_CHARS * 2);
+  const tokens = vendorTokens(host);
+  if (tokens.length === 0) return { ok: false, reason: "cannot_derive_vendor_name_from_domain" };
+  const namesSelf = tokens.filter((t) => new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(head));
+  if (namesSelf.length === 0) {
+    return { ok: false, reason: "announcement_does_not_name_its_own_publisher" };
+  }
+  if (REPORTING_MARKERS.test(head.slice(0, 1800))) {
+    return { ok: false, reason: "third_party_report_not_first_party_announcement" };
+  }
+  // Institutional first person about its own offering.
+  const firstPersonOwn = /\b(we|our|us)\b(?=[^.?!]{0,80}\b(price[sd]?|pricing|plan[s]?|licen[cs]e|api|terms|policy|customers?|users?|developers?|service|subscribe|subscription|account|platform|product)\b)/i;
+  if (!firstPersonOwn.test(head)) {
+    return { ok: false, reason: "no_first_party_voice_about_its_own_offering" };
+  }
+  return { ok: true, reason: null, vendor: namesSelf[0] };
+}
+
+/**
  * An announcement must (a) be first-party, (b) state a change, (c) not be a
  * commercial landing page, and (d) actually be ABOUT a change rather than a
  * price list. A product catalog, price table, or comparison tool fails even
  * when it contains a vendor name and many prices, because there is no
  * announced change to react to.
  */
-function screenAnnouncementDoc(url, text) {
+function screenAnnouncementDoc(url, host, text) {
   if (text.length < 300) return { ok: false, reason: "announcement_too_short_after_extraction" };
   const head = screenHead(text);
   if (!head.ok) return head;
@@ -105,7 +151,15 @@ function screenAnnouncementDoc(url, text) {
   const headText = text.slice(0, HEAD_CHARS * 2);
   if (!FIRST_PARTY.test(headText)) return { ok: false, reason: "not_first_party_voice" };
   if (!ANNOUNCE_VERBS.test(headText)) return { ok: false, reason: "no_announcement_verb_in_document" };
-  return { ok: true, reason: null };
+  const prov = screenProvenance(host, text);
+  if (!prov.ok) return prov;
+  // Advocacy, petition, and campaign pages are third parties arguing FOR a
+  // change, not the party making it. Observed: refund4freedom.org, an EU
+  // Windows-refund campaign, passed every other test.
+  if (/\b(we\s+demand|our\s+petition|sign\s+the\s+petition|this\s+petition|join\s+us\s+in\s+calling|call\s+on\s+.*\s+to\s+(?:act|demand)|your\s+signature)\b/i.test(headText)) {
+    return { ok: false, reason: "advocacy_or_petition_page_not_a_vendor_announcement" };
+  }
+  return { ok: true, reason: null, vendor: prov.vendor };
 }
 
 /**
@@ -173,7 +227,7 @@ for (const pair of data.pairs) {
   const got = await fetchAnnouncement(url);
   if (!got.ok) { console.log(got.reason); results.push({ id: pair.observation_id, ok: false, reason: got.reason }); await sleep(2000); continue; }
 
-  const doc = screenAnnouncementDoc(url, got.text);
+  const doc = screenAnnouncementDoc(url, pair.announcement.host, got.text);
   if (!doc.ok) { console.log(doc.reason); results.push({ id: pair.observation_id, ok: false, reason: doc.reason }); await sleep(2000); continue; }
 
   const match = verifyMatch(pair.reaction.title, got.text);
@@ -196,3 +250,4 @@ writeFileSync(pairsPath, JSON.stringify(data, null, 2));
 
 console.log(`\n--- verified pairs: ${data.pairs.length}/${data.target_n} ---`);
 for (const p of data.pairs) console.log(`  ${p.observation_id}  ${p.announcement.host}  ${p.announcement.char_count} chars  r/${p.reaction.subreddit}`);
+
