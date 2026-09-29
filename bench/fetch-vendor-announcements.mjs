@@ -138,16 +138,60 @@ const GENERIC = new Set([
 ]);
 
 /**
- * The reaction and the announcement must be about the same change. Checked by
- * requiring topical overlap in the announcement's opening, where a change is
- * stated, excluding generic commerce words.
+ * The reaction must REFERENCE the announcement.
+ *
+ * Two previous tests were both wrong, and the second one is the interesting
+ * failure. Checking that the reaction and announcement shared topical terms let
+ * through a Hetzner thread about a DATA-PURGE INCIDENT paired with a
+ * price-adjustment page (matched on the word "last"), and a Proton thread
+ * comparing Tuta and Proton for private mail paired with a price-change post
+ * (matched on "email", "mail", "private"). Shared vocabulary between a vendor
+ * and a community thread is nearly always incidental; it is not evidence that
+ * the thread is about the change.
+ *
+ * What IS evidence: the thread links the announcement, or quotes a distinctive
+ * phrase from it verbatim. That is a deliberate act by the commenter, it cannot
+ * happen by accident, and it needs no tuned threshold.
  */
-function verifySameChange(reactionTitle, reactionBody, annText) {
+function reactionReferencesAnnouncement(pair, annText) {
+  const rx = `${pair.reaction.title}\n${pair.reaction.selftext ?? ""}`;
+
+  // (a) The thread links the announcement (or its canonical form).
+  const annUrl = (pair.announcement.final_url ?? pair.announcement.url).replace(/\/+$/, "");
+  const host = new URL(annUrl).hostname.replace(/^www\./, "");
+  const linked = rx.includes(annUrl) || rx.includes(pair.announcement.url);
+  // A bare vendor blog root is too weak to count as a link to a specific post.
+  const linkedSpecific = linked && !/^https?:\/\/[^/]+\/?$/.test(annUrl);
+  if (linkedSpecific) return { ok: true, how: "thread_links_the_announcement" };
+
+  // (b) The thread quotes a distinctive phrase from the announcement verbatim.
+  const phrases = distinctivePhrases(annText);
+  const quoted = phrases.filter((p) => rx.toLowerCase().includes(p));
+  if (quoted.length > 0) {
+    return { ok: true, how: "thread_quotes_the_announcement", quoted: quoted.slice(0, 3) };
+  }
+  return { ok: false, how: "reaction_does_not_reference_the_announcement", phrases_considered: phrases.length, vendor_host: host };
+}
+
+/**
+ * Distinctive phrases from the announcement: long word sequences from the
+ * change-stating sentences, lowercased. A 6-word run is long enough that a
+ * community post reproducing it is quoting, not coinciding.
+ */
+function distinctivePhrases(annText) {
   const head = annText.slice(0, HEAD_CHARS * 2);
-  const text = `${reactionTitle}\n${reactionBody}`;
-  const words = text.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 4 && !GENERIC.has(w));
-  const shared = words.filter((w) => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(head));
-  return { ok: shared.length > 0, shared: [...new Set(shared)] };
+  const sentences = head.split(/(?<=[.!?])\s+/).filter((s) => s.length > 60);
+  const out = new Set();
+  for (const s of sentences) {
+    const words = s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
+    for (let n = 8; n >= 6; n--) {
+      for (let i = 0; i + n <= words.length; i++) {
+        const phrase = words.slice(i, i + n).join(" ");
+        if (phrase.split(" ").length === n) out.add(phrase);
+      }
+    }
+  }
+  return [...out].slice(0, 400);
 }
 
 const raw = JSON.parse(readFileSync(PAIRS, "utf8"));
@@ -170,16 +214,21 @@ for (const pair of raw.pairs) {
   const doc = screenAnnouncement(got.text);
   if (!doc.ok) { console.log(doc.reason); data.announcement_fetch_log.push({ id: pair.observation_id, ok: false, reason: doc.reason }); await sleep(2500); continue; }
 
-  const match = verifySameChange(pair.reaction.title, pair.reaction.selftext ?? "", got.text);
-  if (!match.ok) { console.log("announcement_mismatch: shares no specific term with the reaction"); data.announcement_fetch_log.push({ id: pair.observation_id, ok: false, reason: "announcement_mismatch" }); await sleep(2500); continue; }
+  const match = reactionReferencesAnnouncement(pair, got.text);
+  if (!match.ok) {
+    console.log(`${match.how} (${match.phrases_considered} phrases considered)`);
+    data.announcement_fetch_log.push({ id: pair.observation_id, ok: false, reason: `reaction_mismatch_${match.how}` });
+    await sleep(2500);
+    continue;
+  }
 
   pair.announcement.text = got.text.slice(0, 20000);
   pair.announcement.final_url = got.final_url;
   pair.announcement.char_count = got.text.length;
-  pair.verified = { shared_terms: match.shared, verified_at: new Date().toISOString() };
+  pair.verified = { how: match.how, quoted: match.quoted ?? null, verified_at: new Date().toISOString() };
   kept.push(pair);
-  console.log(`OK ${got.text.length} chars, shared=[${match.shared.join(",")}]`);
-  data.announcement_fetch_log.push({ id: pair.observation_id, ok: true, chars: got.text.length, shared: match.shared });
+  console.log(`OK ${got.text.length} chars, reaction ${match.how}${match.quoted ? ` quoted="${match.quoted[0].slice(0, 60)}"` : ""}`);
+  data.announcement_fetch_log.push({ id: pair.observation_id, ok: true, chars: got.text.length, how: match.how });
   await sleep(3000);
 }
 
@@ -193,3 +242,4 @@ console.log(`\n--- verified pairs: ${kept.length}/${data.target_n} ---`);
 for (const p of kept) {
   console.log(`  ${p.observation_id}  ${p.vendor.padEnd(12)} ${String(p.announcement.char_count).padStart(6)} chars  r/${p.reaction.subreddit}  ${p.reaction.num_comments}c`);
 }
+

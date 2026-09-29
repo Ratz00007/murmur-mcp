@@ -83,28 +83,22 @@ const VENDORS = [
     term: "nextcloud",
   },
   {
-    name: "Proton",
-    announcement: "https://proton.me/blog",
-    subreddits: ["privacy", "linux", "VPN"],
-    term: "proton",
-  },
-  {
-    name: "Synology",
-    announcement: "https://www.synology.com/en-global/releaseNote/DSM",
-    subreddits: ["synology", "selfhosted", "sysadmin"],
-    term: "synology",
-  },
-  {
-    name: "JetBrains",
-    announcement: "https://www.jetbrains.com/community/feed/",
-    subreddits: ["intellijidea", "javafx", "programming", "java"],
-    term: "jetbrains",
-  },
-  {
+    // A specific first-party post, not a blog index. States a concrete change
+    // ("we are removing support for OpenVPN ... completely removed on 15th
+    // January 2026") and is exactly the kind of announcement a user would hold
+    // before reacting.
     name: "Mullvad",
-    announcement: "https://mullvad.net/en/blog",
-    subreddits: ["privacy", "VPN", "linux"],
+    announcement: "https://mullvad.net/en/blog/removing-openvpn-15th-january-2026",
+    subreddits: ["privacy", "VPN", "linux", "selfhosted"],
     term: "mullvad",
+  },
+  {
+    // A specific first-party post announcing a price change with an effective
+    // date, and explicitly inviting discussion on Reddit.
+    name: "Proton",
+    announcement: "https://proton.me/blog/monthly-unlimited-price-change",
+    subreddits: ["privacy", "linux", "VPN", "ProtonMail"],
+    term: "proton",
   },
 ];
 
