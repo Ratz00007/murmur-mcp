@@ -8,12 +8,10 @@ audit; run a pre-registered benchmark against real observed reactions; and bring
 engineering, protocol conformance, and launch readiness to the highest bar
 achievable today.
 
-**Status:** active — B2 and B3 complete but **UNCOMMITTED: `git.exe` is missing
-from this machine** (not on PATH; `C:\Program Files\Git\bin` contains only
-bash.exe; no copy found under Program Files (x86), scoop, C:\git, or
-GitHubDesktop). Every change is verified on disk and green — typecheck exit 0,
-86/86 unit+golden, 2/2 e2e, cleanroom GATE GREEN — but it needs a commit once
-git is restored. Not marking anything blocked that I can still finish.
+**Status:** active — A, B, and B4 complete. 91/91 unit+golden, 2/2 e2e,
+cleanroom GATE GREEN. **Environment note:** the system Git install is broken and
+a PortableGit copy is being used from the temp dir; reinstall Git properly.
+Next: D1, the benchmark pair search, which decides what product to build.
 
 **Replaces:** the prior "Murmur Phase 0 + Phase 1: Ship, Prove, and De-risk"
 goal. Two of its claims are **disproved by direct inspection** and are corrected
@@ -67,7 +65,8 @@ coding session** — by showing its work, including where it is bad.
         printed beside it, with its formula
 - [x] B3 `METHODOLOGY.md` written: personas are invented, the band is slope
       sensitivity not uncertainty, nothing is a measurement
-- [ ] B4 "ensemble" renamed to sensitivity everywhere in code identifiers
+- [x] B4 "ensemble" renamed to `sensitivity` in module, functions, config key,
+      and ReportData field; semantics pinned by tests
 
 ### C. The Objection Dossier
 - [ ] C1 New report artifact: ranked objections with steelman, evidence, blast
@@ -252,3 +251,26 @@ coding session** — by showing its work, including where it is bad.
 
   VERIFIED: typecheck exit 0 · 86/86 unit+golden (was 83, +3) · 2/2 e2e ·
   cleanroom GATE GREEN.
+- 2026-09-28 — **git restored, B2/B3 committed, B4 done.** The Git install at
+  `C:\Program Files\Git` had been partially wiped mid-session (`bin` held only
+  bash.exe, `usr/bin` had a few MSYS tools, `cmd` was empty, `rg.exe` gone too).
+  No package manager was available, so a PortableGit 2.51.0 was extracted to the
+  temp dir and added to the user PATH. The system install is still broken and
+  should be reinstalled properly; the portable copy is not a substitute long
+  term because it lives in a temp directory.
+
+  B4 — the P10–P90 band was relabelled in prose earlier while the code still
+  said "ensemble" in the module name, every exported function, the config key
+  and the ReportData field. Renamed throughout to `sensitivity`, and the module
+  doc now states what the computation actually is: a least-squares fit whose
+  slope is perturbed by ±0.06 across seeded refits, not a re-simulation and not
+  an uncertainty interval.
+  `tests/unit/sensitivity.test.ts` pins the semantics rather than the
+  constants. The load-bearing assertion is that refits with different seeds
+  agree **exactly** on every recorded round — if the mechanism were being
+  resampled they would disagree there, so that is the available proof no
+  re-simulation occurs. The jitter bound is checked against an independent
+  least-squares fit, not against the implementation.
+
+  VERIFIED: typecheck exit 0 · 91/91 unit+golden · 2/2 e2e · cleanroom GATE
+  GREEN · claim check GREEN at 91 tests and 29 tools.
