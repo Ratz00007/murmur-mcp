@@ -76,7 +76,8 @@ coding session** — by showing its work, including where it is bad.
       external refs, prints clean)
 
 ### D. MurmurBench
-- [ ] D1 ≥5 verified (announcement, reaction) pairs, public and citable
+- [~] D1 **3 verified pairs, target 5.** Vendor-anchored selection working; the
+      shortfall is documented below rather than tuned away
 - [ ] D2 Ground-truth objections extracted per the frozen rubric and hand-audited
 - [ ] D3 Pre-emption rate reported beside every recall figure
 - [ ] D4 Arm A (naive baseline) and Arm B (full Murmur) run on the same blind inputs
@@ -274,3 +275,47 @@ coding session** — by showing its work, including where it is bad.
 
   VERIFIED: typecheck exit 0 · 91/91 unit+golden · 2/2 e2e · cleanroom GATE
   GREEN · claim check GREEN at 91 tests and 29 tools.
+- 2026-09-28 — **D1: the vendor-anchored approach works; 3 verified pairs, not
+  5.** `bench/select-vendor-pairs.mjs` inverts the failed search. Instead of
+  looking for Reddit threads that link an announcement, it looks for reaction
+  threads naming a KNOWN vendor, and takes the announcement from that vendor's
+  own domain. Neither half depends on a list of publishers, which is what
+  defeated the earlier approach — a 60-host denylist cannot anticipate the next
+  gaming outlet, but a vendor's own changelog is authoritative by construction.
+
+  It also enforces one reaction thread per vendor. Without that, all 7 initial
+  candidates came from a single ONLYOFFICE licence dispute, so the benchmark
+  would have measured one event five times and learned nothing about the other
+  vendors. It collects 3× the target as candidates because verification rejects
+  roughly half; stopping at N candidates yielded 3 verified from 10 vendors.
+
+  **Verified pairs: Flathub (r/linux, 116c), Hetzner (r/sysadmin, 53c),
+  Scaleway (r/sysadmin, 12c).** Distinct vendors, distinct change types (licence
+  compliance, price adjustment, pricing strategy).
+
+  Seven candidates were rejected, and the rejections are the useful part. Two
+  screens were wrong and the data was right, both times:
+
+  - A commerce-keyword screen rejected ONLYOFFICE and Flathub, which are
+    specific first-party posts whose *sidebars* contain "all posts", and later
+    rejected the Bitwarden premium price increase, which says "Get Started
+    Free" in its plan table. Commerce words are now a tie-breaker; the primary
+    test is whether the vendor states a concrete change.
+  - A change-language screen recognised only future tense ("we are increasing
+    prices") and rejected Hetzner, whose page says "the price adjustment took
+    effect … starting 15 June". An announcement you would have held before
+    reacting is usually one that is already in effect, so the majority of real
+    announcements were being rejected. Both tenses now pass.
+
+  The remaining rejections are genuine: blog index pages (ONLYOFFICE, Proton,
+  Mullvad), advocacy rather than announcement (Mullvad open letter), and
+  documents with no first-party change statement (Synology release notes,
+  Bitwarden's marketing-shaped resource page).
+
+  **Why 3 and not 5, stated plainly rather than tuned away.** I could reach 5
+  tomorrow by loosening `FIRST_PARTY_OWN` until more pages passed — and that is
+  precisely the post-hoc selection the seal exists to prevent. The screens were
+  already revised six times during this step. Rather than tune a seventh time
+  to hit a number, the shortfall is recorded and N=3 is used, or the extra
+  vendors are given announcements that are unambiguously first-party (a specific
+  changelog entry rather than a blog index) and re-run from a fresh selection.
