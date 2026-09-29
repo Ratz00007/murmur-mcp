@@ -564,17 +564,17 @@ export function renderReportHtml(storage: Storage, world: World, report: ReportR
   if (D.projection && D.focusEntity) {
     const actual = D.projection.points.filter((p) => !p.projected);
     const proj = D.projection.points.filter((p) => p.projected);
-    if (D.ensemble && D.ensemble.length > 0) {
+    if (D.sensitivity && D.sensitivity.length > 0) {
       // Ensemble UQ: seeded P10–P90 band replaces the single extrapolated line.
-      const runs = world.config.ensemble?.runCount ?? 5;
+      const runs = world.config.sensitivity?.refitCount ?? 5;
       const svgW = 640, svgH = 200, padL = 34, padR = 10, padT = 10, padB = 22;
-      const rounds = D.ensemble.map((b) => b.round);
+      const rounds = D.sensitivity.map((b) => b.round);
       const r0 = Math.min(...rounds), r1 = Math.max(...rounds);
       const x = (r: number) => padL + (r1 === r0 ? (svgW - padL - padR) / 2 : ((r - r0) / (r1 - r0)) * (svgW - padL - padR));
       const y = (v: number) => padT + ((1 - Math.max(-1, Math.min(1, v))) / 2) * (svgH - padT - padB);
-      const lo = D.ensemble.map((b) => `${x(b.round).toFixed(1)},${y(b.p10).toFixed(1)}`).join(" ");
-      const hi = [...D.ensemble].reverse().map((b) => `${x(b.round).toFixed(1)},${y(b.p90).toFixed(1)}`).join(" ");
-      const p50 = D.ensemble.map((b) => `${x(b.round).toFixed(1)},${y(b.p50).toFixed(1)}`).join(" ");
+      const lo = D.sensitivity.map((b) => `${x(b.round).toFixed(1)},${y(b.p10).toFixed(1)}`).join(" ");
+      const hi = [...D.sensitivity].reverse().map((b) => `${x(b.round).toFixed(1)},${y(b.p90).toFixed(1)}`).join(" ");
+      const p50 = D.sensitivity.map((b) => `${x(b.round).toFixed(1)},${y(b.p50).toFixed(1)}`).join(" ");
       const recPts = actual.map((p) => `${x(p.round).toFixed(1)},${y(p.value).toFixed(1)}`).join(" ");
       const axis = [1, 0, -1].map((v) => `<text x="6" y="${Number((y(v) + 3).toFixed(1))}" font-size="10" fill="var(--dim)">${v > 0 ? "+1" : String(v)}</text>`).join("");
       const labels = rounds.map((r) => `<text x="${x(r).toFixed(1)}" y="${svgH - 6}" font-size="10" fill="var(--dim)" text-anchor="middle">r${r}</text>`).join("");
@@ -588,8 +588,8 @@ export function renderReportHtml(storage: Storage, world: World, report: ReportR
           axis + labels +
           `</svg></div>`
       );
-      const last = D.ensemble[D.ensemble.length - 1];
-      const opened = D.ensemble.some((b) => b.p10 !== b.p90);
+      const last = D.sensitivity[D.sensitivity.length - 1];
+      const opened = D.sensitivity.some((b) => b.p10 !== b.p90);
       H.push(
         `<p class="chart-note">Simulated projection — slope-jitter sensitivity around the recorded run (no re-simulation; ${runs} refits of the least-squares trend): recorded rounds carry no band (every run shares the recorded values); the band opens on projected rounds. ` +
           (opened ? `Round ${last.round}: P10 ${fmt(last.p10)} · P50 ${fmt(last.p50)} · P90 ${fmt(last.p90)}. ` : "") +
@@ -730,5 +730,8 @@ export function renderReportHtml(storage: Storage, world: World, report: ReportR
   H.push(`</div></body></html>`);
   return H.join("\n");
 }
+
+
+
 
 

@@ -172,7 +172,7 @@ export function allowedNumbers(d: ReportData, rounds: number, population: number
     for (const e of Object.values(row.sentimentByEntity)) push(e);
   }
   for (const e of d.focusCurve) push(e.value);
-  for (const b of d.ensemble ?? []) {
+  for (const b of d.sensitivity ?? []) {
     push(b.p10);
     push(b.p50);
     push(b.p90);
@@ -284,4 +284,6 @@ export function verifyNumericClaims(
 
   return { ok: unverified.length === 0, claims, unverified, available };
 }
+
+
 

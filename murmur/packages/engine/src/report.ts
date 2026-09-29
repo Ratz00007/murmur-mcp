@@ -41,7 +41,7 @@ import {
 } from "./analytics.js";
 import { engagementScore } from "./util/engagement.js";
 import { verifyNumericClaims } from "./report-claims.js";
-import { ensembleIntervals, projectionEnsemble, type EnsembleInterval } from "./dynamics/ensemble.js";
+import { sensitivityIntervals, projectionRefits, type SensitivityInterval } from "./dynamics/sensitivity.js";
 import { clamp, escapeMermaid, estTokens, nowIso, round2Safe, sentimentLabel, stanceBar, truncate } from "./util/text.js";
 
 export const REPORT_DISCLAIMER =
@@ -81,7 +81,7 @@ export interface ReportStatsPack {
   sentimentCurves: { entity: string; type: string; curve: { round: number; value: number }[] }[];
   projection: { entity: string; slope: number; direction: string; projected: { round: number; value: number }[] } | null;
   /** Seeded P10–P50–P90 bands for the focus entity's simulated projection (null when disabled). */
-  ensemble: EnsembleInterval[] | null;
+  sensitivity: SensitivityInterval[] | null;
   momentum: MomentumAnalysis;
   controversy: ControversyAnalysis;
   factions: FactionAnalysis;
@@ -123,7 +123,7 @@ export function buildReportTask(storage: Storage, world: World, focus: string | 
   const trends = entityTrends(storage, world, topEntities, (e) => sentimentCurve(storage, world, e), 6);
   const focusCurve = focusEntity ? sentimentCurve(storage, world, focusEntity) : [];
   const projection = focusCurve.length >= 2 ? projectCurve(focusCurve, 2) : null;
-  const ensemble = projection ? ensembleIntervals(projectionEnsemble(world.seed, world.config.ensemble?.runCount ?? 5, focusCurve, projection)) : null;
+  const sensitivity = projection ? sensitivityIntervals(projectionRefits(world.seed, world.config.sensitivity?.refitCount ?? 5, focusCurve, projection)) : null;
   const mom = momentum(rows);
   const moments = narrativeTimeline(storage, world, 8);
   const quotes = quoteBank(storage, world, focusEntity, 3);
@@ -142,7 +142,7 @@ export function buildReportTask(storage: Storage, world: World, focus: string | 
     projection: projection
       ? { entity: focusEntity!.name, slope: projection.slope, direction: projection.direction, projected: projection.points.filter((p) => p.projected).map((p) => ({ round: p.round, value: p.value })) }
       : null,
-    ensemble,
+    sensitivity,
     momentum: mom,
     controversy,
     factions,
@@ -391,7 +391,7 @@ export interface ReportData {
   focusCurve: { round: number; value: number }[];
   projection: Projection | null;
   /** Seeded P10–P50–P90 bands for the focus entity's projection; null when disabled. */
-  ensemble: EnsembleInterval[] | null;
+  sensitivity: SensitivityInterval[] | null;
   amp: AmplificationInfo;
   chains: ReturnType<typeof allEscalations>;
   topBoard: ReturnType<typeof leaderboards>;
@@ -437,7 +437,7 @@ export function collectReportData(storage: Storage, world: World, report: Report
   const trends = entityTrends(storage, world, entities, (e) => sentimentCurve(storage, world, e), 6);
   const focusCurve = focusEntity ? sentimentCurve(storage, world, focusEntity) : [];
   const projection = focusCurve.length >= 2 ? projectCurve(focusCurve, 2) : null;
-  const ensemble = projection ? ensembleIntervals(projectionEnsemble(world.seed, world.config.ensemble?.runCount ?? 5, focusCurve, projection)) : null;
+  const sensitivity = projection ? sensitivityIntervals(projectionRefits(world.seed, world.config.sensitivity?.refitCount ?? 5, focusCurve, projection)) : null;
   const amp = amplification(storage, world);
   const chains = allEscalations(storage, world).sort((a, b) => b.severity - a.severity || a.rootId.localeCompare(b.rootId));
   const topBoard = leaderboards(storage, world, 8);
@@ -460,7 +460,7 @@ export function collectReportData(storage: Storage, world: World, report: Report
   }
   return {
     entities, personas, posts, handles, rows, mentionCount, focusEntity, mom, moments,
-    quotes, factions, arcs, controversy, cross, trends, focusCurve, projection, ensemble, amp,
+    quotes, factions, arcs, controversy, cross, trends, focusCurve, projection, sensitivity, amp,
     chains, topBoard, charted, totalPosts, totalEng, dominant,
     injections: injections.map((ev) => ({ round: ev.round, text: String((ev.payload as { text?: string })?.text ?? "") })),
     date,
@@ -470,7 +470,7 @@ export function collectReportData(storage: Storage, world: World, report: Report
 export function renderReportMarkdown(storage: Storage, world: World, report: ReportRecord): string {
   const {
     entities, personas, posts, handles, rows, mentionCount, focusEntity, mom, moments,
-    quotes, factions, arcs, controversy, cross, trends, focusCurve, projection, ensemble, amp,
+    quotes, factions, arcs, controversy, cross, trends, focusCurve, projection, sensitivity, amp,
     chains, topBoard, charted, totalPosts, totalEng, dominant, injections, date,
   } = collectReportData(storage, world, report);
   const d = report.narrative;
@@ -731,9 +731,9 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
   // ---- 8. simulated projection ----------------------------------------------------------------
   L.push("## 8. Trajectory Simulated Projection");
   L.push("");
-  if (projection && focusEntity && ensemble && ensemble.length > 0) {
+  if (projection && focusEntity && sensitivity && sensitivity.length > 0) {
     // Ensemble UQ: seeded P10–P50–P90 bands replace the old 2-point line.
-    const runs = world.config.ensemble?.runCount ?? 5;
+    const runs = world.config.sensitivity?.refitCount ?? 5;
     L.push(
       `**Simulated projection — slope-jitter sensitivity around the recorded run.** No re-simulation: the ensemble least-squares-fits the observed curve and jitters the fitted slope across ${runs} refits (seeds \`${world.seed}:0\`…\`${world.seed}:${runs - 1}\`). ` +
         `Recorded rounds are identical in every run, so the band only opens on projected rounds — it quantifies model spread against a ±0.06 slope perturbation, not real-world uncertainty.`
@@ -741,7 +741,7 @@ export function renderReportMarkdown(storage: Storage, world: World, report: Rep
     L.push("");
     L.push("| Round | P10 | P50 | P90 |");
     L.push("|---|---|---|---|");
-    for (const b of ensemble) {
+    for (const b of sensitivity) {
       L.push(`| ${b.round} | ${fmt(b.p10)} | ${fmt(b.p50)} | ${fmt(b.p90)} |`);
     }
     L.push("");
@@ -975,4 +975,7 @@ export function clampReportFocus(focus: string | undefined): string {
 }
 
 export type { Post, World, Persona };
+
+
+
 

@@ -50,8 +50,8 @@ export { buildSimBatch, buildPersonaDigest, batchBrief, SIM_INSTRUCTIONS } from 
 export { submitGenerations } from "./sim/ingest.js";
 export { deffuantUpdate, applyOpinionDynamics } from "./dynamics/opinion.js";
 export type { DeffuantParams, DeffuantResult, OpinionAgent, OpinionDynamicsParams, OpinionStanceChange, OpinionDynamicsResult } from "./dynamics/opinion.js";
-export { ensembleIntervals, simulateEnsemble, projectionEnsemble, MAX_ENSEMBLE_RUNS } from "./dynamics/ensemble.js";
-export type { TrajectoryPoint, EnsembleInterval } from "./dynamics/ensemble.js";
+export { sensitivityIntervals, refitSpread, projectionRefits, MAX_SENSITIVITY_REFITS } from "./dynamics/sensitivity.js";
+export type { TrajectoryPoint, SensitivityInterval } from "./dynamics/sensitivity.js";
 export { calibrate, ENGAGEMENT_BOUNDS } from "./calibrate/calibrate.js";
 export type { ParamBound, CalibrateResult } from "./calibrate/calibrate.js";
 export { workingMemory, appendEpisodic, compactIfNeeded, collectiveView, memoryTimeline } from "./memory.js";
@@ -104,4 +104,5 @@ export {
   ASK_INSTRUCTIONS,
 } from "./interact.js";
 export { worldStatus, roundSummary, worldListRow } from "./stats.js";
+
 
