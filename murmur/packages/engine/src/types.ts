@@ -347,7 +347,7 @@ export interface MemoryRecord {
 // Generation tasks (the plan/submit protocol)
 // ---------------------------------------------------------------------------
 
-export type TaskKind = "ontology" | "personas" | "sim" | "report";
+export type TaskKind = "ontology" | "personas" | "sim" | "report" | "dossier";
 
 export interface TaskItem {
   id: string;

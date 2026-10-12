@@ -90,6 +90,14 @@ export {
 } from "./report.js";
 export { renderReportHtml } from "./report-html.js";
 export {
+  buildDossierTask,
+  validateDossierDraft,
+  renderDossierMarkdown,
+  DOSSIER_INSTRUCTIONS,
+  type DossierDraft,
+  type DossierObjection,
+} from "./dossier.js";
+export {
   verifyNumericClaims,
   extractNumbers,
   allowedNumbers,

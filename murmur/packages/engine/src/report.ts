@@ -95,7 +95,12 @@ export interface ReportStatsPack {
   movers: { personaId: string; entity: string; from: number; to: number }[];
 }
 
-export function buildReportTask(storage: Storage, world: World, focus: string | undefined): import("./types.js").GenerationTask {
+export function buildReportTask(
+  storage: Storage,
+  world: World,
+  focus: string | undefined,
+  over?: { kind?: import("./types.js").TaskKind; instructions?: string; outputSchema?: Record<string, unknown> }
+): import("./types.js").GenerationTask {
   if (world.round === 0) throw new Error("no rounds simulated yet — run sim_next_batch / sim_submit_generations first");
   const entities = [...storage.listEntities(world.id)].sort((a, b) => b.salience - a.salience || a.id.localeCompare(b.id));
   const topEntities = entities.slice(0, 5);
@@ -181,10 +186,10 @@ export function buildReportTask(storage: Storage, world: World, focus: string | 
   const task: import("./types.js").GenerationTask = {
     id: storage.nextTaskId(world.id),
     worldId: world.id,
-    kind: "report",
+    kind: over?.kind ?? "report",
     round: world.round,
-    instructions: `${REPORT_INSTRUCTIONS}\n\nWorld: ${world.name}${focus ? ` — focus: ${focus}` : ""}\n\n${DATA_NOTICE}`,
-    outputSchema: {
+    instructions: over?.instructions ?? `${REPORT_INSTRUCTIONS}\n\nWorld: ${world.name}${focus ? ` — focus: ${focus}` : ""}\n\n${DATA_NOTICE}`,
+    outputSchema: over?.outputSchema ?? {
       type: "object",
       required: ["executiveSummary", "keyFindings", "trajectory", "risks", "recommendations", "confidence"],
       properties: {

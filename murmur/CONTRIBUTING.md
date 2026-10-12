@@ -25,7 +25,7 @@ The product promise is that Murmur runs entirely on the user's existing coding s
 ```bash
 npm install
 npm run build         # engine, prompts, adapters, templates, server bundle
-npm test              # unit + golden (262 tests)
+npm test              # unit + golden (267 tests)
 npm run test:e2e      # real MCP client <-> server over stdio + cleanroom gate
 npm run demo          # headless full pipeline (mock brain, no LLM)
 npm run typecheck
@@ -45,6 +45,7 @@ starter issues, each with file hints and acceptance criteria. Standard checks:
 ## Commit style
 
 Conventional commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`). Every PR runs the full CI matrix (Node 20/22/24, plus a Windows smoke job).
+
 
 
 

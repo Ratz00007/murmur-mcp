@@ -79,6 +79,34 @@ export class Workspace {
     return path.join(this.murmurDir, "reports", slug, `report-${version}.html`);
   }
 
+  /** Dossier versions live beside the reports, not in the reports table. */
+  dossierPath(slug: string, version: number): string {
+    return path.join(this.murmurDir, "reports", slug, `dossier-${version}.md`);
+  }
+
+  dossierJsonPath(slug: string, version: number): string {
+    return path.join(this.murmurDir, "reports", slug, `dossier-${version}.json`);
+  }
+
+  /** Next dossier version: one past the highest dossier-N.json present. */
+  nextDossierVersion(slug: string): number {
+    const dir = path.join(this.murmurDir, "reports", slug);
+    let max = 0;
+    try {
+      for (const f of fs.readdirSync(dir)) {
+        const m = /^dossier-(\d+)\.json$/.exec(f);
+        if (m) max = Math.max(max, Number(m[1]));
+      }
+    } catch {
+      // directory does not exist yet — version 1
+    }
+    return max + 1;
+  }
+
+  latestDossierVersion(slug: string): number {
+    return this.nextDossierVersion(slug) - 1;
+  }
+
   artifactPath(slug: string, name: string): string {
     return path.join(this.worldDir(slug), "artifacts", name);
   }

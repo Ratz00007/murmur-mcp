@@ -89,7 +89,7 @@ the 29 Murmur tools; the LLM you already pay for does the persona voices.
 ```bash
 cd murmur
 npm install            # if you skipped Option B (dev toolchain: typescript, vitest, sqlite)
-npm test               # 262 unit + golden tests (byte-identical replay, citation integrity)
+npm test               # 267 unit + golden tests (byte-identical replay, citation integrity)
 npm run test:e2e       # 2 end-to-end: real SDK client ↔ server over stdio
 npm run cleanroom      # zero-egress gate: no network APIs, no URLs, no key surfaces
 npm run build          # rebuild dist from source (all 5 packages)
@@ -201,6 +201,7 @@ publish it in `gallery/` and replace this line with the measured figure.
 | Clean-room + zero-key policies | `murmur/CONTRIBUTING.md` |
 | Security / injection hardening | `murmur/SECURITY.md` |
 | License | `murmur/LICENSE` (Apache-2.0) + `murmur/NOTICE` |
+
 
 
 
