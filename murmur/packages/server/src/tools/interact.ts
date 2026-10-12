@@ -39,7 +39,22 @@ export function registerInteractTools(server: McpServer, ctx: ServerContext): vo
       try {
         const w = ctx.resolveWorld(world);
         if (target === "persona" && !persona) {
-          throw new Error("target:'persona' needs persona (id or handle) — use target:'run' to ask the simulation as a whole");
+          // Ask the user which persona they mean instead of failing outright —
+          // but only when the client supports elicitation. Most do not, and
+          // the plain error below is the universal path.
+          if (ctx.elicit) {
+            const got = await ctx.elicit(
+              "Which persona should answer in character?",
+              { persona: { title: "Persona", description: "Persona id or handle (e.g. p_3 or @ada) — see personas({action:'plan'}) output for the population" } }
+            );
+            const named = typeof got?.persona === "string" ? got.persona.trim() : "";
+            if (named) {
+              persona = named;
+            }
+          }
+          if (!persona) {
+            throw new Error("target:'persona' needs persona (id or handle) — use target:'run' to ask the simulation as a whole");
+          }
         }
         if (answer && answer.trim()) {
           if (target === "persona" && persona) {

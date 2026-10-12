@@ -10,11 +10,20 @@ import { log } from "./logging.js";
 
 export type SamplingFn = (prompt: string, system: string, maxTokens: number) => Promise<string | null>;
 
+/**
+ * Ask the user for a missing value through MCP elicitation, when the client
+ * supports it. Returns the submitted content, or null when elicitation is
+ * unavailable or declined — callers MUST fall back to a plain error, because
+ * most clients do not implement elicitation and the tool must work there too.
+ */
+export type ElicitFn = (message: string, fields: Record<string, { title?: string; description?: string }>) => Promise<Record<string, unknown> | null>;
+
 export class ServerContext {
   readonly workspace: Workspace;
   readonly storage: Storage;
   activeWorldId: string | null = null;
   sampling: SamplingFn | null = null;
+  elicit: ElicitFn | null = null;
 
   constructor(cwd: string) {
     this.workspace = new Workspace(cwd);

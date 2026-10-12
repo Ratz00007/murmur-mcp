@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { InMemoryTaskStore } from "@modelcontextprotocol/sdk/experimental/tasks/stores/in-memory.js";
 import type { ServerContext } from "./session.js";
-import { log } from "./logging.js";
+import { log, setMcpLogSink } from "./logging.js";
 import { registerTools, TOOL_COUNT } from "./tools/index.js";
 import { registerResources } from "./resources.js";
 import { registerPrompts } from "./prompts.js";
@@ -52,6 +52,53 @@ export function buildServer(ctx: ServerContext): McpServer {
   registerResources(server, ctx);
   registerPrompts(server);
 
+  // Logging over MCP: mirror warn-and-above to the client via
+  // notifications/message. Stderr remains the primary sink — the mirror is
+  // best-effort and a client that never asked for logging ignores it.
+  setMcpLogSink((level, message) => server.sendLoggingMessage({ level, data: message }));
+
+  // The low-level Server carries the client-facing methods (createMessage for
+  // sampling, elicitInput for elicitation) as prototype methods. Both bridges
+  // below probe explicitly and BIND — calling either unbound sets `this` to
+  // undefined and fails on client capabilities, which a catch would swallow.
+  const lowLevel = (server as unknown as { server?: { createMessage?: unknown; elicitInput?: unknown } }).server;
+
+  // Elicitation bridge: let tools ask the user for a missing value instead of
+  // failing outright, when the client supports it. Every caller falls back to
+  // a plain error because most clients do not implement this.
+  if (typeof lowLevel?.elicitInput === "function") {
+    const elicitInput = (
+      lowLevel.elicitInput as (
+        this: unknown,
+        params: unknown,
+        opts?: unknown
+      ) => Promise<{ action?: string; content?: Record<string, unknown> }>
+    ).bind(lowLevel);
+    log.info("elicitation bridge: client elicitation reachable via Server.elicitInput (bound)");
+    let elicitWarned = false;
+    ctx.elicit = async (message, fields) => {
+      try {
+        const properties: Record<string, unknown> = {};
+        for (const [name, f] of Object.entries(fields)) {
+          properties[name] = { type: "string", ...(f.title ? { title: f.title } : {}), ...(f.description ? { description: f.description } : {}) };
+        }
+        const result = await elicitInput({ message, requestedSchema: { type: "object", properties } }, {});
+        if (result?.action === "accept" && result.content && typeof result.content === "object") {
+          return result.content;
+        }
+        return null;
+      } catch (e) {
+        if (!elicitWarned) {
+          elicitWarned = true;
+          log.warn(`elicitation bridge declined by client (${String(e)}) — tools fall back to plain errors`);
+        }
+        return null;
+      }
+    };
+  } else {
+    log.info("elicitation bridge unavailable: Server.elicitInput not found on the SDK's low-level server");
+  }
+
   // Optional accelerator: MCP sampling, when the client supports it.
   // Plan/submit remains the universal default path on every client. Sampling
   // is a method on the low-level Server (reachable as `server.server` in the
@@ -66,7 +113,6 @@ export function buildServer(ctx: ServerContext): McpServer {
   //
   // Note: MCP 2026-07-28 moves sampling into the deprecated feature set, so
   // this stays an opt-in accelerator and never a dependency.
-  const lowLevel = (server as unknown as { server?: { createMessage?: unknown } }).server;
   if (typeof lowLevel?.createMessage === "function") {
     const createMessage = (
       lowLevel.createMessage as (this: unknown, req: unknown, opts?: unknown) => Promise<{ content?: { type: string; text?: string } }>
