@@ -1,0 +1,34 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2026-07-28/server.schema.json",
+  "name": "murmur-mcp",
+  "version": "1.0.0",
+  "description": "Adversarial critic for pricing and launch changes: ranked objections with evidence, counter-case, and a test plan for real humans. Zero API keys; runs inside your coding agent over MCP.",
+  "repository": {
+    "url": "https://github.com/Ratz00007/murmur-mcp",
+    "source": "github"
+  },
+  "license": "Apache-2.0",
+  "runtime": {
+    "transport": "stdio",
+    "command": "npx",
+    "args": ["-y", "murmur-mcp", "serve"],
+    "node": ">=20.0.0"
+  },
+  "capabilities": {
+    "tools": [
+      "world_init",
+      "world_list",
+      "world_config",
+      "seed_add",
+      "seeds_review",
+      "ontology",
+      "graph",
+      "personas",
+      "sim",
+      "report",
+      "interact"
+    ],
+    "resources": ["murmur://worlds", "murmur://world/{id}/state", "murmur://world/{id}/report/{rid}"],
+    "prompts": ["murmur-predict", "murmur-simulate", "murmur-interview", "murmur-resume"]
+  }
+}

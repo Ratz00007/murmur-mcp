@@ -3,12 +3,13 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { CLIENTS, findClient, renderInstall, type ServerCommand } from "@murmur/adapters";
 import { findScenario, SCENARIOS } from "@murmur/templates";
+import { openDatabase, Storage, Workspace, type DossierDraft } from "@murmur/engine";
 import { printDoctor, runDoctor } from "./doctor.js";
 import { SERVER_VERSION } from "./server.js";
 
-export type CliAction = "serve" | "doctor" | "init" | "templates" | "version" | "help";
+export type CliAction = "serve" | "doctor" | "init" | "templates" | "version" | "help" | "diff";
 
-export function parseArgs(argv: string[]): { action: CliAction; flags: Record<string, string | boolean> } {
+export function parseArgs(argv: string[]): { action: CliAction; flags: Record<string, string | boolean>; positionals: string[] } {
   const args = [...argv];
   const flagNames = new Set(["client", "template", "write", "server"]);
   const flags: Record<string, string | boolean> = {};
@@ -34,8 +35,9 @@ export function parseArgs(argv: string[]): { action: CliAction; flags: Record<st
   else if (first === "templates") action = "templates";
   else if (first === "version") action = "version";
   else if (first === "help") action = "help";
+  else if (first === "diff") action = "diff";
   else if (first) action = "help";
-  return { action, flags };
+  return { action, flags, positionals: positional.slice(action === "diff" ? 1 : 0) };
 }
 
 /** When running from a repo checkout (unpublished), prefer a direct node command. */
@@ -68,6 +70,7 @@ Usage:
   murmur-mcp init [--client ID]   Show (or --write) the MCP config for one client
   murmur-mcp init --template ID   Copy a scenario template (launch|policy|crisis|finance|fiction) into .
   murmur-mcp templates            List scenario templates
+  murmur-mcp diff <worldA> <worldB>  Diff the latest dossiers: added/removed/kept objections
   murmur-mcp version              Print version
 
 In your coding agent, use prompts: /murmur-predict, /murmur-simulate, /murmur-interview, /murmur-resume
@@ -83,13 +86,16 @@ Environment:
 }
 
 export async function runCli(argv: string[]): Promise<number> {
-  const { action, flags } = parseArgs(argv);
+  const { action, flags, positionals } = parseArgs(argv);
   const cwd = process.cwd();
 
   switch (action) {
     case "version": {
       process.stdout.write(`murmur-mcp ${SERVER_VERSION}\n`);
       return 0;
+    }
+    case "diff": {
+      return runDiff(cwd, positionals);
     }
     case "help": {
       printHelp();
@@ -162,3 +168,91 @@ export async function runCli(argv: string[]): Promise<number> {
       return 0;
   }
 }
+
+/**
+ * murmur-mcp diff <worldA> <worldB> — what changed in the attack surface?
+ *
+ * Diffs the latest dossiers of two worlds line by line: added, removed, and
+ * kept objections (matched by label), plus the counter-case and test plan.
+ * The intended loop is: run the same seed against two seed files (e.g. the
+ * pricing page before and after a rewording), dossier both, then diff to see
+ * which objections the rewording killed and which it created.
+ *
+ * Pure read of stored dossiers; exits nonzero when either world has none.
+ */
+export function runDiff(cwd: string, positionals: string[]): number {
+  const [aId, bId] = positionals;
+  if (!aId || !bId) {
+    process.stderr.write("usage: murmur-mcp diff <worldA> <worldB> — diffs the latest dossiers of two worlds\n");
+    return 1;
+  }
+  const ws = new Workspace(cwd);
+  // A directory with no .murmur store has no worlds and no dossiers. Say so
+  // with exit 1 rather than crashing inside SQLite's file handling.
+  if (!fs.existsSync(ws.dbPath)) {
+    process.stderr.write(`no Murmur workspace at ${ws.root} (no .murmur/murmur.db) — run this where a world exists\n`);
+    return 1;
+  }
+  const storage = new Storage(openDatabase(ws.dbPath));
+  try {
+    const a = storage.getWorld(aId);
+    const b = storage.getWorld(bId);
+    if (!a) {
+      process.stderr.write(`unknown world: ${aId}\n`);
+      return 1;
+    }
+    if (!b) {
+      process.stderr.write(`unknown world: ${bId}\n`);
+      return 1;
+    }
+    const readDossier = (slug: string) => {
+      const version = ws.latestDossierVersion(slug);
+      if (version < 1) return null;
+      const raw = ws.readIfExists(ws.dossierJsonPath(slug, version));
+      if (!raw) return null;
+      return JSON.parse(raw) as { version: number; draft: DossierDraft };
+    };
+    const da = readDossier(a.slug);
+    const db = readDossier(b.slug);
+    if (!da) {
+      process.stderr.write(`no stored dossier for ${aId} — run report({action:'plan', mode:'dossier'}) first\n`);
+      return 1;
+    }
+    if (!db) {
+      process.stderr.write(`no stored dossier for ${bId} — run report({action:'plan', mode:'dossier'}) first\n`);
+      return 1;
+    }
+    const out = process.stdout;
+    out.write(`\nObjection delta: ${a.name} (dossier v${da.version}) → ${b.name} (dossier v${db.version})\n\n`);
+    const byLabel = (d: { draft: DossierDraft }) =>
+      new Map(d.draft.objections.map((o) => [o.label.toLowerCase(), o]));
+    const ma = byLabel(da);
+    const mb = byLabel(db);
+    const removed = [...ma.keys()].filter((k) => !mb.has(k));
+    const added = [...mb.keys()].filter((k) => !ma.has(k));
+    const kept = [...ma.keys()].filter((k) => mb.has(k));
+    if (removed.length === 0 && added.length === 0) {
+      out.write("No objection changed. Same labels, both sides.\n");
+    }
+    for (const k of removed) {
+      const o = ma.get(k)!;
+      out.write(`- REMOVED [${o.blastRadius.toUpperCase()}] ${o.label}\n`);
+    }
+    for (const k of added) {
+      const o = mb.get(k)!;
+      out.write(`+ ADDED   [${o.blastRadius.toUpperCase()}] ${o.label}\n`);
+    }
+    for (const k of kept) {
+      const o = mb.get(k)!;
+      out.write(`= KEPT    [${o.blastRadius.toUpperCase()}] ${o.label}\n`);
+    }
+    out.write(`\nCounter-case changed: ${da.draft.counterCase !== db.draft.counterCase ? "yes" : "no"}\n`);
+    out.write(
+      `Test plan: ${da.draft.testPlan.length} → ${db.draft.testPlan.length} questions\n`
+    );
+    return 0;
+  } finally {
+    storage.close();
+  }
+}
+

@@ -3,19 +3,22 @@
 [![build](https://img.shields.io/github/actions/workflow/status/Ratz00007/murmur-mcp/ci.yml?branch=main)](https://github.com/Ratz00007/murmur-mcp/actions)
 [![npm](https://img.shields.io/npm/v/murmur-mcp.svg)](https://www.npmjs.com/package/murmur-mcp)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](murmur/LICENSE)
-[![MCP](https://img.shields.io/badge/MCP-server%20%C2%B7%2029%20tools-brightgreen.svg)](murmur/README.md)
+[![MCP](https://img.shields.io/badge/MCP-server%20%C2%B7%2011%20tools-brightgreen.svg)](murmur/README.md)
 
-**Before you publish a pricing or launch change, see how a panel of simulated users reacts inside the coding agent you already use—with no extra API keys or Murmur network calls, and every risk tied to the simulated post behind it.**
+**Before you ship a pricing or launch change, find the objections that would kill it — ranked by blast radius, each tied to the simulated post behind it, inside the coding agent you already use, with no extra API keys.**
 
 > [!IMPORTANT]
-> Murmur produces a **simulated perspective**, not validated evidence of what real users will do. The included demo is mock-driven; it shows the workflow, not a live-model result.
+> Murmur produces a **structured set of arguments**, not a prediction. Simulated personas are invented critics, not your customers; nothing here is evidence of what real users will do. The output is a list of objections to test with real humans — including which questions discriminate and what answers should stop the launch. The included demo is mock-driven; it shows the workflow, not a live-model result.
+>
+> This positioning is deliberate. Peer-reviewed work in 2026 measured LLM-simulated users against real people and found them unreliable as proxies: Seshadri et al., ["Lost in Simulation"](https://arxiv.org/abs/2601.17087) (ACL 2026, calibration error 15–20 points) and Chen et al., ["When Synthetic Users Fail"](https://arxiv.org/abs/2607.26348) (no LLM beats the best non-LLM baseline on real survey data). Murmur does not claim what those papers rule out. See `METHODOLOGY.md` for what a run is and is not, and `bench/` for the pre-registered attempt to measure recall against real reactions.
 
 ## What you get
 
-- **Pressure-test the reaction** to a pricing, launch, policy, or crisis decision before your audience responds.
+- **Surface the killing objections** to a pricing, launch, policy, or crisis decision — each stated at its strongest, with the evidence and the decision it threatens.
+- **Argue the other side honestly**: every dossier carries the counter-case, so an adversarial tool cannot talk you out of a good idea silently.
 - **Stay in your coding workflow** with Claude Code, Codex, Gemini CLI, Cursor, Windsurf, and other MCP clients.
 - **Add no API keys or Murmur network calls**; model use stays inside the host agent you already use.
-- **Trace every risk to the simulated post behind it**, so you can inspect the argument instead of trusting a summary.
+- **Trace every claim to the simulated post behind it**, and every number to the run that produced it — the engine rejects drafts that invent figures.
 - **Replay the same seed, inputs, and host model** to reproduce the same run.
 
 **See the shipped dashboard in 3 clicks**
@@ -89,7 +92,7 @@ the 29 Murmur tools; the LLM you already pay for does the persona voices.
 ```bash
 cd murmur
 npm install            # if you skipped Option B (dev toolchain: typescript, vitest, sqlite)
-npm test               # 268 unit + golden tests (byte-identical replay, citation integrity)
+npm test               # 270 unit + golden tests (byte-identical replay, citation integrity)
 npm run test:e2e       # 2 end-to-end: real SDK client ↔ server over stdio
 npm run cleanroom      # zero-egress gate: no network APIs, no URLs, no key surfaces
 npm run build          # rebuild dist from source (all 5 packages)
@@ -201,6 +204,7 @@ publish it in `gallery/` and replace this line with the measured figure.
 | Clean-room + zero-key policies | `murmur/CONTRIBUTING.md` |
 | Security / injection hardening | `murmur/SECURITY.md` |
 | License | `murmur/LICENSE` (Apache-2.0) + `murmur/NOTICE` |
+
 
 
 

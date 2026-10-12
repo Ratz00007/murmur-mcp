@@ -12,8 +12,9 @@ import { describe, expect, it } from "vitest";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { parseArgs, resolveServerCommand } from "../../packages/server/src/cli.js";
+import { parseArgs, resolveServerCommand, runDiff } from "../../packages/server/src/cli.js";
 import { runDoctor } from "../../packages/server/src/doctor.js";
+import { Storage, openDatabase, Workspace } from "@murmur/engine";
 
 describe("parseArgs", () => {
   it("routes the documented actions", () => {
@@ -62,6 +63,83 @@ describe("resolveServerCommand", () => {
       const resolved = resolveServerCommand(dir);
       expect(resolved.command).toBe("npx");
       expect(resolved.args).toContain("murmur-mcp");
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("runDiff", () => {
+  it("diffs two dossiers: added, removed, kept", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-diff-"));
+    const ws = new Workspace(dir);
+    ws.ensure();
+    const storage = new Storage(openDatabase(ws.dbPath));
+    try {
+      const a = storage.createWorld({ name: "before", seed: "diff-a" });
+      const b = storage.createWorld({ name: "after", seed: "diff-b" });
+      const mk = (labels: string[]) => ({
+        version: 1,
+        world: "w",
+        focus: "",
+        draft: {
+          objections: labels.map((label) => ({
+            label,
+            steelman: "x".repeat(130),
+            blastRadius: "high" as const,
+            threatenedDecision: "the launch decision",
+            postIds: ["po_1", "po_2"],
+          })),
+          strongestCritic: { handle: "@c", sentence: "x".repeat(30) },
+          counterCase: "x".repeat(130),
+          weakestClaim: { claim: "the plan holds", breakingQuestion: "what breaks it?" },
+          testPlan: [{ question: "would you pay?", discriminates: "price vs surprise", wouldNotShipIf: "lower number" }],
+        },
+        createdAt: new Date().toISOString(),
+      });
+      ws.ensureWorldDir(a.slug);
+      ws.ensureWorldDir(b.slug);
+      fs.mkdirSync(path.dirname(ws.dossierJsonPath(a.slug, 1)), { recursive: true });
+      fs.mkdirSync(path.dirname(ws.dossierJsonPath(b.slug, 1)), { recursive: true });
+      fs.writeFileSync(ws.dossierJsonPath(a.slug, 1), JSON.stringify(mk(["Old pain", "Shared worry"])));
+      fs.writeFileSync(ws.dossierJsonPath(b.slug, 1), JSON.stringify(mk(["Shared worry", "New pain"])));
+      storage.close();
+
+      const lines: string[] = [];
+      const origWrite = process.stdout.write.bind(process.stdout);
+      (process.stdout as unknown as { write: unknown }).write = (s: string) => {
+        lines.push(String(s));
+        return true;
+      };
+      let code = -1;
+      const origCwd = process.cwd();
+      process.chdir(dir);
+      try {
+        code = runDiff(dir, [a.id, b.id]);
+      } finally {
+        process.chdir(origCwd);
+        (process.stdout as unknown as { write: unknown }).write = origWrite;
+      }
+      const text = lines.join("");
+      expect(code).toBe(0);
+      expect(text).toContain("REMOVED");
+      expect(text).toContain("Old pain");
+      expect(text).toContain("ADDED");
+      expect(text).toContain("New pain");
+      expect(text).toContain("KEPT");
+      expect(text).toContain("Shared worry");
+    } finally {
+      storage.close();
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("exits nonzero with usage when worlds are missing", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-diff-"));
+    try {
+      expect(runDiff(dir, [])).toBe(1);
+      expect(runDiff(dir, ["only-one"])).toBe(1);
+      expect(runDiff(dir, ["nope-a", "nope-b"])).toBe(1);
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
