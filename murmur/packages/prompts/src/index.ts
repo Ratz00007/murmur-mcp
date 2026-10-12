@@ -21,12 +21,12 @@ export interface MurmurPrompt {
 
 const PIPELINE_RULES = `
 Work the pipeline with the murmur tools, in this order, and obey these rules:
-1. world_init — create a world (short name). If seeds come from files, pass their repo-relative paths to seed_add_files; for URLs, fetch each page yourself and pass url + extracted text to seed_add_url; for pasted notes use seed_add_text. Then seeds_review and show me the digest.
-2. ontology_plan → you complete the task → ontology_submit. If items are rejected, fix only those and resubmit the same task_id.
-3. graph_build, then graph_export_mermaid. Report the number of relations and top tensions.
-4. personas_plan (default 24 personas) → you draft the population → personas_submit. Then persona_inspect on 2-3 personas to sanity-check voice and stances; persona_edit if anything feels off.
-5. sim_configure (default 8 rounds), then loop: sim_next_batch → you write every activated persona's actions (stay in character, react to their actual feed, max 3 actions each) → sim_submit_generations. Repeat until all rounds complete. If submissions are rejected, fix surgically; only use finalize:true if I ask.
-6. report_plan → you draft the narrative from the evidence pack (exactly 3 risks, each citing real post ids) → report_submit → report_export.
+1. world_init — create a world (short name). To attach material: files go to seed_add({source:"files", paths}) with repo-relative paths; a URL means YOU fetch the page and pass seed_add({source:"url", url, text}) — the engine never touches the network; pasted notes go to seed_add({source:"text", title, text}). Then seeds_review and show me the digest.
+2. ontology({action:"plan"}) → you complete the task → ontology({action:"submit", task_id, result}). If items are rejected, fix only those and resubmit the same task_id.
+3. graph({action:"build"}), then graph({action:"export"}). Report the number of relations and top tensions.
+4. personas({action:"plan"}) (default 24 personas) → you draft the population → personas({action:"submit", task_id, result}). Then personas({action:"inspect", persona}) on 2-3 personas to sanity-check voice and stances; personas({action:"edit", persona, patch}) if anything feels off.
+5. world_config (default 8 rounds), then loop: sim({action:"next_batch"}) → you write every activated persona's actions (stay in character, react to their actual feed, max 3 actions each) → sim({action:"submit", task_id, generations}). Repeat until all rounds complete. If submissions are rejected, fix surgically; only use finalize:true if I ask.
+6. report({action:"plan"}) → you draft the narrative from the evidence pack (exactly 3 risks, each citing real post ids) → report({action:"submit", task_id, draft}) → report({action:"export"}).
 7. Show me the report path and a 5-line summary of the most-likely trajectory and the three risks.
 Notes: never invent post ids or statistics; use only what the tools return. If a tool errors, read its message — every receipt tells you the next step.`;
 
@@ -40,7 +40,7 @@ export const PROMPTS: MurmurPrompt[] = [
       { name: "sources", required: false, description: "Where the source material lives: repo files, URLs, or pasted text (if omitted, ask me)" },
     ],
     build: (a) =>
-      `I want a social-simulation prediction. Question: ${a.question}\nSources: ${a.sources || "(ask me — I may point you at files in this repo, paste text, or give URLs; fetch URLs yourself and pass the extracted text to seed_add_url)"}\n${PIPELINE_RULES}`,
+      `I want a social-simulation prediction. Question: ${a.question}\nSources: ${a.sources || "(ask me — I may point you at files in this repo, paste text, or give URLs; fetch URLs yourself and pass the extracted text to seed_add({source:'url'}))"}\n${PIPELINE_RULES}`,
   },
   {
     name: "murmur-simulate",
@@ -52,8 +52,8 @@ export const PROMPTS: MurmurPrompt[] = [
       { name: "sources", required: false, description: "Source material (files / URLs / text)" },
     ],
     build: (a) =>
-      `I want a mid-run social simulation. Question: ${a.question}\nSources: ${a.sources || "(ask me)"}\nRun the pipeline as usual (world_init → seeds → ontology → graph → personas → sim_configure with ${a.rounds || 4}+ total rounds), but PAUSE after round ${a.rounds || 4}:\n` +
-      `- Show me sim_timeline and the sentiment per entity so far.\n- Ask me whether to sim_inject_event (describe a hypothetical event) or continue.\n- On continue: keep looping sim_next_batch → sim_submit_generations to the final round, then report_plan → report_submit → report_export and summarize.\n${PIPELINE_RULES}`,
+      `I want a mid-run social simulation. Question: ${a.question}\nSources: ${a.sources || "(ask me)"}\nRun the pipeline as usual (world_init → seeds → ontology → graph → personas → world_config with ${a.rounds || 4}+ total rounds), but PAUSE after round ${a.rounds || 4}:\n` +
+      `- Show me sim({action:"timeline"}) and the sentiment per entity so far.\n- Ask me whether to sim({action:"inject"}) (describe a hypothetical event) or continue.\n- On continue: keep looping sim({action:"next_batch"}) → sim({action:"submit"}) to the final round, then report({action:"plan"}) → report({action:"submit"}) → report({action:"export"}) and summarize.\n${PIPELINE_RULES}`,
   },
   {
     name: "murmur-interview",
@@ -65,8 +65,8 @@ export const PROMPTS: MurmurPrompt[] = [
     ],
     build: (a) =>
       a.persona
-        ? `Interview the simulated persona ${a.persona}. Question: "${a.question}"\nCall interview_agent(persona, question) → answer strictly from the returned pack, in first person, citing their own post ids, declining what they never saw → call interview_agent again with persona+question+answer to log it. Then relay the answer to me. If I keep asking follow-ups, repeat this loop.`
-        : `Ask the Murmur ReportAgent: "${a.question}"\nCall report_agent_ask(question) → answer using ONLY the evidence pack, citing post ids like (po_12), separating strong from weak evidence → call report_agent_ask again with question+answer to log it. Relay the answer to me and repeat for follow-ups.`,
+        ? `Interview the simulated persona ${a.persona}. Question: "${a.question}"\nCall interact({target:"persona", persona, question}) → answer strictly from the returned pack, in first person, citing their own post ids, declining what they never saw → call interact again with target:"persona" + persona + question + answer to log it. Then relay the answer to me. If I keep asking follow-ups, repeat this loop.`
+        : `Ask the Murmur ReportAgent: "${a.question}"\nCall interact({target:"run", question}) → answer using ONLY the evidence pack, citing post ids like (po_12), separating strong from weak evidence → call interact again with target:"run" + question + answer to log it. Relay the answer to me and repeat for follow-ups.`,
   },
   {
     name: "murmur-resume",
@@ -74,7 +74,7 @@ export const PROMPTS: MurmurPrompt[] = [
     description: "Reopen a saved world at its exact stage boundary and continue where it left off (crash-safe by construction).",
     args: [{ name: "world", required: false, description: "World id/slug; omit to list worlds" }],
     build: (a) =>
-      `Resume a Murmur world. ${a.world ? `World: ${a.world}.` : "First call world_list and show me the worlds, then ask which to open."}\nCall world_open (or pick the world), then world_status — it tells you the stage, counts and the exact next tool. Continue the pipeline from there: seeds → ontology → graph → personas → simulation loop → report → interviews. Never redo completed stages; every receipt names the next step.`,
+      `Resume a Murmur world. ${a.world ? `World: ${a.world}.` : "First call world_list() to see the worlds, then ask which to open."}\nCall world_list({world: <id>, detail:"open"}) (or pick the world), then world_list({detail:"status"}) — it tells you the stage, counts and the exact next tool. Continue the pipeline from there: seeds → ontology → graph → personas → simulation loop → report → interact. Never redo completed stages; every receipt names the next step.`,
   },
 ];
 

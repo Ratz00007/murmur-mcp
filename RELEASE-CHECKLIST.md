@@ -9,13 +9,13 @@ the hard blocker and step 3 is the credibility blocker.
 ```bash
 cd murmur
 npm install          # builds dist automatically (root `prepare` script)
-npm test             # 91 unit + golden tests — includes citation-integrity + byte-replay
+npm test             # 255 unit + golden tests — includes citation-integrity + byte-replay
 npm run test:e2e     # 2 e2e tests: real MCP SDK client ↔ server over stdio
 npm run cleanroom    # release gate: no network APIs, no URLs, no key surfaces, <120s to first world
 node ../tools/scale-benchmark.mjs 48 8   # token budget + wall time at any scale
 ```
 
-Last run of record: 91/91 unit+golden, 2/2 e2e, cleanroom **GATE GREEN** (7/7
+Last run of record: 255/255 unit+golden, 2/2 e2e, cleanroom **GATE GREEN** (7/7
 checks, 0.41s time-to-first-world), engine+server+templates typecheck clean.
 
 ---
@@ -108,6 +108,7 @@ Use: "simulated perspective", "evidence-cited", "reproducible", "zero-key".
 Avoid: "analyst-grade", "#1", "best", "predicts the future", "forecast".
 Do not add an optional `MURMUR_LLM_API_KEY` — it would destroy the zero-key
 positioning, the cleanroom gate, and the install-friction advantage at once.
+
 
 
 

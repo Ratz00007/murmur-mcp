@@ -266,7 +266,7 @@ export function validateReportDraft(storage: Storage, world: World, draft: unkno
       if (mitigation.length < 60) rejected.push({ ref: `risks[${i}].mitigation`, message: `mitigation too thin (${mitigation.length} chars, min 60) — give the team a concrete action` });
       if (postIds.length < 2 || postIds.length > 3) rejected.push({ ref: `risks[${i}].postIds`, message: `each risk must cite 2-3 real post ids (got ${postIds.length})` });
       for (const pid of postIds) {
-        if (!storage.getPost(world.id, pid)) rejected.push({ ref: `risks[${i}].postIds`, message: `unknown post id ${pid}` });
+        if (!storage.getPost(world.id, pid)) rejected.push({ ref: `risks[${i}].postIds`, message: `unknown post id "${pid}"` });
       }
       if (rejected.every((e) => !e.ref.startsWith(`risks[${i}]`))) {
         risks.push({ title, rationale, severity: severity as "high" | "medium" | "low", likelihood: likelihoodRaw as "high" | "medium" | "low", mitigation, trigger, postIds: postIds.slice(0, 3) });

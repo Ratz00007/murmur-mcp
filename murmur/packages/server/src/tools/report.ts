@@ -1,8 +1,18 @@
-/** Report tools: report_plan, report_submit, report_export. */
+/**
+ * Stage 6 — report: one tool over one deliverable.
+ *
+ * `plan` composes the drafting task from the deterministic analytics and the
+ * evidence pack, `submit` validates and versions the narrative, `export`
+ * writes it to disk. Three steps of one artifact.
+ */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { buildReportTask, renderReportHtml, renderReportMarkdown, storeReport, validateReportDraft } from "@murmur/engine";
 import { coerceJson, type ServerContext } from "../session.js";
+import { REPORT_OUTPUT } from "./outputs.js";
+import { registerTaskTool } from "./tasks.js";
+
+export const REPORT_TOOL_NAMES = ["report"] as const;
 
 /** Mirrors the task.outputSchema the engine attaches to report tasks (engine/src/report.ts). */
 const reportDraft = z.object({
@@ -46,138 +56,138 @@ const reportDraft = z.object({
 });
 
 export function registerReportTools(server: McpServer, ctx: ServerContext): void {
-  server.tool(
-    "report_plan",
-    "Stage 6 Â· PLAN: compose the report-drafting task â€” deterministic analytics (sentiment curves + projection, factions, controversy index, platform divergence, escalation chains, quote bank, timeline moments) " +
-      "plus an evidence pack of the strongest posts. Draft the senior-analyst narrative from that evidence and return it via report_submit.",
-    {
+  registerTaskTool(server, "report", {
+    title: "Draft / store / export the report",
+    description:
+      "Stage 6 of the pipeline. action:'plan' composes the report-drafting task — deterministic analytics (sentiment curves " +
+      "and projection, factions, controversy index, platform divergence, escalation chains, quote bank, timeline moments) " +
+      "plus an evidence pack of the strongest posts; draft the senior-analyst narrative from that evidence and return it " +
+      "with action:'submit'. action:'submit' validates the narrative (sections, severities, and that every cited post id " +
+      "exists), versions and stores it; invalid fields are itemized for surgical retry. action:'export' writes the " +
+      "versioned report into .murmur/reports/{world}/ as Markdown+Mermaid and/or a self-contained HTML dashboard — " +
+      "reports regenerate rather than mutate, so two scenarios can be diffed line by line.",
+    inputSchema: {
+      action: z.enum(["plan", "submit", "export"]).describe("Draft, store, or write the report"),
       world: z.string().optional().describe("World id/slug (default: active world)"),
-      focus: z.string().max(200).optional().describe("Optional focus for the report, e.g. 'developer reaction to the pricing change'"),
-    },
-    { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    async ({ world, focus }) => {
-      try {
-        const w = ctx.resolveWorld(world);
-        const task = buildReportTask(ctx.storage, w, focus);
-        ctx.audit(w, { op: "report_plan", taskId: task.id, focus: focus ?? "" });
-        return ctx.reply(
-          {
-            ok: true,
-            taskId: task.id,
-            how: "Draft scenarioRecap, executiveSummary (100-170 words), 3-5 keyFindings, trajectory, exactly 3 risks (each with severity, likelihood, mitigation, trigger, citing 2-3 post ids), 2-4 recommendations, confidence and limitations. Then call report_submit with this task_id and your draft.",
-            task,
-            next: "report_submit",
-          },
-          w
-        );
-      } catch (e) {
-        return ctx.fail(e);
-      }
-    }
-  );
-
-  server.tool(
-    "report_submit",
-    "Stage 6 Â· SUBMIT: validate the narrative (sections, severities, post-id citations must exist), version and store it. Invalid fields are itemized for surgical retry.",
-    {
-      task_id: z.string().describe("Task id from report_plan"),
+      focus: z.string().max(200).optional().describe("Optional focus for the report, e.g. 'developer reaction to the pricing change' — action:'plan'"),
+      task_id: z.string().optional().describe("Task id from action:'plan' — required for action:'submit'"),
       draft: z
         .union([
-          reportDraft.describe("Your draft â€” mirrors the task.outputSchema the engine returned"),
+          reportDraft.describe("Your draft — mirrors the task.outputSchema the engine returned"),
           z.string().describe("The same draft as a JSON string (parsed server-side)"),
         ])
-        .describe("Your draft: {scenarioRecap, executiveSummary, keyFindings, trajectory, risks: [{title, rationale, severity, likelihood, mitigation, trigger, postIds}], recommendations: [{title, action, expectedImpact}], confidence: {strongSignals, contested}, limitations}"),
+        .optional()
+        .describe("Your draft: {scenarioRecap, executiveSummary, keyFindings, trajectory, risks: [{title, rationale, severity, likelihood, mitigation, trigger, postIds}], recommendations: [{title, action, expectedImpact}], confidence: {strongSignals, contested}, limitations} — action:'submit' only"),
+      version: z.number().int().min(1).optional().describe("Report version (default: latest) — action:'export'"),
+      format: z.enum(["md", "html", "both"]).optional().describe("Output format: md (default), html dashboard, or both — action:'export'"),
     },
-    { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    async ({ task_id, draft }) => {
+    outputSchema: REPORT_OUTPUT,
+    run: async (args) => {
       try {
-        const wActive = ctx.resolveWorld(undefined);
-        const task = ctx.storage.getTask(wActive.id, task_id);
-        if (!task) throw new Error(`unknown task id: ${task_id} (no such task in the active world ${wActive.id})`);
-        const w = ctx.storage.getWorld(task.worldId);
-        if (!w) throw new Error("world for task not found");
-        const { draft: clean, rejected } = validateReportDraft(ctx.storage, w, coerceJson(draft));
-        if (rejected.length > 0) {
-          ctx.audit(w, { op: "report_submit", taskId: task_id, rejected: rejected.length });
-          return ctx.reply(
-            {
-              ok: false,
-              rejected,
-              hint: "fix the rejected fields and resubmit the same task_id â€” risks must cite real post ids from the evidence pack",
-              next: "report_submit (retry)",
-            },
-            w
-          );
+        switch (args.action) {
+          case "plan":
+            return plan(ctx, args.world, args.focus);
+          case "submit":
+            return submit(ctx, args);
+          default:
+            return exportReport(ctx, args);
         }
-        const record = storeReport(ctx.storage, w, clean, String((task.items[0]?.payload as { focus?: string })?.focus ?? ""));
-        ctx.audit(w, { op: "report_submit", taskId: task_id, version: record.version });
-        return ctx.reply(
-          {
-            ok: true,
-            version: record.version,
-            risks: clean.risks.map((r) => `${r.severity.toUpperCase()} â€” ${r.title} [${r.postIds.join(", ")}]`),
-            next: `report_export to write report-${record.version}.md into the repo`,
-          },
-          w
-        );
       } catch (e) {
         return ctx.fail(e);
       }
-    }
-  );
+    },
+  });
+}
 
-  server.tool(
-    "report_export",
-    "Write the versioned report into .murmur/reports/{world}/ â€” Markdown+Mermaid (diffable, renders on any git forge) and/or a self-contained HTML dashboard (inline CSS+SVG, no external requests; open it in a browser). " +
-      "Reports regenerate (never mutate), so two scenarios can be diffed line by line.",
+function plan(ctx: ServerContext, world?: string, focus?: string) {
+  const w = ctx.resolveWorld(world);
+  const task = buildReportTask(ctx.storage, w, focus);
+  ctx.audit(w, { op: "report_plan", taskId: task.id, focus: focus ?? "" });
+  return ctx.reply(
     {
-      world: z.string().optional().describe("World id/slug (default: active world)"),
-      version: z.number().int().min(1).optional().describe("Report version (default: latest)"),
-      format: z.enum(["md", "html", "both"]).optional().describe("Output format: md (default), html dashboard, or both"),
+      ok: true,
+      taskId: task.id,
+      how: "Draft scenarioRecap, executiveSummary (100-170 words), 3-5 keyFindings, trajectory, exactly 3 risks (each with severity, likelihood, mitigation, trigger, citing 2-3 post ids), 2-4 recommendations, confidence and limitations. Then call report({action:'submit', task_id, draft}).",
+      task,
+      next: 'report({action:"submit", task_id, draft})',
     },
-    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    async ({ world, version, format }) => {
-      try {
-        const w = ctx.resolveWorld(world);
-        const record = version ? ctx.storage.reportByVersion(w.id, version) : ctx.storage.latestReport(w.id);
-        if (!record) throw new Error("no stored report â€” run report_plan / report_submit first");
-        const fmt = format ?? "md";
-        const written: { path: string; bytes: number }[] = [];
-        let mdPath: string | null = null;
-        let htmlPath: string | null = null;
-        if (fmt === "md" || fmt === "both") {
-          const md = renderReportMarkdown(ctx.storage, w, record);
-          const file = ctx.workspace.reportPath(w.slug, record.version);
-          ctx.workspace.writeAtomic(file, md);
-          ctx.storage.db.prepare("UPDATE reports SET path=? WHERE id=?").run(ctx.workspace.rel(file), record.id);
-          written.push({ path: ctx.workspace.rel(file), bytes: Buffer.byteLength(md, "utf8") });
-          mdPath = ctx.workspace.rel(file);
-        }
-        if (fmt === "html" || fmt === "both") {
-          const html = renderReportHtml(ctx.storage, w, record);
-          const file = ctx.workspace.reportHtmlPath(w.slug, record.version);
-          ctx.workspace.writeAtomic(file, html);
-          written.push({ path: ctx.workspace.rel(file), bytes: Buffer.byteLength(html, "utf8") });
-          htmlPath = ctx.workspace.rel(file);
-        }
-        ctx.audit(w, { op: "report_export", version: record.version, format: fmt, files: written.map((x) => x.path) });
-        return ctx.reply(
-          {
-            ok: true,
-            version: record.version,
-            files: written,
-            ...(htmlPath
-              ? { open: htmlPath, hint: `open ${htmlPath} in a browser â€” the dashboard shares every number with the .md report (same engine computation)` }
-              : {}),
-            next: htmlPath
-              ? `open the dashboard (${htmlPath}) and the report${mdPath ? ` (${mdPath})` : ""}, then interview_agent / report_agent_ask to interrogate the world behind them`
-              : `open the report${mdPath ? ` (${mdPath})` : ""}, then interview_agent / report_agent_ask to interrogate the world behind it`,
-          },
-          w
-        );
-      } catch (e) {
-        return ctx.fail(e);
-      }
-    }
+    w,
+    REPORT_OUTPUT
+  );
+}
+
+function submit(ctx: ServerContext, args: { task_id?: string; draft?: unknown }) {
+  if (!args.task_id) throw new Error("action:'submit' needs task_id from the plan receipt");
+  const wActive = ctx.resolveWorld(undefined);
+  const task = ctx.storage.getTask(wActive.id, args.task_id);
+  if (!task) throw new Error(`unknown task id: ${args.task_id} (no such task in the active world ${wActive.id})`);
+  const w = ctx.storage.getWorld(task.worldId);
+  if (!w) throw new Error("world for task not found");
+  const { draft: clean, rejected } = validateReportDraft(ctx.storage, w, coerceJson(args.draft));
+  if (rejected.length > 0) {
+    ctx.audit(w, { op: "report_submit", taskId: args.task_id, rejected: rejected.length });
+    return ctx.reply(
+      {
+        ok: false,
+        rejected,
+        hint: "fix the rejected fields and resubmit the same task_id — risks must cite real post ids from the evidence pack",
+        next: "report({action:'submit', task_id, draft}) again, with the rejected fields fixed",
+      },
+      w,
+      REPORT_OUTPUT
+    );
+  }
+  const record = storeReport(ctx.storage, w, clean, String((task.items[0]?.payload as { focus?: string })?.focus ?? ""));
+  ctx.audit(w, { op: "report_submit", taskId: args.task_id, version: record.version });
+  return ctx.reply(
+    {
+      ok: true,
+      version: record.version,
+      risks: clean.risks.map((r) => `${r.severity.toUpperCase()} — ${r.title} [${r.postIds.join(", ")}]`),
+      next: `report({action:"export"}) to write report-${record.version}.md into the repo`,
+    },
+    w,
+    REPORT_OUTPUT
+  );
+}
+
+function exportReport(ctx: ServerContext, args: { world?: string; version?: number; format?: "md" | "html" | "both" }) {
+  const w = ctx.resolveWorld(args.world);
+  const record = args.version ? ctx.storage.reportByVersion(w.id, args.version) : ctx.storage.latestReport(w.id);
+  if (!record) throw new Error("no stored report — run report({action:'plan'}) / report({action:'submit'}) first");
+  const fmt = args.format ?? "md";
+  const written: { path: string; bytes: number }[] = [];
+  let mdPath: string | null = null;
+  let htmlPath: string | null = null;
+  if (fmt === "md" || fmt === "both") {
+    const md = renderReportMarkdown(ctx.storage, w, record);
+    const file = ctx.workspace.reportPath(w.slug, record.version);
+    ctx.workspace.writeAtomic(file, md);
+    ctx.storage.db.prepare("UPDATE reports SET path=? WHERE id=?").run(ctx.workspace.rel(file), record.id);
+    written.push({ path: ctx.workspace.rel(file), bytes: Buffer.byteLength(md, "utf8") });
+    mdPath = ctx.workspace.rel(file);
+  }
+  if (fmt === "html" || fmt === "both") {
+    const html = renderReportHtml(ctx.storage, w, record);
+    const file = ctx.workspace.reportHtmlPath(w.slug, record.version);
+    ctx.workspace.writeAtomic(file, html);
+    written.push({ path: ctx.workspace.rel(file), bytes: Buffer.byteLength(html, "utf8") });
+    htmlPath = ctx.workspace.rel(file);
+  }
+  ctx.audit(w, { op: "report_export", version: record.version, format: fmt, files: written.map((x) => x.path) });
+  return ctx.reply(
+    {
+      ok: true,
+      version: record.version,
+      files: written,
+      ...(htmlPath
+        ? { open: htmlPath, hint: `open ${htmlPath} in a browser — the dashboard shares every number with the .md report (same engine computation)` }
+        : {}),
+      next: htmlPath
+        ? `open the dashboard (${htmlPath}) and the report${mdPath ? ` (${mdPath})` : ""}, then interact({target:"persona"|"run"}) to interrogate the world behind them`
+        : `open the report${mdPath ? ` (${mdPath})` : ""}, then interact({target:"persona"|"run"}) to interrogate the world behind it`,
+    },
+    w,
+    REPORT_OUTPUT
   );
 }

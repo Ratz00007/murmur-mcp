@@ -11,6 +11,32 @@ const alias = {
 export default defineConfig({
   resolve: { alias },
   test: {
+    // Coverage is measured across the unit + golden projects. It is declared at
+    // the root so both projects contribute to the same merged report; the e2e
+    // project is excluded because it spawns built artifacts in a subprocess,
+    // which v8 coverage cannot attribute to the source map.
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json-summary"],
+      reportsDirectory: "coverage",
+      include: ["packages/*/src/**/*.ts"],
+      exclude: [
+        "**/dist/**",
+        "**/*.test.ts",
+        "packages/*/src/index.ts",
+        "packages/server/src/server.ts",
+        "packages/server/src/index.ts",
+        "packages/server/src/logging.ts",
+        "packages/server/src/prompts.ts",
+        "packages/server/src/tools/**",
+      ],
+      thresholds: {
+        statements: 0,
+        branches: 0,
+        functions: 0,
+        lines: 0,
+      },
+    },
     projects: [
       {
         resolve: { alias },

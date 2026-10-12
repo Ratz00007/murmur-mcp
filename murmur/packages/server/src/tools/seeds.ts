@@ -1,10 +1,21 @@
-/** Seed ingestion tools: seed_add_files, seed_add_url, seed_add_text, seeds_review. */
+/**
+ * Seed ingestion: seed_add (files | url | text) and seeds_review.
+ *
+ * The three adders were one tool wearing three names. The engine never
+ * fetches anything, so `seed_add_url` was `seed_add_text` with a URL in the
+ * provenance slot, and `seed_add_files` was the filesystem reader in front of
+ * the same `addSeed` call. They differ only in where the bytes come from, which
+ * is a `source` discriminator, not a tool.
+ */
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { coverageStats, extractPdfText, makeDigest, MAX_SEED_BYTES, type Seed } from "@murmur/engine";
 import type { ServerContext } from "../session.js";
+import { SEEDS_REVIEW_OUTPUT, SEED_ADD_OUTPUT } from "./outputs.js";
+
+export const SEED_TOOL_NAMES = ["seed_add", "seeds_review"] as const;
 
 const TEXTUAL = new Set([".md", ".markdown", ".txt", ".text", ".csv", ".json", ".yml", ".yaml", ".log"]);
 
@@ -45,132 +56,109 @@ function realpathOfNearestExisting(target: string): string {
 }
 
 export function registerSeedTools(server: McpServer, ctx: ServerContext): void {
-  server.tool(
-    "seed_add_files",
-    "Attach source material from repository files (PDF, Markdown, TXT, CSV, JSON…). Byte-hashed dedupe: identical material never ingests twice. " +
-      "For scanned PDFs with no text layer the receipt will tell you to read the file yourself and pass the text via seed_add_text.",
+  server.registerTool(
+    "seed_add",
     {
-      paths: z.array(z.string()).min(1).max(50).describe("Repo-relative (or absolute) file paths"),
-      world: z.string().optional().describe("World id/slug (default: active world)"),
+      title: "Attach source material",
+      description:
+        "Attach source material to the world, byte-hashed so identical material never ingests twice. " +
+        "source:'files' reads repository files (PDF, Markdown, TXT, CSV, JSON…) from inside the workspace — paths that " +
+        "resolve outside it are refused, and so are symlinks pointing out. source:'url' and source:'text' take material " +
+        "YOU already have: the engine never touches the network, so fetch the page yourself and pass the extracted text " +
+        "with the URL as provenance. For scanned PDFs with no text layer the receipt tells you to read it yourself and " +
+        "re-send it as source:'text'.",
+      inputSchema: {
+        source: z.enum(["files", "url", "text"]).describe("Where the material comes from"),
+        paths: z.array(z.string()).min(1).max(50).optional().describe("Workspace-relative (or absolute) file paths — source:'files' only"),
+        url: z.string().min(4).max(2000).optional().describe("Source URL, provenance only — source:'url' only"),
+        title: z.string().min(1).max(200).optional().describe("Short title for the digest list — source:'text' only"),
+        text: z.string().min(1).optional().describe("The material itself — source:'url' and source:'text' only"),
+        world: z.string().optional().describe("World id/slug (default: active world)"),
+      },
+      outputSchema: SEED_ADD_OUTPUT,
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
-    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    async ({ paths, world }) => {
+    async ({ source, paths, url, title, text, world }) => {
       try {
         const w = ctx.resolveWorld(world);
-        const results: Record<string, unknown>[] = [];
-        let totalBytes = 0;
-        for (const p of paths) {
-          const abs = path.isAbsolute(p) ? p : path.resolve(ctx.workspace.root, p);
-          const rel = path.relative(ctx.workspace.root, abs);
-          let text = "";
-          let note = "";
-          const ext = path.extname(abs).toLowerCase();
-          try {
-            // Containment, before any filesystem read: literal resolution
-            // catches `../` and absolute escapes, and the real path catches a
-            // symlink inside the workspace pointing outside it.
-            assertInsideWorkspace(p, ctx.workspace.root, abs);
-            assertInsideWorkspace(p, ctx.workspace.root, realpathOfNearestExisting(abs));
-            const stat = fs.statSync(abs);
-            if (stat.size > MAX_SEED_BYTES) throw new Error(`file too large (${Math.round(stat.size / 1024 / 1024)} MB > 50 MB envelope)`);
-            if (ext === ".pdf") {
-              const buf = fs.readFileSync(abs);
-              const extracted = extractPdfText(buf);
-              text = extracted.text;
-              if (!extracted.ok) note = "PDF had no extractable text layer — read it yourself and pass the content via seed_add_text";
-            } else if (TEXTUAL.has(ext) || ext === "") {
-              text = fs.readFileSync(abs, "utf8");
-            } else {
-              text = fs.readFileSync(abs, "utf8");
-              note = `unknown extension "${ext}" — read as UTF-8 text`;
+        if (source === "files") {
+          if (!paths?.length) throw new Error("source:'files' needs paths: [...]");
+          const results: Record<string, unknown>[] = [];
+          for (const p of paths) {
+            const abs = path.isAbsolute(p) ? p : path.resolve(ctx.workspace.root, p);
+            const rel = path.relative(ctx.workspace.root, abs);
+            let body = "";
+            let note = "";
+            const ext = path.extname(abs).toLowerCase();
+            try {
+              // Containment, before any filesystem read: literal resolution
+              // catches `../` and absolute escapes, and the real path catches
+              // a symlink inside the workspace pointing outside it.
+              assertInsideWorkspace(p, ctx.workspace.root, abs);
+              assertInsideWorkspace(p, ctx.workspace.root, realpathOfNearestExisting(abs));
+              const stat = fs.statSync(abs);
+              if (stat.size > MAX_SEED_BYTES) throw new Error(`file too large (${Math.round(stat.size / 1024 / 1024)} MB > 50 MB envelope)`);
+              if (ext === ".pdf") {
+                const extracted = extractPdfText(fs.readFileSync(abs));
+                body = extracted.text;
+                if (!extracted.ok) note = "PDF had no extractable text layer — read it yourself and pass the content as source:'text'";
+              } else if (TEXTUAL.has(ext) || ext === "") {
+                body = fs.readFileSync(abs, "utf8");
+              } else {
+                body = fs.readFileSync(abs, "utf8");
+                note = `unknown extension "${ext}" — read as UTF-8 text`;
+              }
+            } catch (e) {
+              results.push({ path: rel, ok: false, error: e instanceof Error ? e.message : String(e) });
+              continue;
             }
-          } catch (e) {
-            results.push({ path: rel, ok: false, error: e instanceof Error ? e.message : String(e) });
-            continue;
+            const { seed, duplicate } = ctx.storage.addSeed(w.id, {
+              kind: "file",
+              title: path.basename(abs),
+              ref: rel,
+              text: body,
+              digest: makeDigest(body),
+            });
+            results.push({ path: rel, ok: true, seedId: seed.id, bytes: seed.bytes, duplicate, ...(note ? { note } : {}) });
           }
-          totalBytes += Buffer.byteLength(text, "utf8");
-          const { seed, duplicate } = ctx.storage.addSeed(w.id, {
-            kind: "file",
-            title: path.basename(abs),
-            ref: rel,
-            text,
-            digest: makeDigest(text),
-          });
-          results.push({ path: rel, ok: true, seedId: seed.id, bytes: seed.bytes, duplicate, ...(note ? { note } : {}) });
+          const sizes = ctx.storage.listSeeds(w.id).map((s) => s.bytes);
+          const coverage = coverageStats(sizes);
+          if (sizes.length > 0) ctx.storage.setStage(w.id, "seeded");
+          ctx.audit(w, { op: "seed_add", source, files: results.length });
+          return ctx.reply({ ok: true, seeds: results, coverage, next: "seeds_review to check coverage, then ontology" }, w, SEED_ADD_OUTPUT);
         }
-        const sizes = ctx.storage.listSeeds(w.id).map((s) => s.bytes);
-        const coverage = coverageStats(sizes);
-        if (sizes.length > 0) ctx.storage.setStage(w.id, "seeded");
-        ctx.audit(w, { op: "seed_add_files", files: results.length });
-        return ctx.reply({ ok: true, seeds: results, coverage, next: "seeds_review to check coverage, then ontology_plan" }, w);
-      } catch (e) {
-        return ctx.fail(e);
-      }
-    }
-  );
 
-  server.tool(
-    "seed_add_url",
-    "Attach material from a URL. The engine never fetches the network — YOU fetch the page (you have a browser/reader), then pass the extracted text here with the URL as provenance.",
-    {
-      url: z.string().min(4).max(2000).describe("Source URL (provenance only)"),
-      text: z.string().min(1).describe("The page content you extracted — markdown or plain text"),
-      title: z.string().max(200).optional().describe("Human title for the digest list"),
-      world: z.string().optional().describe("World id/slug (default: active world)"),
-    },
-    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    async ({ url, text, title, world }) => {
-      try {
-        const w = ctx.resolveWorld(world);
+        if (!text || !text.trim()) throw new Error(`source:'${source}' needs the material itself as text`);
         const { seed, duplicate } = ctx.storage.addSeed(w.id, {
-          kind: "url",
-          title: title ?? url.slice(0, 120),
-          ref: url,
+          kind: source === "url" ? "url" : "text",
+          title: source === "url" ? (title ?? String(url).slice(0, 120)) : (title ?? "untitled"),
+          ref: source === "url" ? String(url) : (title ?? "untitled"),
           text,
           digest: makeDigest(text),
         });
         ctx.storage.setStage(w.id, "seeded");
-        ctx.audit(w, { op: "seed_add_url", url });
-        return ctx.reply({ ok: true, seed: seedRow(seed), duplicate, next: "add more seeds or call ontology_plan" }, w);
+        ctx.audit(w, { op: "seed_add", source, ref: seed.ref });
+        return ctx.reply(
+          { ok: true, seed: seedRow(seed), duplicate, next: "add more material, call seeds_review, or move to ontology" },
+          w,
+          SEED_ADD_OUTPUT
+        );
       } catch (e) {
         return ctx.fail(e);
       }
     }
   );
 
-  server.tool(
-    "seed_add_text",
-    "Attach pasted material — notes, briefs, transcripts, email threads. This is also the fallback path for PDFs with no text layer.",
-    {
-      title: z.string().min(1).max(200).describe("Short title for this material"),
-      text: z.string().min(1).describe("The material itself"),
-      world: z.string().optional().describe("World id/slug (default: active world)"),
-    },
-    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    async ({ title, text, world }) => {
-      try {
-        const w = ctx.resolveWorld(world);
-        const { seed, duplicate } = ctx.storage.addSeed(w.id, {
-          kind: "text",
-          title,
-          ref: title,
-          text,
-          digest: makeDigest(text),
-        });
-        ctx.storage.setStage(w.id, "seeded");
-        ctx.audit(w, { op: "seed_add_text", title });
-        return ctx.reply({ ok: true, seed: seedRow(seed), duplicate, next: "add more seeds or call ontology_plan" }, w);
-      } catch (e) {
-        return ctx.fail(e);
-      }
-    }
-  );
-
-  server.tool(
+  server.registerTool(
     "seeds_review",
-    "Pre-flight check before ontology: list every seed with its digest and coverage notes. Show this to the user before proceeding.",
-    { world: z.string().optional().describe("World id/slug (default: active world)") },
-    { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+    {
+      title: "Review ingested material",
+      description:
+        "Pre-flight check before ontology: list every seed with its digest and the coverage notes. Show this to the user before proceeding.",
+      inputSchema: { world: z.string().optional().describe("World id/slug (default: active world)") },
+      outputSchema: SEEDS_REVIEW_OUTPUT,
+      annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+    },
     async ({ world }) => {
       try {
         const w = ctx.resolveWorld(world);
@@ -180,9 +168,12 @@ export function registerSeedTools(server: McpServer, ctx: ServerContext): void {
             ok: true,
             seeds: seeds.map(seedRow),
             coverage: coverageStats(seeds.map((s) => s.bytes)),
-            next: seeds.length ? "ontology_plan to turn this material into entities, motives and anchors" : "attach material first (seed_add_files / seed_add_url / seed_add_text)",
+            next: seeds.length
+              ? 'ontology({action:"plan"}) to turn this material into entities, motives and anchors'
+              : 'attach material first: seed_add({source:"files"|"url"|"text"})',
           },
-          w
+          w,
+          SEEDS_REVIEW_OUTPUT
         );
       } catch (e) {
         return ctx.fail(e);

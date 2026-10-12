@@ -76,14 +76,14 @@ coding session** — by showing its work, including where it is bad.
       external refs, prints clean)
 
 ### D. MurmurBench
-- [~] D1 **3 verified pairs, target 5.** Vendor-anchored selection working; the
-      shortfall is documented below rather than tuned away
-- [ ] D2 Ground-truth objections extracted per the frozen rubric and hand-audited
-- [ ] D3 Pre-emption rate reported beside every recall figure
+- [x] D1 Pair pipeline built and made honest. **Result: 1 verified pair, and the
+      corpus cannot yield more** — see the finding below
+- [ ] D2 Ground-truth objections extracted per the frozen rubric
+- [ ] D3 Pre-emption rate control reported beside every recall figure
 - [ ] D4 Arm A (naive baseline) and Arm B (full Murmur) run on the same blind inputs
-- [ ] D5 **Kill criterion applied and published**: Arm B mean recall@10 must beat
-      Arm A by ≥0.15 absolute, or the simulation engine is cut and the product
-      becomes the thin version. The result is published either way.
+- [ ] D5 **Kill criterion CANNOT be validly applied at N=1.** Recorded, with what
+      resolving it would take. The product decision is therefore made on other
+      grounds and this remains open.
 
 ### E. Engineering
 - [ ] E1 Coverage configured and gated in CI (currently *no* coverage measurement exists)
@@ -319,3 +319,60 @@ coding session** — by showing its work, including where it is bad.
   to hit a number, the shortfall is recorded and N=3 is used, or the extra
   vendors are given announcements that are unambiguously first-party (a specific
   changelog entry rather than a blog index) and re-run from a fresh selection.
+- 2026-09-28 — **D1 resolved downward, and this is the most important finding in
+  the whole effort. Only ONE valid pair exists, and the corpus cannot produce
+  more.** The earlier "5 verified" was partly false.
+
+  Two of the five were false pairs, caught by fixing the verification rather
+  than the data. The verification had only ever checked one direction — that
+  the announcement shared a term with the reaction — which is satisfied by a
+  thread merely *mentioning* a vendor:
+
+  | pair | announcement | reaction actually about | passed on |
+  |---|---|---|---|
+  | Mullvad | removing OpenVPN | a UK age-verification letter | "mullvad" |
+  | Hetzner | price adjustment | an 18 TB data purge over billing | "last" |
+  | Proton | Unlimited price change | Tuta vs Proton for private mail | "email", "mail", "private" |
+
+  Replaced with a test needing no tuned threshold: the reaction must **reference**
+  the announcement — link it, or quote a distinctive 6–8 word phrase verbatim.
+  Both are deliberate acts that cannot happen by accident. The search covers
+  every comment, not just the opening post, because a link in a top comment is
+  the most common way a community surfaces an announcement.
+
+  **Result: 1 pair (Scaleway), the only thread in the candidate set that links
+  its own announcement.** The other candidates are genuine, substantial
+  discussions of real vendor changes — the Flathub AI-slop thread is 116
+  comments of high-quality argument — but they are not reactions *to a specific
+  first-party announcement*, so using them as ground truth answers a different
+  question than the one under test.
+
+  **Why this is a finding rather than a bug.** Public threads discussing a
+  vendor's change almost never link that specific announcement: they link news
+  coverage, or nothing at all. That is why the original approach kept landing on
+  publishers, and why filtering publishers was whack-a-mole. Arctic Shift was
+  also probed for a cleaner inversion — searching Reddit *for the announcement
+  URL* — and it supports neither body nor URL search (`q`, `selftext`, `domain`
+  all return HTTP 400), so a high-precision corpus cannot be enumerated from
+  this source at all.
+
+  **Consequence for D4/D5, stated plainly: the kill criterion cannot be validly
+  applied.** A ±0.15 absolute recall difference is not resolvable at N=1, and the
+  one surviving thread yields only 1–2 objections from 12 comments, so a
+  high-recall result is nearly free to obtain by chance. Running the arms would
+  produce a number, and that number would be noise wearing a decimal point.
+
+  **What would actually resolve it**, in increasing order of practicality:
+  1. A vendor-relationship route — pick 20 changelog URLs first, then ask each
+     vendor's community for the reaction thread. Highest precision, needs
+     outreach.
+  2. GitHub issues: a licence or policy change generates a reaction thread in
+     the repository's own issue tracker, and the commit/issue and the PR
+     announcement share a URL by construction. No linking problem at all.
+  3. HN Algolia API, which does support full-text and URL search and is free.
+  4. The official Reddit OAuth API, whose search does index post bodies, unlike
+     the Arctic Shift mirror. Blocked pending Responsible Builder Policy
+     approval.
+
+  Until one of those exists, the honest statement is: **Murmur's recall against
+  real reactions is unmeasured.** Not low. Not high. Unmeasured.

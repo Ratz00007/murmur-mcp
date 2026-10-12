@@ -5,7 +5,9 @@
   "description": "Murmur — social-simulation engine for coding agents. Zero API keys; inference rides your existing coding subscription via MCP.",
   "license": "Apache-2.0",
   "type": "module",
-  "engines": { "node": ">=20.0.0" },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "workspaces": [
     "packages/engine",
     "packages/prompts",
@@ -27,6 +29,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "@vitest/coverage-v8": "^3.2.7",
     "tsup": "^8.0.0",
     "typescript": "^5.6.0",
     "vitest": "^3.0.0"

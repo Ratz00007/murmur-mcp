@@ -1,8 +1,9 @@
 /**
  * End-to-end: a real MCP client (official SDK) talks to the built server over
  * stdio in a temp workspace — the same transport Claude Code, Codex, OpenCode
- * & co use. Runs the full pipeline, asserts the 29-tool contract, response
- * budgets, artifacts on disk, prompts, resources and session resume.
+ * & co use. Runs the full pipeline, asserts the 11-tool contract (the 29-tool
+ * surface was consolidated into action-dispatched tools), response budgets,
+ * artifacts on disk, prompts, resources and session resume.
  */
 import { describe, expect, it } from "vitest";
 import * as fs from "node:fs";
@@ -18,14 +19,9 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const SERVER = path.resolve(here, "..", "..", "packages", "server", "dist", "index.js");
 
 const EXPECTED_TOOLS = new Set([
-  "world_init", "world_list", "world_open", "world_status", "world_config",
-  "seed_add_files", "seed_add_url", "seed_add_text", "seeds_review",
-  "ontology_plan", "ontology_submit",
-  "graph_build", "graph_query", "graph_export_mermaid",
-  "personas_plan", "personas_submit", "persona_inspect", "persona_edit",
-  "sim_configure", "sim_next_batch", "sim_submit_generations", "sim_inject_event", "sim_round_summary", "sim_timeline",
-  "report_plan", "report_submit", "report_export",
-  "interview_agent", "report_agent_ask",
+  "world_init", "world_list", "world_config",
+  "seed_add", "seeds_review",
+  "ontology", "graph", "personas", "sim", "report", "interact",
 ]);
 
 async function spawnClient(cwd: string): Promise<{ client: Client; close: () => Promise<void> }> {
@@ -85,11 +81,11 @@ describe("MCP server end-to-end", () => {
       expect(init.world.stage).toBe("created");
       expect(init.next).toBeTruthy();
 
-      await call("seed_add_text", { title: "Acme pricing brief", text: SEED_CORPUS });
+      await call("seed_add", { source: "text", title: "Acme pricing brief", text: SEED_CORPUS });
       const review = await call("seeds_review");
       expect(review.coverage.seeds).toBe(1);
 
-      // seed_add_files is jailed to the workspace root.
+      // seed_add({source:"files"}) is jailed to the workspace root.
       //
       // The probe file MUST be created. The previous version referenced a path
       // that was never written, so the read failed with ENOENT and the
@@ -98,7 +94,7 @@ describe("MCP server end-to-end", () => {
       // so a future regression cannot pass on any unrelated failure.
       const outside = path.join(os.tmpdir(), "murmur-jail-probe.txt");
       fs.writeFileSync(outside, "SECRET-OUTSIDE-THE-WORKSPACE\n", "utf8");
-      const jailed = await call("seed_add_files", { paths: [outside] });
+      const jailed = await call("seed_add", { source: "files", paths: [outside] });
       const jailResult = (jailed.seeds as { ok: boolean; error?: string }[])[0];
       expect(jailResult.ok).toBe(false);
       expect(jailResult.error).toMatch(/outside workspace/i);
@@ -108,7 +104,7 @@ describe("MCP server end-to-end", () => {
       const symlinkProbe = path.join(cwd, "jail-symlink-probe.md");
       try {
         fs.symlinkSync(outside, symlinkProbe);
-        const symlinked = await call("seed_add_files", { paths: ["jail-symlink-probe.md"] });
+        const symlinked = await call("seed_add", { source: "files", paths: ["jail-symlink-probe.md"] });
         expect((symlinked.seeds as { ok: boolean; error?: string }[])[0].ok).toBe(false);
         expect((symlinked.seeds as { error?: string }[])[0].error).toMatch(/outside workspace/i);
       } catch (e) {
@@ -118,65 +114,65 @@ describe("MCP server end-to-end", () => {
       }
 
       fs.writeFileSync(path.join(cwd, "jail-probe.md"), "# in-workspace probe\n", "utf8");
-      const allowed = await call("seed_add_files", { paths: ["jail-probe.md"] });
+      const allowed = await call("seed_add", { source: "files", paths: ["jail-probe.md"] });
       expect((allowed.seeds as { ok: boolean }[])[0].ok).toBe(true);
       // The out-of-workspace secret must never have reached the world.
       const seeds = await call("seeds_review");
       expect(JSON.stringify(seeds)).not.toContain("SECRET-OUTSIDE-THE-WORKSPACE");
 
-      const ontPlan = await call("ontology_plan");
+      const ontPlan = await call("ontology", { action: "plan" });
       const ontTask = ontPlan.task as { id: string };
-      const ont = await call("ontology_submit", { task_id: ontTask.id, result: completeOntology(ontTask) });
+      const ont = await call("ontology", { action: "submit", task_id: ontTask.id, result: completeOntology(ontTask) });
       expect(ont.inserted as number).toBeGreaterThanOrEqual(10);
 
-      const graph = await call("graph_build");
+      const graph = await call("graph", { action: "build" });
       expect(graph.relations as number).toBeGreaterThanOrEqual(1);
-      const mermaid = await call("graph_export_mermaid");
+      const mermaid = await call("graph", { action: "export" });
       expect(fs.existsSync(path.join(cwd, String(mermaid.path)))).toBe(true);
 
-      const pPlan = await call("personas_plan", { count: 10 });
+      const pPlan = await call("personas", { action: "plan", count: 10 });
       const pTask = pPlan.task as { id: string };
-      const pop = await call("personas_submit", { task_id: pTask.id, result: completePersonas(pTask) });
+      const pop = await call("personas", { action: "submit", task_id: pTask.id, result: completePersonas(pTask) });
       expect(pop.population as number).toBe(10);
 
       // audit one persona (F4)
       const firstPersona = String((pop.personaIds as string[])[0]);
-      const inspect = await call("persona_inspect", { persona: firstPersona });
+      const inspect = await call("personas", { action: "inspect", persona: firstPersona });
       expect(inspect.card).toBeTruthy();
 
-      await call("sim_configure", { rounds: 3 });
+      await call("world_config", { rounds: 3 });
 
       // round 1
-      let batch = await call("sim_next_batch");
+      let batch = await call("sim", { action: "next_batch" });
       let task = batch.task as { id: string; items: { id: string; payload: { persona: { id: string } } }[] };
       expect(batch.round as number).toBe(1);
-      let sub = await call("sim_submit_generations", { task_id: task.id, generations: completeSim(task) });
+      let sub = await call("sim", { action: "submit", task_id: task.id, generations: completeSim(task) });
       expect(sub.advanced as boolean).toBe(true);
       expect(sub.round as number).toBe(1);
 
       // inject before round 2 (F5)
-      await call("sim_inject_event", { text: "Acme Cloud raises the Pro plan price by 40% overnight", round: 2 });
+      await call("sim", { action: "inject", text: "Acme Cloud raises the Pro plan price by 40% overnight", round: 2 });
 
       for (const round of [2, 3]) {
-        batch = await call("sim_next_batch");
+        batch = await call("sim", { action: "next_batch" });
         task = batch.task as typeof task;
-        sub = await call("sim_submit_generations", { task_id: task.id, generations: completeSim(task) });
+        sub = await call("sim", { action: "submit", task_id: task.id, generations: completeSim(task) });
         expect(sub.round as number).toBe(round);
       }
       expect(sub.completed as boolean).toBe(true);
 
-      const summary = await call("sim_round_summary", { round: 3 });
+      const summary = await call("sim", { action: "summary", round: 3 });
       expect(summary.stats).toBeTruthy();
-      const timeline = await call("sim_timeline");
+      const timeline = await call("sim", { action: "timeline" });
       expect((timeline.timeline as unknown[]).length).toBe(3);
 
       // report (F6)
-      const rPlan = await call("report_plan", { focus: "developer reaction to the pricing change" });
+      const rPlan = await call("report", { action: "plan", focus: "developer reaction to the pricing change" });
       const rTask = rPlan.task as { id: string };
       const draft = completeReportTask(rTask);
-      const submitted = await call("report_submit", { task_id: rTask.id, draft });
+      const submitted = await call("report", { action: "submit", task_id: rTask.id, draft });
       expect(submitted.version as number).toBe(1);
-      const exported = await call("report_export", { format: "both" });
+      const exported = await call("report", { action: "export", format: "both" });
       const files = exported.files as { path: string; bytes: number }[];
       expect(files.length).toBe(2);
       const mdFile = path.join(cwd, files.find((f) => f.path.endsWith(".md"))!.path);
@@ -196,20 +192,21 @@ describe("MCP server end-to-end", () => {
       expect(html).not.toMatch(/https?:\/\//);
 
       // deep interaction (F7)
-      const interview = await call("interview_agent", { persona: firstPersona, question: "Why do you feel this way about the pricing change?" });
+      const interview = await call("interact", { target: "persona", persona: firstPersona, question: "Why do you feel this way about the pricing change?" });
       expect(interview.pack).toBeTruthy();
-      const logged = await call("interview_agent", {
+      const logged = await call("interact", {
+        target: "persona",
         persona: firstPersona,
         question: "Why do you feel this way about the pricing change?",
         answer: "Because like I said in my post, the migration guide reads like a paywall.",
       });
       expect(logged.logged as boolean).toBe(true);
-      const ask = await call("report_agent_ask", { question: "What is behind the biggest risk?" });
+      const ask = await call("interact", { target: "run", question: "What is behind the biggest risk?" });
       expect((ask.pack as { evidence: unknown[] }).evidence.length).toBeGreaterThan(0);
-      await call("report_agent_ask", { question: "What is behind the biggest risk?", answer: "Posts po_1 and others show backlash (strong evidence)." });
+      await call("interact", { target: "run", question: "What is behind the biggest risk?", answer: "Posts po_1 and others show backlash (strong evidence)." });
 
       // status receipts teach the next step
-      const status = await call("world_status");
+      const status = await call("world_list", { world: String(init.world.id), detail: "status" });
       expect(status.next).toBeTruthy();
 
       // artifacts on disk
@@ -232,10 +229,10 @@ describe("MCP server end-to-end", () => {
         const text2 = await second.client.callTool({ name: "world_list", arguments: {} });
         const parsed2 = JSON.parse(String((text2.content as { text: string }[])[0]?.text));
         expect(parsed2.worlds[0].id).toBe(init.world.id);
-        const opened = await second.client.callTool({ name: "world_open", arguments: { world: String(init.world.id) } });
+        const opened = await second.client.callTool({ name: "world_list", arguments: { world: String(init.world.id), detail: "open" } });
         const openedParsed = JSON.parse(String((opened.content as { text: string }[])[0]?.text));
         expect(openedParsed.world.stage).toBe("reported");
-        expect(openedParsed.next).toContain("interview");
+        expect(openedParsed.next).toContain("interact");
       } finally {
         await second.close();
       }

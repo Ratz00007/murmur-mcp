@@ -1,71 +1,87 @@
-/** Deep-interaction tools: interview_agent, report_agent_ask (F7). Two-phase: without `answer` they return a grounded pack for you to answer from; with `answer` they log the exchange. */
+/**
+ * Stage 7 — interaction: two-phase grounded dialogue with the simulated world.
+ *
+ * `interview_agent` and `report_agent_ask` are the same protocol against two
+ * evidence sources: without `answer` they return a grounded pack for you to
+ * answer from, with `answer` they log the exchange. `target` picks the source
+ * (one persona's own memory and posts, or the whole run's evidence pack).
+ */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { buildAskPack, buildInterviewPack, qaEntry } from "@murmur/engine";
 import type { ServerContext } from "../session.js";
+import { INTERACT_OUTPUT } from "./outputs.js";
+
+export const INTERACT_TOOL_NAMES = ["interact"] as const;
 
 export function registerInteractTools(server: McpServer, ctx: ServerContext): void {
-  server.tool(
-    "interview_agent",
-    "Talk to any simulated persona after (or during) a run. Returns their grounded pack (card, own posts, episodic memory) — answer the question in " +
-      "character, then call again with `answer` to log the dialogue into the world directory.",
+  server.registerTool(
+    "interact",
     {
-      persona: z.string().describe("Persona id or handle (e.g. p_3 or @ada)"),
-      question: z.string().min(3).max(1000).describe("Your question"),
-      answer: z.string().max(4000).optional().describe("Your in-character answer — provide to log the exchange"),
-      world: z.string().optional().describe("World id/slug (default: active world)"),
+      title: "Interview a persona / interrogate the run",
+      description:
+        "Talk to the simulated world after (or during) a run. target:'persona' returns one persona's grounded pack — " +
+        "their card, their own posts, their episodic memory — so you can answer in character and have them decline what " +
+        "they never saw. target:'run' returns the evidence pack for the whole simulation, so you can drill into any claim " +
+        "in the report. Both are two-phase: call without `answer` to get the pack, answer from it, then call again with " +
+        "`answer` to log the exchange into the world directory.",
+      inputSchema: {
+        target: z.enum(["persona", "run"]).describe("Ask one persona, or the whole run"),
+        persona: z.string().optional().describe("Persona id or handle (e.g. p_3 or @ada) — required for target:'persona'"),
+        question: z.string().min(3).max(1000).describe("Your question"),
+        answer: z.string().max(6000).optional().describe("Your answer — provide it to log the exchange"),
+        world: z.string().optional().describe("World id/slug (default: active world)"),
+      },
+      outputSchema: INTERACT_OUTPUT,
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
-    { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    async ({ persona, question, answer, world }) => {
+    async ({ target, persona, question, answer, world }) => {
       try {
         const w = ctx.resolveWorld(world);
-        if (answer && answer.trim()) {
-          const { persona: p } = buildInterviewPack(ctx.storage, w, persona, question);
-          ctx.workspace.appendJsonl(ctx.workspace.interviewsPath(w.slug), qaEntry(question, answer.trim(), { persona: p.id, name: p.name }));
-          ctx.audit(w, { op: "interview_log", persona: p.id });
-          return ctx.reply(
-            { ok: true, logged: true, persona: p.name, file: ctx.workspace.rel(ctx.workspace.interviewsPath(w.slug)), next: "ask another question (no answer → new pack), or report_agent_ask" },
-            w
-          );
+        if (target === "persona" && !persona) {
+          throw new Error("target:'persona' needs persona (id or handle) — use target:'run' to ask the simulation as a whole");
         }
-        const { persona: p, pack } = buildInterviewPack(ctx.storage, w, persona, question);
-        ctx.audit(w, { op: "interview_pack", persona: p.id });
-        return ctx.reply(
-          {
-            ok: true,
-            logged: false,
-            persona: p.name,
-            how: "Answer the question AS this persona using only the pack (cite your own post ids; decline what you don't recall). Then call interview_agent again with persona + question + your answer to log it.",
-            pack,
-            next: "interview_agent(persona, question, answer)",
-          },
-          w
-        );
-      } catch (e) {
-        return ctx.fail(e);
-      }
-    }
-  );
-
-  server.tool(
-    "report_agent_ask",
-    "Interrogate the whole simulation: retrieves the posts and statistics behind a question. Answer with citations (po_ids), then call again with " +
-      "`answer` to log the exchange. Use it to drill into any claim in the report ('show me the posts behind this risk').",
-    {
-      question: z.string().min(3).max(1000).describe("Your question about the run"),
-      answer: z.string().max(6000).optional().describe("Your cited answer — provide to log the exchange"),
-      world: z.string().optional().describe("World id/slug (default: active world)"),
-    },
-    { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    async ({ question, answer, world }) => {
-      try {
-        const w = ctx.resolveWorld(world);
         if (answer && answer.trim()) {
-          ctx.workspace.appendJsonl(ctx.workspace.qaPath(w.slug), qaEntry(question, answer.trim()));
+          if (target === "persona" && persona) {
+            const { persona: p } = buildInterviewPack(ctx.storage, w, persona, question);
+            const file = ctx.workspace.interviewsPath(w.slug);
+            ctx.workspace.appendJsonl(file, qaEntry(question, answer.trim(), { persona: p.id, name: p.name }));
+            ctx.audit(w, { op: "interview_log", persona: p.id });
+            return ctx.reply(
+              {
+                ok: true,
+                logged: true,
+                persona: p.name,
+                file: ctx.workspace.rel(file),
+                next: "ask another question (omit `answer` for a fresh pack), or switch target to 'run'",
+              },
+              w,
+              INTERACT_OUTPUT
+            );
+          }
+          const file = ctx.workspace.qaPath(w.slug);
+          ctx.workspace.appendJsonl(file, qaEntry(question, answer.trim()));
           ctx.audit(w, { op: "ask_log" });
           return ctx.reply(
-            { ok: true, logged: true, file: ctx.workspace.rel(ctx.workspace.qaPath(w.slug)), next: "ask another question, or wrap up" },
-            w
+            { ok: true, logged: true, file: ctx.workspace.rel(file), next: "ask another question, or wrap up" },
+            w,
+            INTERACT_OUTPUT
+          );
+        }
+        if (target === "persona" && persona) {
+          const { persona: p, pack } = buildInterviewPack(ctx.storage, w, persona, question);
+          ctx.audit(w, { op: "interview_pack", persona: p.id });
+          return ctx.reply(
+            {
+              ok: true,
+              logged: false,
+              persona: p.name,
+              how: "Answer the question AS this persona using only the pack (cite their own post ids; decline what they don't recall). Then call interact again with target:'persona' + persona + question + your answer to log it.",
+              pack,
+              next: "interact({target:'persona', persona, question, answer})",
+            },
+            w,
+            INTERACT_OUTPUT
           );
         }
         const pack = buildAskPack(ctx.storage, w, question);
@@ -74,11 +90,12 @@ export function registerInteractTools(server: McpServer, ctx: ServerContext): vo
           {
             ok: true,
             logged: false,
-            how: "Answer using ONLY the evidence pack, citing post ids like (po_12). Distinguish strong from weak evidence. Then call report_agent_ask again with question + your answer to log it.",
+            how: "Answer using ONLY the evidence pack, citing post ids like (po_12). Distinguish strong from weak evidence. Then call interact again with target:'run' + question + your answer to log it.",
             pack,
-            next: "report_agent_ask(question, answer)",
+            next: "interact({target:'run', question, answer})",
           },
-          w
+          w,
+          INTERACT_OUTPUT
         );
       } catch (e) {
         return ctx.fail(e);

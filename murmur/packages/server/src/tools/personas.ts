@@ -1,8 +1,18 @@
-/** Persona tools: personas_plan, personas_submit, persona_inspect, persona_edit. */
+/**
+ * Stage 4 — personas: one tool for the population and for auditing individuals.
+ *
+ * `plan`/`submit` are the two phases of the same protocol as everywhere else.
+ * `inspect`/`edit` act on one member of that population, reading exactly the
+ * fields `edit` can change — the same subject seen from two sides.
+ */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { applyPersonas, buildPersonasTask, CONFIG_LIMITS, personaCard, personaPatch, type Persona } from "@murmur/engine";
+import { applyPersonas, buildPersonasTask, CONFIG_LIMITS, personaCard, personaPatch, type Entity, type Persona } from "@murmur/engine";
 import { coerceJson, type ServerContext } from "../session.js";
+import { PERSONAS_OUTPUT } from "./outputs.js";
+import { registerTaskTool } from "./tasks.js";
+
+export const PERSONAS_TOOL_NAMES = ["personas"] as const;
 
 /** Mirrors the task.outputSchema the engine attaches to personas tasks (engine/src/personas.ts). */
 const personaDraftItem = z.object({
@@ -16,44 +26,32 @@ const personaDraftItem = z.object({
   activity: z.number().min(0.05).max(1).optional().describe("Posting activity (0.05-1, default 0.5)"),
 });
 
-export function registerPersonaTools(server: McpServer, ctx: ServerContext): void {
-  server.tool(
-    "personas_plan",
-    "Stage 4 Â· PLAN: compose the population-drafting task (count + archetype distribution derived from the ontology + stance hints per entity). " +
-      "Complete it and return the result via personas_submit.",
-    {
-      world: z.string().optional().describe("World id/slug (default: active world)"),
-      count: z.number().int().min(8).max(128).optional().describe("Population size (default 24, range 8-128)"),
-      hint: z.string().max(300).optional().describe("Optional platform-mix hint, e.g. 'mostly reddit'"),
-    },
-    { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    async ({ world, count, hint }) => {
-      try {
-        const w = ctx.resolveWorld(world);
-        const task = buildPersonasTask(ctx.storage, w, { count, hint });
-        ctx.audit(w, { op: "personas_plan", taskId: task.id, count });
-        return ctx.reply(
-          {
-            ok: true,
-            taskId: task.id,
-            how: "Draft the population per the task instructions (names, handles, archetypes, Big-Five-lite traits, stances toward the listed entities, platform, activity), then call personas_submit with this task_id and your result.",
-            task,
-            next: "personas_submit",
-          },
-          w
-        );
-      } catch (e) {
-        return ctx.fail(e);
-      }
-    }
-  );
+const personaPatchShape = z.object({
+  name: z.string().max(80).optional().describe("New display name"),
+  handle: z.string().max(40).optional().describe("New platform handle"),
+  archetype: z.string().max(40).optional().describe("New archetype name"),
+  bio: z.string().max(200).optional().describe("New backstory line"),
+  traits: z.record(z.number()).optional().describe("Trait overrides: {openness?, conscientiousness?, extraversion?, agreeableness?, emotionalStability?} (0-1)"),
+  stances: z.record(z.number().min(-1).max(1)).optional().describe("Stance overrides by entity name: {EntityName: -1..1}"),
+  platform: z.enum(["twitter", "reddit", "both"]).optional().describe("New platform: twitter | reddit | both"),
+  activity: z.number().min(0.05).max(1).optional().describe("New activity (0.05-1)"),
+});
 
-  server.tool(
-    "personas_submit",
-    "Stage 4 Â· SUBMIT: validate and store the population (8-128 personas). Bad personas are itemized; the population also gets its follow graph and community memberships wired here. " +
-      "Resubmitting the same task_id skips already-inserted names.",
-    {
-      task_id: z.string().describe("Task id from personas_plan"),
+export function registerPersonaTools(server: McpServer, ctx: ServerContext): void {
+  registerTaskTool(server, "personas", {
+    title: "Draft / store / audit the population",
+    description:
+      "Stage 4 of the pipeline. action:'plan' composes the population-drafting task (count + archetype distribution " +
+      "derived from the ontology, plus a stance hint per entity); complete it and return it with action:'submit'. " +
+      "action:'inspect' audits one persona — full record, the compact card that fits in a digest, communities, follows and " +
+      "recent posts — recommended before a run to catch low-fidelity personas. action:'edit' surgically fixes one " +
+      "persona: only the fields you pass change.",
+    inputSchema: {
+      action: z.enum(["plan", "submit", "inspect", "edit"]).describe("What to do with the population"),
+      world: z.string().optional().describe("World id/slug (default: active world)"),
+      count: z.number().int().min(8).max(128).optional().describe("Population size (default 24, range 8-128) — action:'plan'"),
+      hint: z.string().max(300).optional().describe("Optional platform-mix hint, e.g. 'mostly reddit' — action:'plan'"),
+      task_id: z.string().optional().describe("Task id from the plan receipt — required for action:'submit'"),
       result: z
         .union([
           z
@@ -67,132 +65,131 @@ export function registerPersonaTools(server: McpServer, ctx: ServerContext): voi
             .describe("Your drafting result: { personas: [...] }"),
           z.string().describe("The same result as a JSON string (parsed server-side)"),
         ])
-        .describe("Your drafting result: { personas: [{name, handle, archetype, bio, traits, stances, platform, activity}] }"),
-    },
-    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    async ({ task_id, result }) => {
-      try {
-        const wActive = ctx.resolveWorld(undefined);
-        const task = ctx.storage.getTask(wActive.id, task_id);
-        if (!task) throw new Error(`unknown task id: ${task_id} (no such task in the active world ${wActive.id})`);
-        const w = ctx.storage.getWorld(task.worldId);
-        if (!w) throw new Error("world for task not found");
-        const submitted = coerceJson(result);
-        const out = applyPersonas(ctx.storage, w, task_id, submitted);
-        ctx.audit(w, {
-          op: "personas_submit",
-          taskId: task_id,
-          personas: out.personas.length,
-          rejected: out.rejected.length,
-          follows: out.followEdges,
-        });
-        const okAll = out.rejected.length === 0 && out.personas.length > 0;
-        return ctx.reply(
-          {
-            ok: okAll,
-            population: out.personas.length,
-            personaIds: out.personas.map((p) => p.id),
-            platformBreakdown: out.platformBreakdown,
-            archetypeBreakdown: out.archetypeBreakdown,
-            followEdges: out.followEdges,
-            communityMemberships: out.memberships,
-            ...(out.rejected.length ? { rejected: out.rejected, hint: "fix rejected personas and resubmit the same task_id â€” already-inserted names are skipped" } : {}),
-            next: okAll ? "persona_inspect to audit individuals (recommended), or sim_configure" : "fix and resubmit",
-          },
-          w
-        );
-      } catch (e) {
-        return ctx.fail(e);
-      }
-    }
-  );
-
-  server.tool(
-    "persona_inspect",
-    "Audit one persona: full record, compact card (what fits in a digest), communities, follows and recent posts. Use before a run to catch low-fidelity personas.",
-    {
-      persona: z.string().describe("Persona id or handle (e.g. p_3 or @ada)"),
-      world: z.string().optional().describe("World id/slug (default: active world)"),
-    },
-    { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-    async ({ persona, world }) => {
-      try {
-        const w = ctx.resolveWorld(world);
-        const p = ctx.storage.getPersona(w.id, persona);
-        if (!p) throw new Error(`persona not found: ${persona}`);
-        const entities = ctx.storage.listEntities(w.id);
-        const card = personaCard(p, entities, w.config);
-        const all = ctx.storage.listPersonas(w.id);
-        const handles = new Map(all.map((x) => [x.id, x.handle]));
-        const stances = Object.entries(p.stances).map(([id, v]) => ({
-          entity: entities.find((e) => e.id === id)?.name ?? id,
-          stance: v,
-        }));
-        const posts = ctx.storage
-          .listPosts(w.id, { personaId: p.id, limit: 10 })
-          .map((x) => ({ id: x.id, round: x.round, platform: x.platform, kind: x.kind, body: x.body.slice(0, 160) }));
-        return ctx.reply(
-          {
-            ok: true,
-            persona: { ...p, stancesDetailed: stances, followsHandles: p.follows.map((id) => handles.get(id) ?? id) },
-            card,
-            recentPosts: posts,
-            next: "persona_edit to fix anything, or sim_configure",
-          },
-          w
-        );
-      } catch (e) {
-        return ctx.fail(e);
-      }
-    }
-  );
-
-  server.tool(
-    "persona_edit",
-    "Fix an individual persona before (or during) a run: rename, re-voice, retarget stances, change platform or activity. Surgical â€” only provided fields change.",
-    {
-      persona: z.string().describe("Persona id or handle"),
+        .optional()
+        .describe("Your drafting result: { personas: [{name, handle, archetype, bio, traits, stances, platform, activity}] } — action:'submit' only"),
+      persona: z.string().optional().describe("Persona id or handle (e.g. p_3 or @ada) — action:'inspect' / 'edit'"),
       patch: z
         .union([
-          z
-            .object({
-              name: z.string().max(80).optional().describe("New display name"),
-              handle: z.string().max(40).optional().describe("New platform handle"),
-              archetype: z.string().max(40).optional().describe("New archetype name"),
-              bio: z.string().max(200).optional().describe("New backstory line"),
-              traits: z.record(z.number()).optional().describe("Trait overrides: {openness?, conscientiousness?, extraversion?, agreeableness?, emotionalStability?} (0-1)"),
-              stances: z.record(z.number().min(-1).max(1)).optional().describe("Stance overrides by entity name: {EntityName: -1..1}"),
-              platform: z.enum(["twitter", "reddit", "both"]).optional().describe("New platform: twitter | reddit | both"),
-              activity: z.number().min(0.05).max(1).optional().describe("New activity (0.05-1)"),
-            })
-            .describe("Partial persona â€” only provided fields change"),
+          personaPatchShape.describe("Partial persona — only the provided fields change"),
           z.string().describe("The same patch as a JSON string (parsed server-side)"),
         ])
-        .describe("Partial persona: {name?, handle?, archetype?, bio?, traits?, stances?: {EntityName: -1..1}, platform?, activity?}"),
-      world: z.string().optional().describe("World id/slug (default: active world)"),
+        .optional()
+        .describe("Partial persona: {name?, handle?, archetype?, bio?, traits?, stances?: {EntityName: -1..1}, platform?, activity?} — action:'edit' only"),
     },
-    { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    async ({ persona, patch, world }) => {
+    outputSchema: PERSONAS_OUTPUT,
+    run: async (args) => {
       try {
-        const w = ctx.resolveWorld(world);
-        const p = coerceJson(patch);
-        if (!p || typeof p !== "object") throw new Error("patch must be an object");
-        const out = personaPatch(ctx.storage, w, persona, p as Record<string, unknown>);
-        ctx.audit(w, { op: "persona_edit", persona });
-        return ctx.reply(
-          {
-            ok: out.rejected.length === 0 && !!out.persona,
-            persona: out.persona ? inspectLite(out.persona) : null,
-            ...(out.rejected.length ? { rejected: out.rejected } : {}),
-            next: "persona_inspect to verify, or sim_configure",
-          },
-          w
-        );
+        const w = ctx.resolveWorld(args.world);
+        if (args.action === "plan") {
+          const task = buildPersonasTask(ctx.storage, w, { count: args.count, hint: args.hint });
+          ctx.audit(w, { op: "personas_plan", taskId: task.id, count: args.count });
+          return ctx.reply(
+            {
+              ok: true,
+              taskId: task.id,
+              how: "Draft the population per the task instructions (names, handles, archetypes, Big-Five-lite traits, stances toward the listed entities, platform, activity), then call personas({action:'submit', task_id, result}).",
+              task,
+              next: 'personas({action:"submit", task_id, result})',
+            },
+            w,
+            PERSONAS_OUTPUT
+          );
+        }
+        if (args.action === "submit") return submit(ctx, args);
+        if (args.action === "inspect") return inspect(ctx, w, args.persona);
+        return edit(ctx, w, args);
       } catch (e) {
         return ctx.fail(e);
       }
-    }
+    },
+  });
+}
+
+function submit(ctx: ServerContext, args: { task_id?: string; result?: unknown }) {
+  if (!args.task_id) throw new Error("action:'submit' needs task_id from the plan receipt");
+  const wActive = ctx.resolveWorld(undefined);
+  const task = ctx.storage.getTask(wActive.id, args.task_id);
+  if (!task) throw new Error(`unknown task id: ${args.task_id} (no such task in the active world ${wActive.id})`);
+  const w = ctx.storage.getWorld(task.worldId);
+  if (!w) throw new Error("world for task not found");
+  const out = applyPersonas(ctx.storage, w, args.task_id, coerceJson(args.result));
+  ctx.audit(w, {
+    op: "personas_submit",
+    taskId: args.task_id,
+    personas: out.personas.length,
+    rejected: out.rejected.length,
+    follows: out.followEdges,
+  });
+  const okAll = out.rejected.length === 0 && out.personas.length > 0;
+  return ctx.reply(
+    {
+      ok: okAll,
+      population: out.personas.length,
+      personaIds: out.personas.map((p) => p.id),
+      platformBreakdown: out.platformBreakdown,
+      archetypeBreakdown: out.archetypeBreakdown,
+      followEdges: out.followEdges,
+      communityMemberships: out.memberships,
+      ...(out.rejected.length
+        ? { rejected: out.rejected, hint: "fix rejected personas and resubmit the same task_id — already-inserted names are skipped" }
+        : {}),
+      next: okAll
+        ? 'personas({action:"inspect", persona}) to audit individuals (recommended), or world_config'
+        : "fix the rejected personas and resubmit the same task_id",
+    },
+    w,
+    PERSONAS_OUTPUT
   );
+}
+
+function inspect(ctx: ServerContext, w: ReturnType<ServerContext["resolveWorld"]>, persona?: string) {
+  if (!persona) throw new Error("action:'inspect' needs persona (id or handle)");
+  const p = ctx.storage.getPersona(w.id, persona);
+  if (!p) throw new Error(`persona not found: ${persona}`);
+  const entities = ctx.storage.listEntities(w.id);
+  const handles = new Map(ctx.storage.listPersonas(w.id).map((x) => [x.id, x.handle]));
+  return ctx.reply(
+    {
+      ok: true,
+      persona: {
+        ...p,
+        stancesDetailed: detailedStances(p, entities),
+        followsHandles: p.follows.map((id) => handles.get(id) ?? id),
+      },
+      card: personaCard(p, entities, w.config),
+      recentPosts: ctx.storage
+        .listPosts(w.id, { personaId: p.id, limit: 10 })
+        .map((x) => ({ id: x.id, round: x.round, platform: x.platform, kind: x.kind, body: x.body.slice(0, 160) })),
+      next: 'personas({action:"edit", persona, patch}) to fix anything, or world_config',
+    },
+    w,
+    PERSONAS_OUTPUT
+  );
+}
+
+function edit(ctx: ServerContext, w: ReturnType<ServerContext["resolveWorld"]>, args: { persona?: string; patch?: unknown }) {
+  if (!args.persona) throw new Error("action:'edit' needs persona (id or handle)");
+  const p = coerceJson(args.patch);
+  if (!p || typeof p !== "object") throw new Error("action:'edit' needs a patch object");
+  const out = personaPatch(ctx.storage, w, args.persona, p as Record<string, unknown>);
+  ctx.audit(w, { op: "persona_edit", persona: args.persona });
+  return ctx.reply(
+    {
+      ok: out.rejected.length === 0 && !!out.persona,
+      persona: out.persona ? inspectLite(out.persona) : null,
+      ...(out.rejected.length ? { rejected: out.rejected } : {}),
+      next: 'personas({action:"inspect", persona}) to verify, or world_config',
+    },
+    w,
+    PERSONAS_OUTPUT
+  );
+}
+
+function detailedStances(p: Persona, entities: Entity[]): { entity: string; stance: number }[] {
+  return Object.entries(p.stances).map(([id, v]) => ({
+    entity: entities.find((e) => e.id === id)?.name ?? id,
+    stance: v,
+  }));
 }
 
 function inspectLite(p: Persona): Record<string, unknown> {

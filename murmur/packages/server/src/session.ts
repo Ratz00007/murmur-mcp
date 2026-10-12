@@ -5,6 +5,7 @@
  * to the world directory and are answered with receipts + pointers).
  */
 import { openDatabase, Storage, Workspace, estTokens, nowIso, type World } from "@murmur/engine";
+import type { ZodTypeAny } from "zod";
 import { log } from "./logging.js";
 
 export type SamplingFn = (prompt: string, system: string, maxTokens: number) => Promise<string | null>;
@@ -68,17 +69,28 @@ export class ServerContext {
    * Render a tool result. If the JSON body exceeds the context budget
    * (default 12,000 tokens), the full payload is written to the world's
    * artifacts directory and the response becomes a pointer receipt.
-   * The stable response shape ({ok, next, ...}) is also returned as
-   * structuredContent so hosts can consume it without re-parsing text
-   * (with the same JSON mirrored in a text block for compatibility).
+   *
+   * `structuredContent` is emitted **only** when the caller passes the tool's
+   * declared `outputSchema`. Per the MCP spec a tool that declares an
+   * `outputSchema` MUST return `structuredContent`, and a tool that does not
+   * declare one has no business returning it; the SDK validates the pair on
+   * every call, so making the schema the switch keeps the two impossible to
+   * desynchronise. The same JSON is always mirrored in a text block, for
+   * clients that predate structured output.
    */
   reply(
     data: unknown,
-    world?: World | null
+    world?: World | null,
+    output?: ZodTypeAny
   ): { content: { type: "text"; text: string }[]; structuredContent?: Record<string, unknown> } {
-    const maxTokens = (world?.config.context.maxResponseTokens ?? 12000);
+    const maxTokens = world?.config.context.maxResponseTokens ?? 12000;
     const body = JSON.stringify(data);
-    const structured = asRecord(data);
+    const structured = output ? asRecord(data) : null;
+    if (output && !structured) {
+      // A declared outputSchema with a non-object payload is a programming
+      // error: the schema (and the SDK's validation of it) assume an object.
+      throw new Error(`reply() given a non-object payload for a tool that declares an outputSchema: ${typeof data}`);
+    }
     if (estTokens(body) <= maxTokens) {
       return {
         content: [{ type: "text", text: body }],
@@ -86,10 +98,15 @@ export class ServerContext {
       };
     }
     if (!world) {
-      const err = { ok: false, error: "response exceeds context budget", hint: "narrow the request (fewer items, tighter query)" };
+      const err = {
+        ok: false,
+        error: "response exceeds context budget",
+        hint: "narrow the request (fewer items, tighter query)",
+        next: "re-issue with a narrower query (fewer items, lower depth, smaller budget)",
+      };
       return {
         content: [{ type: "text", text: JSON.stringify(err) }],
-        structuredContent: err,
+        ...(output ? { structuredContent: err } : {}),
       };
     }
     const name = `oversize-${Date.now().toString(36)}.json`;
@@ -98,7 +115,7 @@ export class ServerContext {
     const ok = (data as { ok?: boolean })?.ok !== false;
     const receipt: Record<string, unknown> = {
       ok,
-      truncated: true,
+      spilled: true,
       reason: "payload exceeded the response token budget",
       artifact: this.workspace.rel(file),
       fullTokens: estTokens(JSON.stringify(data, null, 2)),
@@ -106,7 +123,7 @@ export class ServerContext {
     };
     return {
       content: [{ type: "text", text: JSON.stringify(receipt) }],
-      structuredContent: receipt,
+      ...(output ? { structuredContent: receipt } : {}),
     };
   }
 

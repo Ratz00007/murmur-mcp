@@ -1,6 +1,7 @@
 /** Server assembly: McpServer + tools + resources + prompts + sampling bridge. */
 import { createRequire } from "node:module";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { InMemoryTaskStore } from "@modelcontextprotocol/sdk/experimental/tasks/stores/in-memory.js";
 import type { ServerContext } from "./session.js";
 import { log } from "./logging.js";
 import { registerTools, TOOL_COUNT } from "./tools/index.js";
@@ -24,16 +25,28 @@ function readVersion(): string {
 export const SERVER_VERSION = readVersion();
 
 export const SERVER_INSTRUCTIONS =
-  "Murmur rehearses how a community reacts to a change with a strictly ordered 7-stage pipeline: " +
-  "world_init → seeds (seed_add_files / seed_add_url / seed_add_text, then seeds_review) → ontology_plan → ontology_submit → " +
-  "graph_build → personas_plan → personas_submit → sim_configure → the simulation loop (sim_next_batch → sim_submit_generations × N rounds) → " +
-  "report_plan → report_submit → report_export → interviews (interview_agent / report_agent_ask). " +
-  "Call the /murmur-predict prompt for the full one-command playbook, or world_status to see exactly where a world stands. " +
-  "Never skip stages and never redo completed ones: every receipt names the next tool to call, and every plan receipt carries the " +
-  "task schema to complete yourself before submitting it.";
+  "Murmur rehearses how a community reacts to a change with a strictly ordered 7-stage pipeline over 11 tools. " +
+  "Each stage is one tool with an `action` (or `target`) argument: " +
+  "1) world_init → 2) seed_add({source:\"files\"|\"url\"|\"text\"}) then seeds_review → 3) ontology({action:\"plan\"}) → ontology({action:\"submit\"}) → " +
+  "4) graph({action:\"build\"}) → 5) personas({action:\"plan\"}) → personas({action:\"submit\"}) → 6) world_config → " +
+  "the simulation loop (sim({action:\"next_batch\"}) → sim({action:\"submit\"}) × N rounds, with sim({action:\"inject\"}) between rounds) → " +
+  "7) report({action:\"plan\"}) → report({action:\"submit\"}) → report({action:\"export\"}) → 8) interact({target:\"persona\"|\"run\"}). " +
+  "world_list is the only navigation tool: detail:'rows' lists worlds, detail:'open' makes one active, detail:'status' reads " +
+  "the full session readout. Every tool declares an outputSchema, and its structuredContent is the same JSON as its text block. " +
+  "Call the /murmur-predict prompt for the full one-command playbook. " +
+  "Never skip stages and never redo completed ones: every receipt names the next tool call to make, and every plan receipt " +
+  "carries the task schema to complete yourself before submitting it.";
 
 export function buildServer(ctx: ServerContext): McpServer {
-  const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION }, { instructions: SERVER_INSTRUCTIONS });
+  // The task store is what makes `execution.taskSupport: "optional"` real on
+  // the four generation stages (see tools/tasks.ts). Without it the SDK has
+  // nowhere to put a task result and the tools would have to drop the
+  // affordance entirely.
+  const taskStore = new InMemoryTaskStore();
+  const server = new McpServer(
+    { name: SERVER_NAME, version: SERVER_VERSION },
+    { instructions: SERVER_INSTRUCTIONS, taskStore }
+  );
 
   registerTools(server, ctx);
   registerResources(server, ctx);
@@ -50,6 +63,9 @@ export function buildServer(ctx: ServerContext): McpServer {
   // catch below swallowed into a one-time warning. The probe succeeded, which
   // is exactly what hid the bug: `use_sampling: true` silently no-opped and
   // the whole `fillViaSampling` path was unreachable.
+  //
+  // Note: MCP 2026-07-28 moves sampling into the deprecated feature set, so
+  // this stays an opt-in accelerator and never a dependency.
   const lowLevel = (server as unknown as { server?: { createMessage?: unknown } }).server;
   if (typeof lowLevel?.createMessage === "function") {
     const createMessage = (

@@ -36,13 +36,36 @@ describe("prompts", () => {
     expect(PROMPTS.map((p) => p.name).sort()).toEqual(["murmur-interview", "murmur-predict", "murmur-resume", "murmur-simulate"]);
   });
   it("playbooks name their tools", () => {
+    // The 29-tool surface was consolidated to 11 action-dispatched tools, so
+    // the playbooks name the new surface. What is asserted is that a playbook
+    // never sends a model toward a tool that does not exist.
     const predict = findPrompt("predict")!;
     const text = predict.build({ question: "How will r/programming react to the pricing page?" });
     expect(text).toContain("world_init");
-    expect(text).toContain("sim_submit_generations");
-    expect(text).toContain("report_export");
+    expect(text).toContain("sim(");
+    expect(text).toContain("report");
     const resume = findPrompt("resume")!;
-    expect(resume.build({})).toContain("world_status");
+    const resumeText = resume.build({});
+    expect(resumeText).toContain("world_list");
+    // And no playbook may name a retired tool: a stale name in a prompt is a
+    // guaranteed failed call for every model that follows it. (world_config
+    // survives — sim_configure was merged INTO it — so it is not retired.)
+    const retired = [
+      "world_open", "world_status", "sim_configure",
+      "seed_add_files", "seed_add_url", "seed_add_text",
+      "ontology_plan", "ontology_submit",
+      "graph_build", "graph_query", "graph_export_mermaid",
+      "personas_plan", "personas_submit", "persona_inspect", "persona_edit",
+      "sim_next_batch", "sim_submit_generations", "sim_inject_event", "sim_round_summary", "sim_timeline",
+      "report_plan", "report_submit", "report_export",
+      "interview_agent", "report_agent_ask",
+    ];
+    for (const prompt of PROMPTS) {
+      const built = prompt.build({});
+      for (const old of retired) {
+        expect(built, `${prompt.name} names retired tool ${old}`).not.toContain(old);
+      }
+    }
   });
 });
 

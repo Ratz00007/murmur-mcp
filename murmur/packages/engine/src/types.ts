@@ -38,15 +38,15 @@ export function stageAtLeast(a: Stage, b: Stage): boolean {
 
 /** The "next recommended tool" teaching hint returned in every receipt. */
 export const NEXT_TOOL: Record<Stage, string> = {
-  created: "seed_add_files / seed_add_text — attach source material to this world",
-  seeded: "ontology_plan — ask the host LLM to extract entities, motives and anchors",
-  ontologized: "graph_build — derive typed relations and tension scores",
-  graphed: "personas_plan — draft the simulated population",
-  populated: "sim_configure — set rounds and platform parameters",
-  configured: "sim_next_batch — start round 1",
-  running: "sim_next_batch — continue the current round batch",
-  completed: "report_plan — draft the prediction report",
-  reported: "report_export — write the report file, or interview_agent / report_agent_ask to interrogate the world",
+  created: 'seed_add({source:"files"|"url"|"text"}) — attach source material to this world',
+  seeded: 'ontology({action:"plan"}) — ask the host LLM to extract entities, motives and anchors',
+  ontologized: 'graph({action:"build"}) — derive typed relations and tension scores',
+  graphed: 'personas({action:"plan"}) — draft the simulated population',
+  populated: "world_config — set rounds and platform parameters",
+  configured: 'sim({action:"next_batch"}) — start round 1',
+  running: 'sim({action:"next_batch"}) — continue the current round batch',
+  completed: 'report({action:"plan"}) — draft the prediction report',
+  reported: 'report({action:"export"}) — write the report file, or interact({target:"persona"|"run"}) to interrogate the world',
 };
 
 // ---------------------------------------------------------------------------

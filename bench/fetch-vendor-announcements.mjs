@@ -18,7 +18,7 @@
  *
  * Usage: node bench/fetch-vendor-announcements.mjs
  */
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sleep } from "./lib/sleep.mjs";
@@ -145,32 +145,52 @@ const GENERIC = new Set([
  * through a Hetzner thread about a DATA-PURGE INCIDENT paired with a
  * price-adjustment page (matched on the word "last"), and a Proton thread
  * comparing Tuta and Proton for private mail paired with a price-change post
- * (matched on "email", "mail", "private"). Shared vocabulary between a vendor
- * and a community thread is nearly always incidental; it is not evidence that
- * the thread is about the change.
+ * (matched on "email", "mail", "private"). Every one of those is incidental
+ * vocabulary overlap. A vendor and a community thread always share words; that
+ * is not evidence the thread is about the change.
  *
- * What IS evidence: the thread links the announcement, or quotes a distinctive
- * phrase from it verbatim. That is a deliberate act by the commenter, it cannot
- * happen by accident, and it needs no tuned threshold.
+ * What IS evidence: someone links the announcement, or quotes a distinctive
+ * phrase from it verbatim. Both are deliberate acts and cannot happen by
+ * accident, so neither needs a tuned threshold.
+ *
+ * The reference may appear in ANY comment, not just the opening post. A link in
+ * a top comment is the single most common way a community surfaces an
+ * announcement, and checking only the title and body missed that. This widens
+ * WHERE the evidence may be found, not how weak the evidence must be.
  */
-function reactionReferencesAnnouncement(pair, annText) {
-  const rx = `${pair.reaction.title}\n${pair.reaction.selftext ?? ""}`;
+function reactionReferencesAnnouncement(pair, annText, commentBodies = []) {
+  const own = `${pair.reaction.title}\n${pair.reaction.selftext ?? ""}`;
+  const haystacks = [own, ...commentBodies];
 
-  // (a) The thread links the announcement (or its canonical form).
+  // (a) Linked. A bare vendor blog root is too weak to count as a specific post.
   const annUrl = (pair.announcement.final_url ?? pair.announcement.url).replace(/\/+$/, "");
-  const host = new URL(annUrl).hostname.replace(/^www\./, "");
-  const linked = rx.includes(annUrl) || rx.includes(pair.announcement.url);
-  // A bare vendor blog root is too weak to count as a link to a specific post.
-  const linkedSpecific = linked && !/^https?:\/\/[^/]+\/?$/.test(annUrl);
-  if (linkedSpecific) return { ok: true, how: "thread_links_the_announcement" };
-
-  // (b) The thread quotes a distinctive phrase from the announcement verbatim.
-  const phrases = distinctivePhrases(annText);
-  const quoted = phrases.filter((p) => rx.toLowerCase().includes(p));
-  if (quoted.length > 0) {
-    return { ok: true, how: "thread_quotes_the_announcement", quoted: quoted.slice(0, 3) };
+  const isSpecific = !/^https?:\/\/[^/]+\/?$/.test(annUrl);
+  for (const h of haystacks) {
+    if (isSpecific && (h.includes(annUrl) || h.includes(pair.announcement.url))) {
+      return { ok: true, how: h === own ? "opening_post_links_the_announcement" : "a_comment_links_the_announcement" };
+    }
   }
-  return { ok: false, how: "reaction_does_not_reference_the_announcement", phrases_considered: phrases.length, vendor_host: host };
+
+  // (b) Quoted verbatim.
+  const phrases = distinctivePhrases(annText);
+  for (const h of haystacks) {
+    const lower = h.toLowerCase();
+    const quoted = phrases.find((p) => lower.includes(p));
+    if (quoted) {
+      return {
+        ok: true,
+        how: h === own ? "opening_post_quotes_the_announcement" : "a_comment_quotes_the_announcement",
+        quoted: quoted.slice(0, 3),
+      };
+    }
+  }
+
+  return {
+    ok: false,
+    how: "reaction_does_not_reference_the_announcement",
+    phrases_considered: phrases.length,
+    sources_searched: haystacks.length,
+  };
 }
 
 /**
@@ -194,6 +214,13 @@ function distinctivePhrases(annText) {
   return [...out].slice(0, 400);
 }
 
+/** Comment bodies for a pair, if they have been fetched already. */
+function commentBodies(pair) {
+  const p = join(HERE, "data-vendor", "reactions", `${pair.observation_id}.json`);
+  if (!existsSync(p)) return [];
+  try { return JSON.parse(readFileSync(p, "utf8")).comments.map((c) => c.body); } catch { return []; }
+}
+
 const raw = JSON.parse(readFileSync(PAIRS, "utf8"));
 const data = {
   ...raw,
@@ -214,7 +241,7 @@ for (const pair of raw.pairs) {
   const doc = screenAnnouncement(got.text);
   if (!doc.ok) { console.log(doc.reason); data.announcement_fetch_log.push({ id: pair.observation_id, ok: false, reason: doc.reason }); await sleep(2500); continue; }
 
-  const match = reactionReferencesAnnouncement(pair, got.text);
+  const match = reactionReferencesAnnouncement(pair, got.text, commentBodies(pair));
   if (!match.ok) {
     console.log(`${match.how} (${match.phrases_considered} phrases considered)`);
     data.announcement_fetch_log.push({ id: pair.observation_id, ok: false, reason: `reaction_mismatch_${match.how}` });
@@ -242,4 +269,6 @@ console.log(`\n--- verified pairs: ${kept.length}/${data.target_n} ---`);
 for (const p of kept) {
   console.log(`  ${p.observation_id}  ${p.vendor.padEnd(12)} ${String(p.announcement.char_count).padStart(6)} chars  r/${p.reaction.subreddit}  ${p.reaction.num_comments}c`);
 }
+
+
 

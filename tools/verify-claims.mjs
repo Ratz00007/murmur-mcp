@@ -69,11 +69,23 @@ const registerCalls = [...toolsIndex.matchAll(/register\w+Tools\(/g)].length;
 const countMatch = toolsIndex.match(/TOOL_COUNT\s*=\s*(\d+)/);
 const declaredCount = countMatch ? Number(countMatch[1]) : null;
 
-/** Count `server.tool(` registrations across the tool modules. */
+/** Count registered MCP tools from the source.
+ *
+ * Each module declares its names in `X_TOOL_NAMES = [...]` and registers them
+ * through a shared helper, so counting registration *calls* undercounts: one
+ * call site can register one tool, and the helper in tasks.ts registers
+ * whatever it is handed. The names arrays are the declaration of record, and
+ * tools.test.ts plus the startup assertToolSurface() already verify those
+ * arrays match what the live server exposes. What this checks is that the
+ * advertised TOOL_COUNT matches the declared names — the drift that used to be
+ * silent.
+ */
 let actualTools = 0;
 for (const f of ["world", "seeds", "ontology", "personas", "sim", "graph", "interact", "report"]) {
   const src = readFileSync(join(MURMUR, "packages", "server", "src", "tools", `${f}.ts`), "utf8");
-  actualTools += [...src.matchAll(/\bserver\.tool\(/g)].length;
+  const m = src.match(/export const \w+_TOOL_NAMES = \[([\s\S]*?)\] as const/);
+  if (!m) throw new Error(`no TOOL_NAMES declaration found in tools/${f}.ts`);
+  actualTools += [...m[1].matchAll(/"([a-z_]+)"/g)].length;
 }
 
 const facts = {

@@ -113,7 +113,10 @@ describe("golden run", () => {
     expect(world.stage).toBe("reported"); // full pipeline incl. report — resumable at this boundary
     const status = engine.worldStatus(storage, world);
     expect(status.counts.posts).toBeGreaterThan(0);
-    expect(status.next).toContain("interview");
+    // The interrogation step survived the 29→11 consolidation as `interact`
+    // (it absorbed interview_agent and report_agent_ask); the receipt must
+    // name the tool that exists, not the retired one.
+    expect(status.next).toContain("interact");
     storage.close();
     fs.rmSync(dir, { recursive: true, force: true });
   });
