@@ -34,6 +34,16 @@ jobs:
       - run: npm run test:coverage
       - run: npm run test:e2e
       - run: npm run cleanroom
+      # Cross-Node determinism (E6): the same seed must produce the same bytes
+      # on every supported Node major. The golden test only proves two runs
+      # agree in one process; this compares against the committed hash. A red
+      # job here means the replay contract is narrower than claimed — do NOT
+      # regenerate the hash to make it green, find the divergence first.
+      # Runs from the repo root: the script resolves everything from its own
+      # path, but the `tools/` directory only exists at root.
+      - name: Cross-Node golden hash must match the committed value
+        run: node tools/golden-hash.mjs
+        working-directory: ${{ github.workspace }}
 
   windows:
     runs-on: windows-latest
@@ -51,6 +61,9 @@ jobs:
       - run: npm run test:coverage
       - run: npm run test:e2e
       - run: npm run cleanroom
+      - name: Cross-Node golden hash must match the committed value
+        run: node tools/golden-hash.mjs
+        working-directory: ${{ github.workspace }}
 
   macos:
     runs-on: macos-latest
@@ -68,6 +81,9 @@ jobs:
       - run: npm run test:coverage
       - run: npm run test:e2e
       - run: npm run cleanroom
+      - name: Cross-Node golden hash must match the committed value
+        run: node tools/golden-hash.mjs
+        working-directory: ${{ github.workspace }}
 
   # A phase of this project was spent "fixing doc lies" and shipped with the
   # test count wrong in the very commit that claimed it fixed — 66 was quoted
@@ -89,6 +105,7 @@ jobs:
         working-directory: murmur
       - name: Fail if any advertised count or tool total is wrong
         run: node tools/verify-claims.mjs
+        working-directory: ${{ github.workspace }}
 
   # Guards the published gallery against drift. A stale copy of report-1.md once
   # shipped citing po_20, a post id absent from the database; the engine's own

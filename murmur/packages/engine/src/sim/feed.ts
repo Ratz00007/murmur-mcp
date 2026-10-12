@@ -74,7 +74,7 @@ export function buildFeed(
     );
     const ranked = candidates
       .map((p) => ({ p, s: twitterScore(p, persona, targetRound, viral, entities) }))
-      .sort((a, b) => b.s - a.s || a.p.id.localeCompare(b.p.id, undefined, { numeric: true }));
+      .sort((a, b) => b.s - a.s || a.p.id.localeCompare(b.p.id, "en", { numeric: true }));
     for (const { p } of ranked.slice(0, perPlatform)) {
       items.push(toDigestItem(p, handles, targetRound));
     }
@@ -86,7 +86,7 @@ export function buildFeed(
     );
     const ranked = candidates
       .map((p) => ({ p, s: redditScore(p, targetRound, config.platforms.reddit.gravity) }))
-      .sort((a, b) => b.s - a.s || a.p.id.localeCompare(b.p.id, undefined, { numeric: true }));
+      .sort((a, b) => b.s - a.s || a.p.id.localeCompare(b.p.id, "en", { numeric: true }));
     for (const { p } of ranked.slice(0, perPlatform)) {
       items.push(toDigestItem(p, handles, targetRound));
       // thread preview: top comments of the hottest threads
@@ -132,3 +132,4 @@ export function trendingEntities(storage: Storage, world: World, targetRound: nu
     .slice(0, k)
     .map(([id]) => byId.get(id)!.name);
 }
+

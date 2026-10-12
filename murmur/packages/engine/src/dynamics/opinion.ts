@@ -115,7 +115,7 @@ export function applyOpinionDynamics(world: World, round: number, params: Opinio
   if (params.personas.length < 2) return result;
 
   // Deterministic population order, then build the directed follow-graph edge list.
-  const ordered = [...params.personas].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+  const ordered = [...params.personas].sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));
   const byId = new Map(ordered.map((p) => [p.id, p]));
   const seenEdge = new Set<string>();
   const edges: { srcId: string; dstId: string }[] = [];
@@ -163,3 +163,4 @@ export function applyOpinionDynamics(world: World, round: number, params: Opinio
   }
   return result;
 }
+

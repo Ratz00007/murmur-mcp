@@ -26,7 +26,7 @@ export interface DerivedEdge {
 /** Deterministic typed-relation derivation over the ontology. */
 export function deriveRelations(entities: Entity[]): DerivedEdge[] {
   // deterministic iteration order
-  const ordered = [...entities].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+  const ordered = [...entities].sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));
   const edges: DerivedEdge[] = [];
   const seen = new Set<string>();
 
@@ -337,5 +337,6 @@ function push2(m: Map<string, string[]>, k: string, v: string): void {
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
+
 
 

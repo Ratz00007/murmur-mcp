@@ -29,5 +29,6 @@ export function activatePersonas(world: World, personas: Persona[], posts: Post[
 
   const k = Math.max(1, Math.min(maxPersonas, Math.ceil(personas.length * 0.4)));
   const sampled = rng.sampleWeighted(items, (i) => i.w, k);
-  return sampled.map((i) => i.id).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  return sampled.map((i) => i.id).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
 }
+

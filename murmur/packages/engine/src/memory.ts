@@ -57,7 +57,7 @@ export function compactIfNeeded(storage: Storage, world: World, persona: Persona
     .filter((m) => m.kind === "event");
   if (events.length <= config.memory.episodicMaxRecords) return { compacted: 0 };
   // oldest first
-  const ordered = [...events].sort((a, b) => a.round - b.round || a.id.localeCompare(b.id, undefined, { numeric: true }));
+  const ordered = [...events].sort((a, b) => a.round - b.round || a.id.localeCompare(b.id, "en", { numeric: true }));
   const toCompact = ordered.slice(0, events.length - config.memory.episodicKeep);
   if (toCompact.length === 0) return { compacted: 0 };
   const salient = [...toCompact].sort((a, b) => b.salience - a.salience || a.round - b.round).slice(0, 5);
@@ -105,3 +105,4 @@ export function collectiveView(
 export function memoryTimeline(storage: Storage, world: World, personaId: string, limit = 40): MemoryRecord[] {
   return storage.listMemories(world.id, { personaId, tier: "episodic", limit });
 }
+

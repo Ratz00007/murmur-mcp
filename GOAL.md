@@ -8,9 +8,9 @@ audit; run a pre-registered benchmark against real observed reactions; and bring
 engineering, protocol conformance, and launch readiness to the highest bar
 achievable today.
 
-**Status:** active — A, B, E1, E4, E5, E7(surface), E8 complete. 262/262
-unit+golden, 2/2 e2e, cleanroom GATE GREEN, lint and coverage gated in CI,
-claim check GREEN at 262 tests and 11 tools. Next: E6, C1, D-arms, F.
+**Status:** active — A, B, E1, E4, E5, E6, E7(surface), E8 complete. 262/262
+unit+golden, 2/2 e2e, cleanroom GATE GREEN, lint/coverage/golden-hash gated in
+CI, claim check GREEN at 262 tests and 11 tools. Next: C1, D-arms, F.
 
 **Replaces:** the prior "Murmur Phase 0 + Phase 1: Ship, Prove, and De-risk"
 goal. Two of its claims are **disproved by direct inspection** and are corrected
@@ -92,7 +92,8 @@ coding session** — by showing its work, including where it is bad.
 - [x] E1 Coverage gated in CI at the measured floor (75/80/75/75); server-tools exclusion removed; lint runs on all three CI legs
 - [x] E4 Biome error-gate + `noUnusedLocals`/`noUnusedParameters`; all seven `void x;` suppressions verified dead and removed, 12 further dead declarations surfaced and fixed
 - [x] E5 Typecheck covers `tests/`, `prompts`, `adapters`, `templates`; 21 test type errors fixed, one API lie corrected (`insertEntities` demanded full `Entity[]` while minting the id itself)
-- [ ] E6 Cross-Node golden hash in CI on 20/22/24 × 3 OSes (promised in the old GOAL, never done)
+- [x] E6 Cross-Node golden hash committed and checked on 20/22/24 × 3 OSes;
+      every `localeCompare` in the deterministic path pins `"en"`
 - [ ] E7 (rest) `elicitation`, `logging` over MCP — verify what the SDK exposes; document what is missing and why
 
 ### F. Launch
@@ -372,6 +373,19 @@ coding session** — by showing its work, including where it is bad.
   to hit a number, the shortfall is recorded and N=3 is used, or the extra
   vendors are given announcements that are unambiguously first-party (a specific
   changelog entry rather than a blog index) and re-run from a fresh selection.
+- 2026-09-28 — **E6 complete: the replay contract is now proven across
+  runtimes, not just within one process.** The golden test only shows two runs
+  agreeing in the same process; ICU collation, Math internals, and key ordering
+  can all differ across Node majors. Twelve `localeCompare` call sites in the
+  deterministic path used the system default locale, which varies by OS as well
+  as by Node — all pin `"en"` now (no output change locally, confirmed by the
+  still-green byte-identical replay). `tools/golden-hash.mjs` runs a fixed
+  pipeline and compares against `bench/golden-hash.txt`; CI runs it on Node 20,
+  22, 24 × ubuntu/windows/macos. The script refuses to paper over a red result:
+  regenerating the hash to make CI green is forbidden by its own output text.
+  Also fixed a latent CI bug found while wiring it up: the claims job ran
+  `node tools/verify-claims.mjs` with the murmur working directory, where no
+  `tools/` exists — both root-level script steps now pin the workspace root.
 - 2026-09-28 — **D1 resolved downward, and this is the most important finding in
   the whole effort. Only ONE valid pair exists, and the corpus cannot produce
   more.** The earlier "5 verified" was partly false.

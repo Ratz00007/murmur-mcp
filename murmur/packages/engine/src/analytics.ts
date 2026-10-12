@@ -167,7 +167,7 @@ export function factionAnalysis(storage: Storage, world: World, focus: Entity | 
     const signMatch = (p: Post) => (sign === 0 ? Math.abs(attr(p)) <= 0.25 : sign * attr(p) > 0.15);
     const byEngagement = own
       .slice()
-      .sort((a, b) => engagementOf(b) - engagementOf(a) || a.id.localeCompare(b.id, undefined, { numeric: true }));
+      .sort((a, b) => engagementOf(b) - engagementOf(a) || a.id.localeCompare(b.id, "en", { numeric: true }));
     const usedAuthors = new Set<string>();
     const chosen: Post[] = [];
     const claim = (pool: Post[], needMention: boolean, needSign: boolean) => {
@@ -368,10 +368,10 @@ export function personaArcs(storage: Storage, world: World, focus: Entity | null
       pool
         .slice()
         .filter((x) => !exclude?.has(x.id))
-        .sort((a, b) => engagementOf(b) - engagementOf(a) || a.id.localeCompare(b.id, undefined, { numeric: true }))[0] ??
+        .sort((a, b) => engagementOf(b) - engagementOf(a) || a.id.localeCompare(b.id, "en", { numeric: true }))[0] ??
       pool
         .slice()
-        .sort((a, b) => engagementOf(b) - engagementOf(a) || a.id.localeCompare(b.id, undefined, { numeric: true }))[0];
+        .sort((a, b) => engagementOf(b) - engagementOf(a) || a.id.localeCompare(b.id, "en", { numeric: true }))[0];
     const arcLabel = focus
       ? delta <= -0.12
         ? `soured on ${focusName}`
@@ -442,7 +442,7 @@ export function quoteBank(storage: Storage, world: World, focus: Entity | null, 
   const take = (filter: (a: number) => boolean) => {
     const inBucket = posts
       .filter((x) => filter(x.a))
-      .sort((a, b) => b.e - a.e || a.p.id.localeCompare(b.p.id, undefined, { numeric: true }));
+      .sort((a, b) => b.e - a.e || a.p.id.localeCompare(b.p.id, "en", { numeric: true }));
     const used = new Set<string>();
     const chosen: typeof posts = [];
     for (const x of inBucket) {
@@ -485,7 +485,7 @@ export function narrativeTimeline(storage: Storage, world: World, limit = 8): Ti
   const posts = storage
     .listPosts(world.id, { limit: 100000 })
     .filter((p) => p.kind !== "repost")
-    .sort((a, b) => a.round - b.round || a.id.localeCompare(b.id, undefined, { numeric: true }));
+    .sort((a, b) => a.round - b.round || a.id.localeCompare(b.id, "en", { numeric: true }));
   const moments: TimelineMoment[] = [];
 
   for (const ev of storage.listEvents(world.id, { type: "injection" }).sort((a, b) => a.round - b.round)) {
@@ -604,7 +604,7 @@ export function amplification(storage: Storage, world: World): AmplificationInfo
   }
   const viralPosts = posts
     .filter((p) => p.platform === "twitter" && p.kind !== "repost" && engagementOf(p) >= threshold)
-    .sort((a, b) => engagementOf(b) - engagementOf(a) || a.id.localeCompare(b.id, undefined, { numeric: true }))
+    .sort((a, b) => engagementOf(b) - engagementOf(a) || a.id.localeCompare(b.id, "en", { numeric: true }))
     .slice(0, 5)
     .map((p) => ({
       id: p.id,
@@ -682,3 +682,4 @@ export function entityTrends(
     .filter((t) => t.volume > 0)
     .slice(0, limit);
 }
+

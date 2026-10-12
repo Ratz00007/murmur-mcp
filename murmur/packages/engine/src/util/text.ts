@@ -50,7 +50,7 @@ export function keywordFreq(text: string): Map<string, number> {
 }
 
 export function topKeywords(text: string, k: number): [string, number][] {
-  return [...keywordFreq(text).entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, k);
+  return [...keywordFreq(text).entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "en")).slice(0, k);
 }
 
 /** Approximate sentence split on terminal punctuation. */

@@ -28,7 +28,7 @@ export function computeMovers(storage: Storage, world: World, resolve: (id: stri
     if (arr) arr.push(p);
     else byPersona.set(p.personaId, [p]);
   }
-  for (const [personaId, posts] of [...byPersona.entries()].sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))) {
+  for (const [personaId, posts] of [...byPersona.entries()].sort((a, b) => a[0].localeCompare(b[0], "en", { numeric: true }))) {
     const persona = resolve(personaId);
     if (!persona) continue;
     const entities2 = entities;
@@ -158,7 +158,7 @@ export function escalationChains(storage: Storage, world: World, round: number, 
   const chains: EscalationChain[] = [];
   const walk = (path: Post[]) => {
     const leaf = path[path.length - 1];
-    const kids = (children.get(leaf.id) ?? []).sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+    const kids = (children.get(leaf.id) ?? []).sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));
     if (kids.length === 0) {
       if (path.length >= 3) {
         const sentiments = path.map((p) => postSentiment(p));
@@ -179,7 +179,7 @@ export function escalationChains(storage: Storage, world: World, round: number, 
     }
     for (const k of kids) walk([...path, k]);
   };
-  for (const r of roots.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }))) walk([r]);
+  for (const r of roots.sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }))) walk([r]);
   return chains.sort((a, b) => b.severity - a.severity || a.rootId.localeCompare(b.rootId)).slice(0, top);
 }
 
@@ -282,4 +282,5 @@ export function topPostsByEngagement(storage: Storage, world: World, limit = 10,
     .slice(0, limit)
     .map((s) => ({ post: s.post, sentiment: round2Safe(s.sentiment) }));
 }
+
 

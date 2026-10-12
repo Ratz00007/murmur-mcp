@@ -434,7 +434,7 @@ function organicEngagement(
     if (eligible.length === 0) continue;
     const cap = Math.max(2, Math.floor(eligible.length * cfg.organicCapPerPost));
     let engaged = 0;
-    for (const viewer of [...eligible].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }))) {
+    for (const viewer of [...eligible].sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }))) {
       const align = alignment(viewer, post);
       const affinity = viewer.follows.includes(post.personaId) ? 1 : 0.25;
       const pEngage = cfg.organicLikeBase + 0.22 * affinity + 0.18 * Math.abs(align);
@@ -512,7 +512,7 @@ function organicEngagement(
           Math.min(cas.maxProb, cas.base + (cas.factor * engagementScore(post.metrics)) / threshold) *
           cas.attenuation ** (hop - 1);
         const hopRng = streamRng(world.seed, `cascade:${round}:${post.id}:${hop}`);
-        const ordered = [...frontier.values()].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+        const ordered = [...frontier.values()].sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));
         frontier = new Map();
         for (const viewer of ordered) {
           if (seen.has(viewer.id)) continue;
@@ -608,3 +608,4 @@ function checkVirality(storage: Storage, world: World, round: number, newPosts: 
   }
   return viral;
 }
+
