@@ -1,0 +1,40 @@
+{
+  "protocol": "PROTOCOL.md (sealed e700a3e, amended 79045c2/42ef5d5/7157960)",
+  "observation_id": "v4",
+  "scored_at": "2026-09-28",
+  "method": "Two independent scorings of the same arms against the same thread. Scorer 1 (operator) wrote the sealed key before either arm ran. Scorer 2 (fresh agent) was given ONLY the rubric + raw materials (announcement, comments, arm outputs) and was forbidden from reading scorer 1's key or score. Neither scorer saw the other's work.",
+  "scorer_1_operator": {
+    "ground_truth": ["No clear exit path off Scaleway (oissbbr)"],
+    "count": 1,
+    "arm_a_matches": [7],
+    "arm_b_matches": [2],
+    "recall_at_10": { "A": 1.0, "B": 1.0 },
+    "difference": 0.0
+  },
+  "scorer_2_independent": {
+    "ground_truth": [
+      "On-premise hosting still cheaper than cloud (oir2k1y)",
+      "Large cloud migrations face cost blowout (oiqq0eo, corroborated oiqqiim)"
+    ],
+    "count": 2,
+    "arm_a_matches": [],
+    "arm_b_matches": [],
+    "recall_at_10": { "A": 0.0, "B": 0.0 },
+    "difference": 0.0,
+    "key_disagreements_with_scorer_1": [
+      "Scorer 2 EXCLUDES scorer 1's exit-path objection: reads oissbbr as a portability question without critique, not a complaint.",
+      "Scorer 2 INCLUDES two objections scorer 1 excluded as non-specific: on-prem-wins and migration-timing risk, read as direct reactions stating an alternative/decision.",
+      "Scorer 2 rejects scorer 1's Arm A#7 and Arm B#2 matches on directionality: inability to LEAVE is the opposite direction from cost of moving TO cloud."
+    ]
+  },
+  "agreement_analysis": {
+    "kill_criterion_verdict": "NOT MET under BOTH scorings (difference 0.0 in both).",
+    "why_this_strengthens_the_conclusion": "The two scorers disagree substantially on WHAT the ground truth is — different sets, different matches, opposite recall levels (1.0/1.0 vs 0.0/0.0) — yet agree exactly on the decision-relevant number: the arm difference is 0.0 either way. Inter-rater disagreement on the answer key at N=1 with a thin thread is itself evidence the benchmark cannot resolve a 0.15 difference here.",
+    "what_would_change_this": "N large enough that (a) the ground-truth set stabilizes across scorers and (b) a 0.15 recall gap exceeds inter-rater noise. Neither holds at N=1."
+  },
+  "artifacts": {
+    "answer_key_scorer_1": "bench/data-vendor/ground-truth/v4.json",
+    "score_scorer_1": "bench/data-vendor/arms/v4-score.json",
+    "this_file": "bench/data-vendor/arms/v4-score-scorer-2.json"
+  }
+}

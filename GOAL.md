@@ -524,3 +524,12 @@ coding session** â€” by showing its work, including where it is bad.
 
 - 2026-09-28 — **Final verification pass: all six gates re-confirmed green on the committed tree.** 270/270 unit+golden · typecheck exit 0 · lint error-gate clean · 2/2 e2e · cleanroom GATE GREEN · claim check GREEN (270 tests, 11 tools) · golden hash GREEN. No code changes; working tree was and remains clean. Everything in the success criteria that does not require the user is complete and verified.
 
+
+- 2026-09-28 — **Both blocked roles executed to the limit of what is possible without the user.**
+
+  **Publisher role.** Name confirmed unclaimed (
+pm view murmur-mcp ? 404). Tarball dry-run clean: 7 files (dist, README, LICENSE, NOTICE, CHANGELOG, package.json), no src/ts/env/fixtures, no stray .tgz left behind. Metadata correct (repository/homepage/bugs ? public repo, files, bin). Release workflow verified: gated on full CI, publishes with provenance via OIDC, version-tag guard. The ONLY remaining steps need the user: 
+pm login (or set the NPM_TOKEN secret) and push tag v1.0.0 — the CI path is recommended over manual publish so provenance is GitHub-attested rather than locally-signed.
+
+  **Second-scorer role.** A fresh agent rescored blind with only the rubric + raw materials, forbidden from reading the sealed key. It returned a GENUINELY different scoring: 2 ground-truth objections (on-prem-cheaper, migration-blowout) vs the operator's 1 (exit path); it excludes the operator's objection as a question-without-critique and rejects both arm matches on directionality. Result: recall@10 0.0 vs 0.0, difference 0.0 — kill criterion NOT MET under BOTH scorings. The scorers disagree on everything except the decision-relevant number, which is itself evidence N=1 cannot resolve a 0.15 gap. Recorded in bench/data-vendor/arms/v4-score-scorer-2.json with the full agreement analysis.
+
