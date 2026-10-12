@@ -19,7 +19,6 @@ import {
   type Entity,
   type Persona,
   type SimGeneration,
-  type World,
 } from "@murmur/engine";
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "murmur-cascade-"));
@@ -84,8 +83,8 @@ function runRound(): RoundOutcome {
   const C = nonAuthor.slice(2, 6);
   const D = nonAuthor.slice(6, 8);
   for (const id of B) db.patchPersona(world2.id, id, { follows: [author] });
-  C.forEach((id, i) => db.patchPersona(world2.id, id, { follows: [B[i % 2]] }));
-  D.forEach((id, i) => db.patchPersona(world2.id, id, { follows: [C[i]] }));
+  for (const [i, id] of C.entries()) db.patchPersona(world2.id, id, { follows: [B[i % 2]] });
+  for (const [i, id] of D.entries()) db.patchPersona(world2.id, id, { follows: [C[i]] });
 
   const subs: SimGeneration[] = activated.map((id) =>
     id === author

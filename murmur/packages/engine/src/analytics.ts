@@ -8,6 +8,7 @@
 import type { Entity, EscalationChain, Persona, Post, World } from "./types.js";
 import type { Storage } from "./store/storage.js";
 import { engagementPeaks, postSentiment, timeline, type TimelineRow } from "./aggregate.js";
+export type { TimelineRow };
 import { scoreSentiment } from "./sentiment.js";
 import { engagementScore } from "./util/engagement.js";
 import { clamp, round2Safe, truncate } from "./util/text.js";

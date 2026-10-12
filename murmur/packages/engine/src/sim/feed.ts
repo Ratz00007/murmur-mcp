@@ -26,7 +26,7 @@ export function twitterScore(post: Post, viewer: Persona, targetRound: number, v
 export function redditScore(post: Post, targetRound: number, gravity: number): number {
   const age = targetRound - post.round;
   const score = post.metrics.upvotes - post.metrics.downvotes + 1;
-  return score / Math.pow(age + 2, gravity);
+  return score / (age + 2) ** gravity;
 }
 
 function stanceSalience(post: Post, viewer: Persona, entities: Entity[]): number {

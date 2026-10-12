@@ -245,13 +245,19 @@ export function verifyNumericClaims(
     { ref: "trajectory", text: draft.trajectory ?? "" },
     { ref: "scenarioRecap", text: draft.scenarioRecap ?? "" },
   ];
-  (draft.keyFindings ?? []).forEach((f, i) => fields.push({ ref: `keyFindings[${i}]`, text: String(f ?? "") }));
-  (draft.risks ?? []).forEach((r, i) => {
+  for (const [i, f] of (draft.keyFindings ?? []).entries()) {
+    fields.push({ ref: `keyFindings[${i}]`, text: String(f ?? "") });
+  }
+  for (const [i, r] of (draft.risks ?? []).entries()) {
     fields.push({ ref: `risks[${i}].rationale`, text: r?.rationale ?? "" });
     fields.push({ ref: `risks[${i}].title`, text: r?.title ?? "" });
-  });
-  (draft.confidence?.strongSignals ?? []).forEach((s, i) => fields.push({ ref: `confidence.strongSignals[${i}]`, text: String(s ?? "") }));
-  (draft.confidence?.contested ?? []).forEach((s, i) => fields.push({ ref: `confidence.contested[${i}]`, text: String(s ?? "") }));
+  }
+  for (const [i, s] of (draft.confidence?.strongSignals ?? []).entries()) {
+    fields.push({ ref: `confidence.strongSignals[${i}]`, text: String(s ?? "") });
+  }
+  for (const [i, s] of (draft.confidence?.contested ?? []).entries()) {
+    fields.push({ ref: `confidence.contested[${i}]`, text: String(s ?? "") });
+  }
 
   const claims: NumericClaim[] = [];
   const unverified: NumericClaim[] = [];

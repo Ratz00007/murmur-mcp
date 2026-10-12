@@ -109,7 +109,6 @@ export async function runCli(argv: string[]): Promise<number> {
     }
     case "init": {
       const server = resolveServerCommand(cwd);
-      let wrote: string[] = [];
       if (typeof flags.template === "string") {
         const scenario = findScenario(flags.template);
         if (!scenario) {
@@ -118,7 +117,6 @@ export async function runCli(argv: string[]): Promise<number> {
         }
         const file = path.join(cwd, `scenario-${scenario.id}.md`);
         fs.writeFileSync(file, scenario.markdown, "utf8");
-        wrote.push(file);
         process.stdout.write(`✓ wrote ${path.basename(file)} — fill the {{PLACEHOLDERS}}, attach it as a seed, then run /murmur-predict\n`);
         process.stdout.write(`  suggested: ${scenario.suggested.rounds} rounds · ${scenario.suggested.personas} personas\n`);
       }
@@ -142,7 +140,6 @@ export async function runCli(argv: string[]): Promise<number> {
             fs.mkdirSync(path.dirname(target), { recursive: true });
             fs.writeFileSync(target, client.configSnippet(server) + "\n", "utf8");
             process.stdout.write(`✓ wrote ${path.relative(cwd, target)}\n`);
-            wrote.push(target);
           } else if (target) {
             process.stdout.write(`! ${path.relative(cwd, target)} already exists — merge the snippet above manually (do not let a tool overwrite your config)\n`);
           } else {
@@ -156,8 +153,6 @@ export async function runCli(argv: string[]): Promise<number> {
         }
         process.stdout.write("\nTemplates: murmur-mcp templates\nDiagnostics: murmur-mcp doctor\n");
       }
-      void wrote;
-      wrote = [];
       return 0;
     }
     case "serve":

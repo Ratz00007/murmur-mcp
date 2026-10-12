@@ -92,7 +92,7 @@ export interface OntologySubmitResult {
   skippedExisting: string[];
 }
 
-export function applyOntology(storage: Storage, world: World, taskId: string, submitted: unknown): OntologySubmitResult {
+export function applyOntology(storage: Storage, world: World, _taskId: string, submitted: unknown): OntologySubmitResult {
   const payload = normalizeSubmission(submitted);
   const rawEntities = Array.isArray(payload) ? payload : Array.isArray(payload?.entities) ? payload.entities : null;
   if (!rawEntities) {
@@ -112,7 +112,7 @@ export function applyOntology(storage: Storage, world: World, taskId: string, su
       rejected.push({ ref, field: "name", message: `duplicate name in submission: ${name}` });
       return;
     }
-    let type = typeof e?.type === "string" ? e.type.trim().toLowerCase() : "topic";
+    const type = typeof e?.type === "string" ? e.type.trim().toLowerCase() : "topic";
     if (!(ENTITY_TYPES as readonly string[]).includes(type)) {
       rejected.push({ ref, field: "type", message: `unknown type "${e?.type}"`, hint: `use one of ${ENTITY_TYPES.join("|")} — defaulting would hide typos, so fix and retry` });
       return;

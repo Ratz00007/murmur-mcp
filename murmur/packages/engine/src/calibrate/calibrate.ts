@@ -65,7 +65,7 @@ export function calibrate<P extends Record<string, number>>(
   for (let iter = 0; iter < Math.max(0, Math.floor(iters)); iter++) {
     for (const key of keys) {
       const { min, max } = bounds[key];
-      const step = (max - min) / Math.pow(2, iter + 1);
+      const step = (max - min) / 2 ** (iter + 1);
       for (const dir of [1, -1]) {
         const candidate = { ...current };
         candidate[key] = clampTo(key, (current[key] as number) + dir * step) as P[keyof P];

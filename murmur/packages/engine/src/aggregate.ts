@@ -207,7 +207,7 @@ export function leaderboards(storage: Storage, world: World, limit = 10): Leader
       (a, x) => a + engagementScore(x.metrics),
       0
     );
-    const given = own.reduce((a, x) => a + 0, 0); // generated votes are metric bumps on others' posts
+    const given = 0; // generated votes are metric bumps on others' posts, never on their own
     return { personaId: p.id, handle: p.handle, name: p.name, archetype: p.archetype, posts: own.length, engagementReceived: received, engagementGiven: given };
   });
   return rows.sort((a, b) => b.engagementReceived - a.engagementReceived || a.personaId.localeCompare(b.personaId)).slice(0, limit);

@@ -95,6 +95,7 @@ function extractTextOps(content: string): string {
     /\[((?:\\.|[^\]\\])*)\]\s*TJ|\(((?:\\.|[^()\\])*)\)\s*(?:Tj|'|")|<([0-9A-Fa-f\s]+)>\s*(?:Tj|TJ)|(\n)/g;
   let out = "";
   let m: RegExpExecArray | null;
+  // biome-ignore lint/suspicious/noAssignInExpressions: exec-advance is the standard global-regex idiom; the assignment IS the iteration.
   while ((m = re.exec(marked)) !== null) {
     if (m[4] !== undefined) {
       out += "\n";
@@ -114,6 +115,7 @@ function parsePdfStrings(body: string): string[] {
   const re = /\(((?:\\.|[^()\\])*)\)|<([0-9A-Fa-f\s]+)>/g;
   const out: string[] = [];
   let m: RegExpExecArray | null;
+  // biome-ignore lint/suspicious/noAssignInExpressions: same exec-advance idiom as above.
   while ((m = re.exec(body)) !== null) {
     out.push(m[1] !== undefined ? unescapePdfString(m[1]) : decodeHexMaybeUtf16(m[2]));
   }

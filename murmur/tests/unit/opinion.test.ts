@@ -248,7 +248,7 @@ describe("applyOpinionDynamics — determinism", () => {
     // draw to a different stream — silently changing every recorded run — fails
     // here rather than in a golden replay weeks later.
     const personas = build();
-    const direct = deffuantUpdate(0.9, -0.9, { epsilon: 0.4, rng: streamRng("seed-a:dynamics:2:0") });
+    const direct = deffuantUpdate(0.9, -0.9, { epsilon: 0.4, rng: streamRng("seed-a", "dynamics:2:0") });
     expect(typeof direct.outcome).toBe("string");
 
     const run = applyOpinionDynamics(world("seed-a"), 2, { personas });

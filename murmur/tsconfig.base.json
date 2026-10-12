@@ -12,6 +12,12 @@
     "isolatedModules": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
+    // Unused locals and parameters fail the build. The `void x;` suppressions
+    // that used to stand in for this hid genuinely dead code (an unbuilt
+    // lookup map, an uncalled-for parameter, a write-only array); every one
+    // was removed or renamed with a leading underscore instead.
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "types": ["node"]
   }
 }

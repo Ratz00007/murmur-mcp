@@ -28,13 +28,20 @@ export default defineConfig({
         "packages/server/src/index.ts",
         "packages/server/src/logging.ts",
         "packages/server/src/prompts.ts",
-        "packages/server/src/tools/**",
+        // NOTE: packages/server/src/tools/** is deliberately INCLUDED. It is
+        // the least-tested code in the repo and excluding it would inflate the
+        // headline number while hiding exactly the code the gate should watch.
       ],
+      // Measured baseline is ~78% statements with the server tools included
+      // (cli.ts, doctor.ts and the interact/session paths were at 0% before
+      // server-cli.test.ts). The gate sits just below it so it ratchets:
+      // any change that drops coverage fails, and raising the numbers is
+      // always welcome. Do not raise these without the tests that earn it.
       thresholds: {
-        statements: 0,
-        branches: 0,
-        functions: 0,
-        lines: 0,
+        statements: 75,
+        branches: 80,
+        functions: 75,
+        lines: 75,
       },
     },
     projects: [

@@ -217,7 +217,7 @@ function timeline_(ctx: ServerContext, world?: string) {
 
 async function fillViaSampling(
   ctx: ServerContext,
-  worldId: string,
+  _worldId: string,
   task: { items: { id: string; payload: Record<string, unknown>; label: string }[] },
   subs: SimGeneration[]
 ): Promise<{ subs: SimGeneration[]; added: number }> {
@@ -245,6 +245,5 @@ async function fillViaSampling(
       // sampling failed for this persona — it will simply lurk
     }
   }
-  void worldId;
   return { subs: out, added };
 }

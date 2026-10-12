@@ -57,7 +57,7 @@ export function topKeywords(text: string, k: number): [string, number][] {
 export function splitSentences(text: string): string[] {
   return text
     .replace(/\s+/g, " ")
-    .split(/(?<=[.!?])\s+(?=[A-Z0-9"'(\[])/)
+    .split(/(?<=[.!?])\s+(?=[A-Z0-9"'([])/)
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
 }

@@ -27,7 +27,7 @@ export function hashHex(s: string): string {
 /** mulberry32 PRNG factory — returns floats in [0, 1). */
 export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
-  return function () {
+  return () => {
     a |= 0;
     a = (a + 0x6d2b79f5) | 0;
     let t = Math.imul(a ^ (a >>> 15), 1 | a);

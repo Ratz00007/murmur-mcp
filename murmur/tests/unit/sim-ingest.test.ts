@@ -24,7 +24,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { Storage, nowIso, openDatabase } from "@murmur/engine";
-import type { Entity, GenerationTask, Persona, SimAction, SimGeneration, World } from "@murmur/engine";
+import type { GenerationTask, Persona, SimAction, SimGeneration, World } from "@murmur/engine";
 import { submitGenerations } from "../../packages/engine/src/sim/ingest.js";
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "murmur-ingest-"));
@@ -57,10 +57,10 @@ function fixture(over: { rounds?: number; threadDepth?: number } = {}): Fx {
   const world = db.createWorld({ name: "ingest world", seed: "ingest-1" });
   db.insertEntities(world.id, [
     { name: "Acme Cloud", type: "org", description: "d", salience: 0.9, anchors: [], motives: [] },
-  ] as Entity[]);
+  ]);
   const entities = db.listEntities(world.id);
   const acme = entities[0].id;
-  const mk = (i: number, platform: Persona["platform"]): Omit<Persona, "worldId" | "createdAt"> => ({
+  const mk = (i: number, platform: Persona["platform"]): Omit<Persona, "id" | "worldId" | "createdAt"> => ({
     name: `P${i}`,
     handle: `@p${i}`,
     archetype: "casual",
@@ -162,10 +162,6 @@ function onlyAct(fx: Fx, actives: Record<string, SimAction[]>, extra: SimGenerat
     ...fx.activated.map((id) => ({ persona: id, actions: actives[id] ?? [] })),
     ...extra,
   ];
-}
-
-function refs(errors: { ref: string; field?: string }[]): string[] {
-  return errors.map((e) => `${e.ref}/${e.field ?? "-"}`);
 }
 
 describe("sim ingest — persona resolution", () => {
@@ -386,7 +382,9 @@ describe("sim ingest — character limits", () => {
     const noTitle = submit(fx, [{ persona: rd, actions: [{ type: "post", platform: "reddit", body: "b" }] }]);
     expect(noTitle.rejected.some((e) => e.message === "reddit post requires a title")).toBe(true);
 
-    const noBody = submit(fx, [{ persona: rd, actions: [{ type: "post", platform: "reddit", title: "t" }] }]);
+    // Deliberately invalid: the missing body is what is under test, so the
+    // literal is cast at exactly this spot rather than loosening SimAction.
+    const noBody = submit(fx, [{ persona: rd, actions: [{ type: "post", platform: "reddit", title: "t" } as SimAction] }]);
     expect(noBody.rejected.some((e) => e.message === "reddit post requires a body")).toBe(true);
 
     const longTitle = submit(fx, [
@@ -695,7 +693,7 @@ describe("sim ingest — applied actions", () => {
     expect(post.mentions).toHaveLength(1);
     expect(post.mentions[0].score).toBeGreaterThan(0);
     expect(post.threadId).toBe(post.id);
-    expect(post.impressions ?? post.metrics.impressions).toBeGreaterThan(0);
+    expect(post.metrics.impressions).toBeGreaterThan(0);
     cleanup(fx);
   });
 

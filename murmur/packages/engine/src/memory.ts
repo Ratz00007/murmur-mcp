@@ -14,7 +14,7 @@ export interface WorkingMemory {
   tokens: number;
 }
 
-export function workingMemory(storage: Storage, world: World, persona: Persona, targetRound: number, config: MurmurConfig): WorkingMemory {
+export function workingMemory(storage: Storage, world: World, persona: Persona, _targetRound: number, config: MurmurConfig): WorkingMemory {
   const episodic = storage.listMemories(world.id, { personaId: persona.id, tier: "episodic", limit: 60 });
   const summaries = episodic.filter((m) => m.kind === "summary");
   const events = episodic.filter((m) => m.kind === "event").slice(0, 30);
@@ -51,7 +51,6 @@ export function appendEpisodic(
  * interviews re-expand from those.
  */
 export function compactIfNeeded(storage: Storage, world: World, persona: Persona, config: MurmurConfig): { compacted: number } {
-  const count = storage.countMemories(world.id, persona.id, "episodic");
   // summary records count toward the budget too — only event records compact
   const events = storage
     .listMemories(world.id, { personaId: persona.id, tier: "episodic", limit: 100000 })

@@ -462,7 +462,7 @@ export function renderReportHtml(storage: Storage, world: World, report: ReportR
     const colors = ["#4da8da", "#3ddc97", "#ffbe5c"];
     const series = D.charted.map((e, i) => ({ name: e.name, color: colors[i % colors.length], points: sentimentCurve(storage, world, e), width: D.focusEntity && e.id === D.focusEntity.id ? 2.6 : 2 }));
     H.push(`<div class="panel"><h4>Sentiment toward the top entities</h4>${sentimentLineChart(series, world.round)}`);
-    H.push(`<div class="legend">${series.map((s, i) => `<span><i class="dot" style="background:${s.color}"></i>${esc(s.name)}${D.focusEntity && s.name === D.focusEntity.name ? " (focus)" : ""}</span>`).join("")}</div></div>`);
+    H.push(`<div class="legend">${series.map((s) => `<span><i class="dot" style="background:${s.color}"></i>${esc(s.name)}${D.focusEntity && s.name === D.focusEntity.name ? " (focus)" : ""}</span>`).join("")}</div></div>`);
   }
   if (D.trends.length > 0) {
     const arrow = (dir: string) => (dir === "up" ? "▲" : dir === "down" ? "▼" : "■");

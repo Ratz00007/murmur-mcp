@@ -105,7 +105,7 @@ export const SLOPE_JITTER = 0.06;
  *
  * Returns per-refit trajectories ready for sensitivityIntervals().
  */
-export function projectionRefits(seed: string, count: number, curve: TrajectoryPoint[], projection: Projection, ahead = 2): TrajectoryPoint[][] {
+export function projectionRefits(seed: string, count: number, curve: TrajectoryPoint[], _projection: Projection, ahead = 2): TrajectoryPoint[][] {
   const n = Math.max(1, Math.min(MAX_SENSITIVITY_REFITS, Math.floor(count)));
   if (curve.length < 2 || n <= 0) return [];
   const sx = curve.reduce((a, p) => a + p.round, 0);
@@ -118,7 +118,9 @@ export function projectionRefits(seed: string, count: number, curve: TrajectoryP
   const xBar = sx / m;
   const yBar = sy / m;
   const lastRound = curve[curve.length - 1].round;
-  void projection; // fitted slope re-derived here so the jitter is exact
+  // _projection is accepted but not read: the fitted slope is re-derived here
+  // so the jitter is exact, and keeping the parameter documents that the
+  // caller already holds a projection for the same curve.
   return refitSpread(seed, n, (refitSeed) => {
     const rng = streamRng(refitSeed, "projection");
     const jitteredSlope = slope + (rng.float() * 2 - 1) * SLOPE_JITTER;

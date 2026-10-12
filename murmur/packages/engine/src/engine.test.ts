@@ -281,6 +281,7 @@ describe("storage", () => {
     });
     const { inserted, skipped } = db.insertEntities(world.id, [mk("Acme Cloud", "org", 0.9), mk("Pricing", "topic", 0.7)]);
     expect(inserted.length).toBe(2);
+    expect(skipped).toEqual([]);
     expect(db.listEntities(world.id).length).toBe(2);
     const again = db.insertEntities(world.id, [mk("Acme Cloud", "org", 0.9), mk("API", "topic", 0.5)]);
     expect(again.inserted.length).toBe(1);

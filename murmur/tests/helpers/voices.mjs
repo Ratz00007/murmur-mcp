@@ -146,7 +146,7 @@ export const VOICES = {
     },
     reply: {
       agree: ['"{frag}" — this is the sharpest read in the thread. {topic} was always a communication failure more than a product one.', "Agreed, and I'd add the data point everyone's missing: renewals are tracking fine. The {topic} panic is an engagement artifact."],
-      disagree: ['"{frag}" doesn\'t survive contact with procurement reality. {topic} switching costs are the moat, not the pricing page.', "Respectfully: you\'re reading the {topic} sentiment as signal when it\'s mostly performance. The renewals data tells a calmer story."],
+      disagree: ['"{frag}" doesn\'t survive contact with procurement reality. {topic} switching costs are the moat, not the pricing page.', "Respectfully: you're reading the {topic} sentiment as signal when it's mostly performance. The renewals data tells a calmer story."],
       neutral: ["The {topic} truth is somewhere between this thread's doom and the fanboys' denial. I'd want renewal cohort data before calling it."],
     },
     comment: {
@@ -236,7 +236,7 @@ export const VOICES = {
     },
     reply: {
       agree: ['"{frag}" — finally a take that cost more than two brain cells to produce. The {topic} discourse thanks you.', "Correct on {topic}. Screenshotting this for the next time this exact thread happens, which is Tuesday."],
-      disagree: ['"{frag}" is the kind of confident wrong that gets likes. Show me the {topic} churn data or admit this is theater.', "Counterpoint on {topic}: you\'re pattern-matching to the last outrage instead of reading this one. They\'re not the same, and it matters."],
+      disagree: ['"{frag}" is the kind of confident wrong that gets likes. Show me the {topic} churn data or admit this is theater.', "Counterpoint on {topic}: you're pattern-matching to the last outrage instead of reading this one. They're not the same, and it matters."],
       neutral: ["The {topic} truth, as usual, is boring: mild downside, mild upside, everyone alive to complain about it tomorrow."],
     },
     comment: {

@@ -13,7 +13,6 @@ import {
   type MurmurConfig,
   type Persona,
   type Platform,
-  type Relation,
   type World,
 } from "./types.js";
 import { clamp, estTokens, nowIso, round2Safe, slugify, truncate } from "./util/text.js";
@@ -131,7 +130,7 @@ export interface PersonasSubmitResult {
   archetypeBreakdown: Record<string, number>;
 }
 
-export function applyPersonas(storage: Storage, world: World, taskId: string, submitted: unknown): PersonasSubmitResult {
+export function applyPersonas(storage: Storage, world: World, _taskId: string, submitted: unknown): PersonasSubmitResult {
   const payload = submitted as Record<string, unknown>;
   const raw = Array.isArray(payload) ? payload : Array.isArray(payload?.personas) ? payload.personas : null;
   if (!raw) throw new Error('submission must be { "personas": [...] }');

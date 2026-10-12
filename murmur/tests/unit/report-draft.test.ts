@@ -56,7 +56,7 @@ function fixture(): { db: Storage; world: World; focus: Entity; postIds: string[
   const world = db.createWorld({ name: "draft world", seed: "draft-1" });
   const { inserted } = db.insertEntities(world.id, [
     { name: "Acme Cloud", type: "org", description: "d", salience: 0.9, anchors: [], motives: [] },
-  ] as Entity[]);
+  ]);
   const focus = inserted[0];
   // Posts carry a persona foreign key, so the population has to exist first.
   db.insertPersonas(world.id, [

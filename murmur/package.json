@@ -18,7 +18,9 @@
   "scripts": {
     "prepare": "npm run build",
     "build": "npm run build -w @murmur/engine && npm run build -w @murmur/prompts && npm run build -w @murmur/adapters && npm run build -w @murmur/templates && npm run build -w murmur-mcp",
-    "typecheck": "npm run build:libs && tsc -p packages/engine/tsconfig.json && tsc -p packages/server/tsconfig.json",
+    "typecheck": "npm run build:libs && tsc -p packages/engine/tsconfig.json && tsc -p packages/server/tsconfig.json && tsc -p packages/prompts/tsconfig.json && tsc -p packages/adapters/tsconfig.json && tsc -p packages/templates/tsconfig.json && tsc -p tsconfig.tests.json",
+    "lint": "biome lint packages tests",
+    "test:coverage": "vitest run --project unit --project golden --coverage",
     "build:libs": "npm run build -w @murmur/engine && npm run build -w @murmur/prompts && npm run build -w @murmur/adapters && npm run build -w @murmur/templates",
     "test": "vitest run --project unit --project golden",
     "test:e2e": "npm run build && vitest run --project e2e",
@@ -28,6 +30,7 @@
     "clean": "node -e \"require('node:fs').rmSync('packages/engine/dist',{recursive:true,force:true});require('node:fs').rmSync('packages/prompts/dist',{recursive:true,force:true});require('node:fs').rmSync('packages/adapters/dist',{recursive:true,force:true});require('node:fs').rmSync('packages/templates/dist',{recursive:true,force:true});require('node:fs').rmSync('packages/server/dist',{recursive:true,force:true})\""
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
     "@types/node": "^24.0.0",
     "@vitest/coverage-v8": "^3.2.7",
     "tsup": "^8.0.0",

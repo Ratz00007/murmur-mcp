@@ -95,7 +95,7 @@ function fixture(): { db: Storage; world: World; focus: Entity; other: Entity; d
   const { inserted } = db.insertEntities(world.id, [
     { name: "Acme Cloud", type: "org", description: "the company", salience: 0.9, anchors: [], motives: [] },
     { name: "Nimbus Labs", type: "org", description: "the rival", salience: 0.7, anchors: [], motives: [] },
-  ] as Entity[]);
+  ]);
   const focus = inserted[0];
   const other = inserted[1];
 
@@ -780,7 +780,7 @@ describe("entityTrends", () => {
   });
 
   it("honours the limit", () => {
-    const { db, world, focus, dir } = fixture();
+    const { db, world, dir } = fixture();
     db.insertPost(
       post({ id: "po_extra", worldId: world.id, personaId: "p_2", body: "Nimbus Labs great", mentions: [{ entityId: "e_2", score: 0.3 }] })
     );

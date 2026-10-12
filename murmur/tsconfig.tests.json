@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@murmur/engine": ["./packages/engine/src/index.ts"],
+      "@murmur/prompts": ["./packages/prompts/src/index.ts"],
+      "@murmur/adapters": ["./packages/adapters/src/index.ts"],
+      "@murmur/templates": ["./packages/templates/src/index.ts"]
+    }
+  },
+  "include": ["tests/unit/**/*.ts", "packages/*/src/**/*.test.ts"]
+}

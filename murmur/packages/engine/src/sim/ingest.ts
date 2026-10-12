@@ -131,8 +131,10 @@ export function submitGenerations(
   const held = !opts.finalize && mergedRejected.length > 0;
   if (!held) {
     for (const p of missing) lurkers.push(p.id);
-    // organic engagement + platform mechanics on this round's generated posts
-    const organic = organicEngagement(storage, world, targetRound, newPosts, personas, entities, mintId);
+    // organic engagement + platform mechanics on this round's generated posts.
+    // The tally is intentionally discarded: the call's effects (metric bumps,
+    // repost rows, the organic event) are what the round needs, not the count.
+    organicEngagement(storage, world, targetRound, newPosts, personas, entities, mintId);
     const newViral = checkVirality(storage, world, targetRound, newPosts, personas.length);
     // memory compaction for everyone who acted this round
     for (const pid of appliedPersonas) {
@@ -147,7 +149,6 @@ export function submitGenerations(
     storage.setStage(world.id, completed ? "completed" : "running");
     const verdict: TaskVerdict = { taskId, applied: [...appliedPersonas], rejected: mergedRejected };
     storage.completeTask(world.id, taskId, raw, verdict, 'submitted');
-    void organic;
     return {
       taskId,
       round: targetRound,
@@ -184,7 +185,7 @@ export function submitGenerations(
 // Validation
 // ---------------------------------------------------------------------------
 
-function validateActions(storage: Storage, world: World, persona: Persona, actions: SimAction[], entities: Entity[]): ItemError[] {
+function validateActions(storage: Storage, world: World, persona: Persona, actions: SimAction[], _entities: Entity[]): ItemError[] {
   const errors: ItemError[] = [];
   const tw = world.config.platforms.twitter;
   const rd = world.config.platforms.reddit;
@@ -259,7 +260,6 @@ function validateActions(storage: Storage, world: World, persona: Persona, actio
         errors.push({ ref, field: "type", message: `unknown action type "${type}"` });
     }
   });
-  void entities;
   return errors;
 }
 
@@ -416,14 +416,13 @@ function organicEngagement(
   round: number,
   newPosts: Post[],
   personas: Persona[],
-  entities: Entity[],
+  _entities: Entity[],
   mintId: () => string
 ): { likes: number; reposts: number; upvotes: number; downvotes: number } {
   const rng = streamRng(world.seed, `organic:${round}`);
   const cfg = world.config.engagement;
   const tally = { likes: 0, reposts: 0, upvotes: 0, downvotes: 0 };
   const audit: Record<string, unknown>[] = [];
-  const byId = new Map(personas.map((p) => [p.id, p]));
   let cascaded = 0; // viewers engaged by the multi-hop cascade (below)
 
   for (const post of newPosts) {
@@ -511,7 +510,7 @@ function organicEngagement(
       for (let hop = 1; hop <= cas.maxHops && engaged < cap && frontier.size > 0; hop++) {
         const pPropagate =
           Math.min(cas.maxProb, cas.base + (cas.factor * engagementScore(post.metrics)) / threshold) *
-          Math.pow(cas.attenuation, hop - 1);
+          cas.attenuation ** (hop - 1);
         const hopRng = streamRng(world.seed, `cascade:${round}:${post.id}:${hop}`);
         const ordered = [...frontier.values()].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
         frontier = new Map();
@@ -563,8 +562,6 @@ function organicEngagement(
     }
   }
   storage.addEvent(world.id, round, "organic", { tally, cascaded, audit: audit.slice(0, 400) }, "world");
-  void byId;
-  void entities;
   return tally;
 }
 
@@ -603,7 +600,7 @@ function checkVirality(storage: Storage, world: World, round: number, newPosts: 
     }
     if (p.platform === "reddit" && p.kind === "post") {
       const age = round - p.round + 1;
-      const score = (p.metrics.upvotes - p.metrics.downvotes + 1) / Math.pow(age + 1, world.config.platforms.reddit.gravity);
+      const score = (p.metrics.upvotes - p.metrics.downvotes + 1) / (age + 1) ** world.config.platforms.reddit.gravity;
       if (score >= world.config.engagement.hotThreshold) {
         storage.addEvent(world.id, round, "hot", { postId: p.id, score: round2Safe(score) }, "world");
       }

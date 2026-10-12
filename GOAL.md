@@ -8,10 +8,9 @@ audit; run a pre-registered benchmark against real observed reactions; and bring
 engineering, protocol conformance, and launch readiness to the highest bar
 achievable today.
 
-**Status:** active — A, B, and B4 complete. 91/91 unit+golden, 2/2 e2e,
-cleanroom GATE GREEN. **Environment note:** the system Git install is broken and
-a PortableGit copy is being used from the temp dir; reinstall Git properly.
-Next: D1, the benchmark pair search, which decides what product to build.
+**Status:** active — A, B, E7(surface), and E8 complete. 255/255 unit+golden,
+2/2 e2e, cleanroom GATE GREEN, claim check GREEN at 255 tests and 11 tools.
+Next: E1-rest/E4/E5/E6, C1, D-arms, F.
 
 **Replaces:** the prior "Murmur Phase 0 + Phase 1: Ship, Prove, and De-risk"
 goal. Two of its claims are **disproved by direct inspection** and are corrected
@@ -86,16 +85,16 @@ coding session** — by showing its work, including where it is bad.
       grounds and this remains open.
 
 ### E. Engineering
-- [ ] E1 Coverage configured and gated in CI (currently *no* coverage measurement exists)
-- [ ] E2 Dedicated tests for the untested giants: `report.ts` (891),
-      `analytics.ts` (620), `sim/ingest.ts` (584), `opinion.ts` (152),
-      `ensemble.ts` (115)
-- [ ] E3 `packages/server` unit tests (1,884 LOC currently has one happy-path e2e)
+- [x] E8 Tool count 29 → 11 with a CI assertion that the advertised count matches registration; duplicate `world_config`/`sim_configure` merged
+- [x] E7 (protocol surface) outputSchema on all tools; deprecated ErrorCode replaced; tasks support advertised; resource-template completions
+- [x] E2 (part) Dedicated tests: `report.ts` rules (report-draft.test.ts, 36), `analytics.ts`, `sim/ingest.ts`, `opinion.ts`
+- [x] E3 (part) Server surface tests: tools.test.ts pins TOOL_COUNT, the migration map, output schemas, and live registration
+- [x] E1 (part) @vitest/coverage-v8 installed, coverage + thresholds configured in vitest.config.ts
+- [ ] E1 (rest) `test:coverage` and `lint` scripts; gate coverage in CI
 - [ ] E4 Lint (Biome) + `noUnusedLocals`, which would have caught all six `void x;` dead-code suppressions
 - [ ] E5 Typecheck `tests/`, `prompts`, `adapters`, `templates` — never typechecked today
 - [ ] E6 Cross-Node golden hash in CI on 20/22/24 × 3 OSes (promised in the old GOAL, never done)
-- [ ] E7 MCP 2026-07-28 conformance: `outputSchema` on all tools (0 of 29 today) or stop emitting `structuredContent`; `tasks`, `elicitation`, resource-template `complete`, `logging` over MCP
-- [ ] E8 Tool count 29 → ~11 with a CI assertion that the advertised count matches registration; duplicate `world_config`/`sim_configure` merged
+- [ ] E7 (rest) `elicitation`, `logging` over MCP — verify what the SDK exposes; document what is missing and why
 
 ### F. Launch
 - [ ] F1 Docs reduced from ~3,500 lines to ~600; one README, one CHANGELOG, one METHODOLOGY, one BENCHMARK
@@ -275,7 +274,28 @@ coding session** — by showing its work, including where it is bad.
 
   VERIFIED: typecheck exit 0 · 91/91 unit+golden · 2/2 e2e · cleanroom GATE
   GREEN · claim check GREEN at 91 tests and 29 tools.
-- 2026-09-28 — **D1: the vendor-anchored approach works; 3 verified pairs, not
+- 2026-09-28 — **E7/E8 landed with repairs, all verified before committing.**
+  A prior session consolidated the 29-tool surface to 11 action-dispatched
+  tools with outputSchema on every tool, a MIGRATED_TOOLS map for all 29 old
+  names, assertToolSurface() failing at startup on drift, coverage configured,
+  and E2/E3 test files — then was interrupted before verifying. Five failures
+  on landing, each fixed rather than worked around:
+  - The sim submit statsDigest schema demanded the FULL RoundStats shape while
+    the receipt deliberately carries a TRIMMED digest. The schema now matches
+    the digest, with a comment explaining why extending-then-requiring was the
+    exact mismatch a strict client rejects.
+  - The world_list status path spread the engine worldStatus (round as NUMBER)
+    into a schema promising a STRING. Normalised to the row shape.
+  - tools.test.ts asserted retired == 29 - TOOL_COUNT, which only holds if no
+    old name survives. Four do, so retired is derived from the migration map.
+  - The e2e drove the entire old surface; migrated call by call.
+  - report-draft.test.ts assumed listWorlds()[1] is the newest world, but it
+    orders created_at DESC. Rewritten to assert the same po_1 resolves to
+    different rows in different worlds — what its comment actually claims.
+  - adapters.test.ts asserted retired playbook names; updated to the new
+    surface plus a tripwire that no playbook names any retired tool.
+  VERIFIED: typecheck exit 0 · 255/255 unit+golden · 2/2 e2e · cleanroom GATE
+  GREEN · claim check GREEN at 255 tests and 11 tools.
   5.** `bench/select-vendor-pairs.mjs` inverts the failed search. Instead of
   looking for Reddit threads that link an announcement, it looks for reaction
   threads naming a KNOWN vendor, and takes the announcement from that vendor's

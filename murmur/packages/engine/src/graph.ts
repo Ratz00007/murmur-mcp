@@ -5,7 +5,7 @@
  * traversal; toMermaid renders a sub-graph for any git forge.
  */
 import type { Community, Entity, Persona, Relation, RelationType, World } from "./types.js";
-import { escapeMermaid, estTokens, slugify, truncate } from "./util/text.js";
+import { escapeMermaid, estTokens, slugify } from "./util/text.js";
 import { streamRng, type Rng } from "./util/rng.js";
 import { scoreSentiment } from "./sentiment.js";
 import type { Storage } from "./store/storage.js";
@@ -25,7 +25,6 @@ export interface DerivedEdge {
 
 /** Deterministic typed-relation derivation over the ontology. */
 export function deriveRelations(entities: Entity[]): DerivedEdge[] {
-  const byId = new Map(entities.map((e) => [e.id, e]));
   // deterministic iteration order
   const ordered = [...entities].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
   const edges: DerivedEdge[] = [];
@@ -51,13 +50,13 @@ export function deriveRelations(entities: Entity[]): DerivedEdge[] {
       const name = dst.name.toLowerCase();
       if (!wordContains(text, name)) continue;
       const salience = src.salience * dst.salience;
-      if (matches(text, name, OPPOSITION_CUES)) {
+      if (matches(text, OPPOSITION_CUES)) {
         push(src, dst, "opposition", 0.5 + 0.5 * salience, 0.55 + 0.45 * salience);
-      } else if (matches(text, name, OWNERSHIP_CUES)) {
+      } else if (matches(text, OWNERSHIP_CUES)) {
         if (src.type === "org" || src.type === "person") push(src, dst, "ownership", 0.5 + 0.4 * salience, 0.25 * salience);
-      } else if (matches(text, name, INFLUENCE_CUES)) {
+      } else if (matches(text, INFLUENCE_CUES)) {
         if (src.type === "person") push(src, dst, "influence", 0.45 + 0.45 * salience, 0.2 + 0.2 * salience);
-      } else if (matches(text, name, ALLIANCE_CUES)) {
+      } else if (matches(text, ALLIANCE_CUES)) {
         push(src, dst, "alliance", 0.45 + 0.45 * salience, 0.12 + 0.08 * salience);
       }
     }
@@ -87,8 +86,10 @@ function wordContains(haystack: string, name: string): boolean {
   return re.test(haystack);
 }
 
-function matches(text: string, name: string, cues: string[]): boolean {
-  // a cue near the entity mention (same text blob is our resolution unit)
+function matches(text: string, cues: string[]): boolean {
+  // A cue in the same text blob is our resolution unit. (An earlier signature
+  // also took the entity name, but no check ever used it — matching is purely
+  // cue-based, for better and for worse.)
   return cues.some((c) => text.includes(c));
 }
 
@@ -154,7 +155,7 @@ function zipfInt(rng: Rng, minK: number, maxK: number, exponent: number): number
   const weights: number[] = [];
   let total = 0;
   for (let k = lo; k <= hi; k++) {
-    const w = Math.pow(k, -exponent);
+    const w = k ** -exponent;
     weights.push(w);
     total += w;
   }
@@ -336,4 +337,5 @@ function push2(m: Map<string, string[]>, k: string, v: string): void {
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
+
 

@@ -347,7 +347,7 @@ export class Storage {
   // ----- entities ---------------------------------------------------------
 
   /** Insert entities, skipping names already present (idempotent surgical retry). */
-  insertEntities(worldId: string, entities: Entity[]): { inserted: Entity[]; skipped: string[] } {
+  insertEntities(worldId: string, entities: Omit<Entity, "id" | "worldId">[]): { inserted: Entity[]; skipped: string[] } {
     const existing = new Set(this.listEntities(worldId).map((e) => e.name.toLowerCase()));
     const inserted: Entity[] = [];
     const skipped: string[] = [];

@@ -6,7 +6,7 @@
 import type { Entity, GenerationTask, Persona, PersonaDigest, SimGeneration, World } from "../types.js";
 import { DATA_NOTICE } from "../types.js";
 import type { Storage } from "../store/storage.js";
-import { estTokens, nowIso, truncate } from "../util/text.js";
+import { estTokens, nowIso } from "../util/text.js";
 import { activatePersonas } from "./activation.js";
 import { buildFeed, trendingEntities } from "./feed.js";
 import { collectiveView, workingMemory } from "../memory.js";
@@ -61,7 +61,7 @@ export function buildSimBatch(storage: Storage, world: World): BatchBuildResult 
 
   // ---- Context-budget enforcement: trim feeds round-robin, then drop personas.
   const buildItems = () =>
-    digests.map((d, i) => ({
+    digests.map((d) => ({
       id: `persona-${d.persona.id}`,
       label: `${d.persona.name} (${d.persona.handle})`,
       tokens: estTokens(JSON.stringify(d.digest)),
