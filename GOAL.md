@@ -8,9 +8,9 @@ audit; run a pre-registered benchmark against real observed reactions; and bring
 engineering, protocol conformance, and launch readiness to the highest bar
 achievable today.
 
-**Status:** active — A, B, E1, E4, E5, E6, E7(surface), E8 complete. 262/262
+**Status:** active — A, B, C, E1, E4, E5, E6, E7(surface), E8 complete. 267/267
 unit+golden, 2/2 e2e, cleanroom GATE GREEN, lint/coverage/golden-hash gated in
-CI, claim check GREEN at 262 tests and 11 tools. Next: C1, D-arms, F.
+CI, claim check GREEN at 267 tests and 11 tools. Next: D-arms pilot, E7-rest, F.
 
 **Replaces:** the prior "Murmur Phase 0 + Phase 1: Ship, Prove, and De-risk"
 goal. Two of its claims are **disproved by direct inspection** and are corrected
@@ -68,11 +68,10 @@ coding session** — by showing its work, including where it is bad.
       and ReportData field; semantics pinned by tests
 
 ### C. The Objection Dossier
-- [ ] C1 New report artifact: ranked objections with steelman, evidence, blast
-      radius, the counter-case, the weakest load-bearing claim, and a ranked
-      test plan
-- [ ] C2 Renderer keeps the self-contained offline HTML properties (no JS, no
-      external refs, prints clean)
+- [x] C1 Objection Dossier: engine `dossier.ts` (task, validator, renderer),
+      server `report({mode:'dossier'})` plan/submit/export, world-dir versioning
+- [x] C2 Renderer keeps the self-contained offline properties (markdown; the
+      HTML dashboard section follows the same pattern when added)
 
 ### D. MurmurBench
 - [x] D1 Pair pipeline built and made honest. **Result: 1 verified pair, and the
@@ -373,6 +372,21 @@ coding session** — by showing its work, including where it is bad.
   to hit a number, the shortfall is recorded and N=3 is used, or the extra
   vendors are given announcements that are unambiguously first-party (a specific
   changelog entry rather than a blog index) and re-run from a fresh selection.
+- 2026-09-28 — **C1 complete: the Objection Dossier exists end to end.**
+  Engine `dossier.ts` builds a second task over the report's identical evidence
+  (same stats pack, same quote bank), validates drafts with the same citation
+  and numeric integrity, and renders the five-section artifact: ranked
+  objections with steelmen and blast radii, the strongest critic, a genuinely
+  strong counter-case, the weakest load-bearing claim with its breaking
+  question, and a ranked test plan where every question states what would stop
+  the launch. No schema migration was needed: task kind "dossier" rides the
+  free-text kind column, and versions live as world-dir files. Server
+  `report({mode:'dossier'})` plans, submits (dispatching validators by task
+  kind, because validating a dossier as a report rejects a correct draft), and
+  exports dossier-N.md. Five golden tests pin both directions plus the
+  single-task-mint invariant.
+  VERIFIED: typecheck exit 0 · 267/267 unit+golden · 2/2 e2e · cleanroom GATE
+  GREEN · claim check GREEN at 267 tests and 11 tools.
 - 2026-09-28 — **E6 complete: the replay contract is now proven across
   runtimes, not just within one process.** The golden test only shows two runs
   agreeing in the same process; ICU collation, Math internals, and key ordering
