@@ -8,9 +8,9 @@ audit; run a pre-registered benchmark against real observed reactions; and bring
 engineering, protocol conformance, and launch readiness to the highest bar
 achievable today.
 
-**Status:** active — A, B, C, E1, E4, E5, E6, E7(surface), E8 complete. 267/267
-unit+golden, 2/2 e2e, cleanroom GATE GREEN, lint/coverage/golden-hash gated in
-CI, claim check GREEN at 267 tests and 11 tools. Next: D-arms pilot, E7-rest, F.
+**Status:** active — A, B, C, D(pilot), E complete. 268/268 unit+golden, 2/2
+e2e, cleanroom GATE GREEN, lint/coverage/golden-hash gated in CI, claim check
+GREEN at 268 tests and 11 tools. Next: F1–F4.
 
 **Replaces:** the prior "Murmur Phase 0 + Phase 1: Ship, Prove, and De-risk"
 goal. Two of its claims are **disproved by direct inspection** and are corrected
@@ -96,7 +96,9 @@ coding session** — by showing its work, including where it is bad.
 - [x] E5 Typecheck covers `tests/`, `prompts`, `adapters`, `templates`; 21 test type errors fixed, one API lie corrected (`insertEntities` demanded full `Entity[]` while minting the id itself)
 - [x] E6 Cross-Node golden hash committed and checked on 20/22/24 × 3 OSes;
       every `localeCompare` in the deterministic path pins `"en"`
-- [ ] E7 (rest) `elicitation`, `logging` over MCP — verify what the SDK exposes; document what is missing and why
+- [x] E7 `elicitation` (missing-persona ask with plain-error fallback) and
+      `logging` over MCP (stderr-first mirror); progress/subscriptions
+      deliberately declined with reasons
 
 ### F. Launch
 - [ ] F1 Docs reduced from ~3,500 lines to ~600; one README, one CHANGELOG, one METHODOLOGY, one BENCHMARK
@@ -375,6 +377,20 @@ coding session** — by showing its work, including where it is bad.
   to hit a number, the shortfall is recorded and N=3 is used, or the extra
   vendors are given announcements that are unambiguously first-party (a specific
   changelog entry rather than a blog index) and re-run from a fresh selection.
+- 2026-09-28 — **E7 complete: logging over MCP and elicitation, both with
+  fallbacks, and three deliberate refusals.** SDK 1.30.0 exposes both
+  `sendLoggingMessage` and `elicitInput`, verified before use. Warn-and-above
+  now mirrors to the client; stderr stays primary and a logging failure can
+  never break its tool call. `ctx.elicit` parallels the sampling bridge
+  (probed, bound, one-time warning) and is used in exactly one place — the
+  missing-persona case asks instead of failing, with the plain error as the
+  universal path, pinned by server-elicit.test.ts through a real client that
+  cannot elicit. Declined with reasons recorded: elicitation anywhere else
+  (one proven call site beats five speculative ones), progress notifications
+  on synchronous calls (theatre), resource subscriptions (no client in the
+  matrix uses them).
+  VERIFIED: typecheck exit 0 · 268/268 unit+golden · 2/2 e2e · cleanroom GATE
+  GREEN · claim check GREEN at 268 tests and 11 tools.
 - 2026-09-28 — **C1 complete: the Objection Dossier exists end to end.**
   Engine `dossier.ts` builds a second task over the report's identical evidence
   (same stats pack, same quote bank), validates drafts with the same citation
