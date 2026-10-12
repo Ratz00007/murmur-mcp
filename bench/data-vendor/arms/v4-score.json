@@ -1,0 +1,52 @@
+{
+  "protocol": "PROTOCOL.md (sealed e700a3e, amended 79045c2/42ef5d5/7157960)",
+  "observation_id": "v4",
+  "scored_at": "2026-09-28",
+  "scorer": "single operator (same person wrote the key and both arms — recorded limitation)",
+  "blinding": "answer key written before either arm ran; arms generated without reopening the key file",
+  "ground_truth_objections": 1,
+  "preemption_rate": 0.0,
+  "arm_a": {
+    "method": "frozen one-line prompt on the announcement only",
+    "objections_offered": 10,
+    "matches": [
+      {
+        "arm_objection": 7,
+        "arm_label": "No exit assistance; migration costs make it stickier",
+        "ground_truth": "No clear exit path off Scaleway",
+        "rationale": "Same complaint: the announcement says nothing about portability or migration, and the hike is stickier for it."
+      }
+    ],
+    "recall_at_5": 0.0,
+    "recall_at_10": 1.0,
+    "recall_note": "The match sits at rank 7, outside the top 5. recall@5 is 0.0."
+  },
+  "arm_b": {
+    "method": "full Murmur pipeline via MCP (world_init, seed_add, ontology, graph, personas, 3 sim rounds, dossier), 8 personas, human-authored submits, dossier v1 with 5 objections",
+    "objections_offered": 5,
+    "matches": [
+      {
+        "arm_objection": 2,
+        "arm_label": "No exit path disclosed",
+        "ground_truth": "No clear exit path off Scaleway",
+        "rationale": "Same complaint, ranked second by blast radius."
+      }
+    ],
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0
+  },
+  "kill_criterion": {
+    "rule": "Arm B mean recall@10 must exceed Arm A by >= 0.15 absolute",
+    "difference": 0.0,
+    "verdict": "NOT MET — but also not resolvable",
+    "why_not_resolvable": "N=1 with a single ground-truth objection. Both arms found the one objection that exists, so both score 1.0 and the difference is 0.0 by construction, not by measurement. A thin thread makes recall nearly free: any arm listing exit-path concerns among 5-10 objections scores perfectly. The protocol anticipated exactly this in the density note on the answer key."
+  },
+  "directional_reading": "Arm B ranked the match 2nd of 5; Arm A ranked it 7th of 10. If ranking quality were the metric, Arm B wins. But ranking quality was not the pre-registered metric, and promoting it now would be moving the goalposts after seeing the result. Recorded as an observation for a future protocol, not as a finding.",
+  "artifacts": {
+    "arm_a": "bench/data-vendor/arms/v4-arm-a.json",
+    "arm_b_dossier": "bench/data-vendor/arms/v4-arm-b-world/.murmur/reports/scaleway-price-hike/dossier-1.md",
+    "arm_b_tasks": "bench/data-vendor/arms/v4-arm-b-tasks/",
+    "arm_b_submits": "bench/data-vendor/arms/v4-arm-b-submits/",
+    "answer_key": "bench/data-vendor/ground-truth/v4.json"
+  }
+}

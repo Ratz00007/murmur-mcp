@@ -76,12 +76,15 @@ coding session** — by showing its work, including where it is bad.
 ### D. MurmurBench
 - [x] D1 Pair pipeline built and made honest. **Result: 1 verified pair, and the
       corpus cannot yield more** — see the finding below
-- [ ] D2 Ground-truth objections extracted per the frozen rubric
-- [ ] D3 Pre-emption rate control reported beside every recall figure
-- [ ] D4 Arm A (naive baseline) and Arm B (full Murmur) run on the same blind inputs
-- [ ] D5 **Kill criterion CANNOT be validly applied at N=1.** Recorded, with what
-      resolving it would take. The product decision is therefore made on other
-      grounds and this remains open.
+- [x] D2 Ground truth extracted on v4 (Scaleway) per the frozen rubric, full
+      12/12 hand audit; 1 objection, 11 exclusions each with a reason
+- [x] D3 Pre-emption rate 0.0: the one objection is not stated in the announcement
+- [x] D4 Both arms run on the identical blind input (the announcement only).
+      Arm A: frozen one-line prompt, 10 objections. Arm B: full MCP pipeline
+      (world_init, seed_add, ontology, graph, personas, 3 sim rounds, dossier),
+      8 personas, human-authored submits, dossier v1 with 5 objections
+- [x] D5 Scored against the sealed key. **Kill criterion NOT MET and not
+      resolvable at N=1** — recorded with the reason, not worked around
 
 ### E. Engineering
 - [x] E8 Tool count 29 → 11 with a CI assertion that the advertised count matches registration; duplicate `world_config`/`sim_configure` merged
@@ -457,3 +460,37 @@ coding session** — by showing its work, including where it is bad.
 
   Until one of those exists, the honest statement is: **Murmur's recall against
   real reactions is unmeasured.** Not low. Not high. Unmeasured.
+- 2026-09-28 — **D2–D5 executed as an N=1 pilot, with the verdict the protocol
+  predicted: unresolvable, and recorded as such.**
+  - D2: all 12 Scaleway comments read against the frozen rubric. ONE objection
+    survives strict application ("No clear exit path off Scaleway",
+    evidence oissbbr). The other 11 are excluded each with a reason in
+    `bench/data-vendor/ground-truth/v4.json` — industry predictions, on-premise
+    debates, anecdotes, and two borderline general-market complaints excluded
+    under a strict reading of "specific". Density note recorded on the key:
+    1 objection from 12 comments makes recall nearly free by chance.
+  - D3: pre-emption rate 0.0. The announcement details the change product by
+    product but says nothing about portability or exit, so the objection is
+    not answered in advance.
+  - D4: Arm A ran the frozen one-line prompt on the announcement only → 10
+    objections. Arm B ran the FULL pipeline over MCP with a human as the host
+    model (world_init, seed_add, ontology, graph, personas, 3 sim rounds with
+    human-authored submits, dossier plan/submit/export) → dossier v1 with 5
+    objections. 8 personas, seed arm-b-v4, every task receipt and every submit
+    committed under bench/data-vendor/arms/ so the run is auditable. Two
+    engine behaviors were exercised for real along the way: the title validator
+    rejected a title-less reddit post, and the sticky-hold required a surgical
+    resubmit plus finalize to advance the round.
+  - D5: Arm A matched at rank 7/10 (recall@10 1.0, recall@5 0.0). Arm B
+    matched at rank 2/5 (recall@10 1.0). Difference 0.0 < 0.15: criterion NOT
+    MET. But with one ground-truth objection both arms score 1.0 by
+    construction — the number is noise wearing a decimal point, exactly as the
+    protocol's density note predicted. The directional observation (Arm B
+    ranked the match 2nd, Arm A 7th) is recorded in v4-score.json as an
+    observation for a future protocol, NOT promoted to a finding: promoting it
+    now would be moving the goalposts after seeing the result.
+  - Record-keeping gap, admitted: the round-2 submit file was overwritten
+    in place during the sticky-hold repair (full resubmit → surgical resubmit
+    → finalize), so the original authored r2 generations survive only in the
+    session transcript, not on disk. The plan receipts, the final submits, the
+    dossier, and the score are all committed; the intermediate r2 draft is not.

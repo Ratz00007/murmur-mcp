@@ -1,0 +1,748 @@
+{
+  "ok": true,
+  "taskId": "t_6",
+  "how": "Draft 4-7 objections ranked most damaging first (each with steelman, blastRadius as damage-if-true, threatenedDecision, citing 2-3 post ids), the strongest critic, a genuinely strong counter-case, the weakest load-bearing claim with its breaking question, and 1-5 ranked test-plan questions each stating what would stop the launch. Then call report({action:'submit', task_id, draft}).",
+  "task": {
+    "id": "t_6",
+    "worldId": "w_6872ba5b",
+    "kind": "dossier",
+    "round": 3,
+    "instructions": "You are the adversarial critic for a change about to ship. You receive a deterministic statistics pack (real measured numbers from a recorded simulation run) and an evidence pack (real simulated posts). Your job is NOT to predict what will happen. It is to find the objections that would kill this change if they turned out to be true, state each one at its strongest, show the evidence behind it, argue the other side honestly, and hand over the questions worth asking a real human.\n\nReturn ONLY a JSON object with this shape:\n{\n  \"objections\": [\n    { \"label\": \"3-10 word name\", \"steelman\": \"the objection at its strongest, 3-5 sentences, citing concrete posts and numbers\", \"blastRadius\": \"high|medium|low\", \"threatenedDecision\": \"the concrete decision this objection threatens, 1 sentence\", \"postIds\": [\"po_x\", \"po_y\"] }\n  ],\n  \"strongestCritic\": { \"handle\": \"the persona who hates this most\", \"sentence\": \"the single sentence that makes them hate it, quoted or closely paraphrased\" },\n  \"counterCase\": \"the strongest argument FOR shipping anyway, stated as well as the case against, 3-5 sentences\",\n  \"weakestClaim\": { \"claim\": \"your plan's weakest load-bearing claim, 1 sentence\", \"breakingQuestion\": \"the single question that would break it\" },\n  \"testPlan\": [\n    { \"question\": \"a question for a real human\", \"discriminates\": \"which branch of your plan this answer decides, 1 sentence\", \"wouldNotShipIf\": \"the answer that should stop the launch\" }\n  ]\n}\nRules:\n- 4-7 objections, ranked most damaging first. Each MUST cite 2-3 real post ids from the evidence pack.\n- blastRadius is damage IF TRUE, not likelihood. A certain papercut outranks a possible catastrophe only if you say why.\n- The counterCase must be genuinely strong. An adversary-only dossier talks its reader out of good ideas; that failure mode is yours to prevent.\n- At most 5 test-plan questions, ranked by how much each discriminates. A question whose every plausible answer leads to shipping is not a test.\n- Every number you state must come from the stats pack. Never invent post ids, numbers or quotes. Use only the evidence pack and stats pack.\nReturn ONLY the JSON object.\n\nWorld: scaleway-price-hike",
+    "outputSchema": {
+      "type": "object",
+      "required": [
+        "objections",
+        "strongestCritic",
+        "counterCase",
+        "weakestClaim",
+        "testPlan"
+      ],
+      "properties": {
+        "objections": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 7
+        },
+        "strongestCritic": {
+          "type": "object",
+          "required": [
+            "handle",
+            "sentence"
+          ]
+        },
+        "counterCase": {
+          "type": "string",
+          "minLength": 120
+        },
+        "weakestClaim": {
+          "type": "object",
+          "required": [
+            "claim",
+            "breakingQuestion"
+          ]
+        },
+        "testPlan": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5
+        }
+      }
+    },
+    "items": [
+      {
+        "id": "draft-1",
+        "label": "draft the simulated perspective narrative",
+        "tokens": 3041,
+        "payload": {
+          "focus": "",
+          "stats": {
+            "focus": "",
+            "population": 8,
+            "entityCount": 12,
+            "totalPosts": 16,
+            "totalEngagement": 6,
+            "rounds": [
+              {
+                "round": 1,
+                "twitter": 7,
+                "reddit": 0,
+                "engagement": 4,
+                "sentimentByEntity": {
+                  "Scaleway": 0,
+                  "STARDUST1-S": 0
+                },
+                "escalations": 0,
+                "injections": 0,
+                "lurkers": 0
+              },
+              {
+                "round": 2,
+                "twitter": 4,
+                "reddit": 1,
+                "engagement": 0,
+                "sentimentByEntity": {
+                  "Three years of flat prices": 0.32,
+                  "STARDUST1-S": 0.76
+                },
+                "escalations": 0,
+                "injections": 0,
+                "lurkers": 0
+              },
+              {
+                "round": 3,
+                "twitter": 3,
+                "reddit": 1,
+                "engagement": 2,
+                "sentimentByEntity": {
+                  "Scaleway": 0
+                },
+                "escalations": 0,
+                "injections": 0,
+                "lurkers": 0
+              }
+            ],
+            "entityTrends": [
+              {
+                "entity": "Scaleway",
+                "type": "org",
+                "first": 0,
+                "last": 0,
+                "delta": 0,
+                "volume": 4,
+                "peakRound": 1,
+                "direction": "flat"
+              },
+              {
+                "entity": "STARDUST1-S",
+                "type": "product",
+                "first": 0,
+                "last": 0.76,
+                "delta": 0.76,
+                "volume": 2,
+                "peakRound": 1,
+                "direction": "up"
+              }
+            ],
+            "sentimentCurves": [
+              {
+                "entity": "Scaleway",
+                "type": "org",
+                "curve": [
+                  {
+                    "round": 1,
+                    "value": 0
+                  },
+                  {
+                    "round": 3,
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "entity": "June 2026 price increase",
+                "type": "event",
+                "curve": []
+              },
+              {
+                "entity": "STARDUST1-S",
+                "type": "product",
+                "curve": [
+                  {
+                    "round": 1,
+                    "value": 0
+                  },
+                  {
+                    "round": 2,
+                    "value": 0.76
+                  }
+                ]
+              },
+              {
+                "entity": "Serverless memory pricing",
+                "type": "product",
+                "curve": []
+              },
+              {
+                "entity": "Hardware cost crisis",
+                "type": "topic",
+                "curve": []
+              }
+            ],
+            "projection": {
+              "entity": "Scaleway",
+              "slope": 0,
+              "direction": "flat",
+              "projected": [
+                {
+                  "round": 4,
+                  "value": 0
+                },
+                {
+                  "round": 5,
+                  "value": 0
+                }
+              ]
+            },
+            "sensitivity": [
+              {
+                "round": 1,
+                "p10": 0,
+                "p50": 0,
+                "p90": 0
+              },
+              {
+                "round": 3,
+                "p10": 0,
+                "p50": 0,
+                "p90": 0
+              },
+              {
+                "round": 4,
+                "p10": -0.03,
+                "p50": 0.02,
+                "p90": 0.08
+              },
+              {
+                "round": 5,
+                "p10": -0.05,
+                "p50": 0.03,
+                "p90": 0.12
+              }
+            ],
+            "momentum": {
+              "firstHalf": 4,
+              "secondHalf": 2,
+              "pct": -0.5,
+              "trend": "cooling"
+            },
+            "controversy": {
+              "score": 23,
+              "label": "simmering",
+              "drivers": [
+                {
+                  "label": "polarization 44/100",
+                  "value": 0.44,
+                  "weight": 40
+                },
+                {
+                  "label": "share of engagement on negative posts 17%",
+                  "value": 0.16666666666666666,
+                  "weight": 30
+                },
+                {
+                  "label": "escalation density 0 chains over 3 rounds",
+                  "value": 0,
+                  "weight": 30
+                }
+              ]
+            },
+            "factions": {
+              "focusEntity": "Scaleway",
+              "factions": [
+                {
+                  "key": "supporters",
+                  "label": "Supporters of Scaleway",
+                  "size": 1,
+                  "share": 0.13,
+                  "avgStance": 0.7,
+                  "posts": 1,
+                  "engagement": 0,
+                  "leaders": [
+                    {
+                      "handle": "u/tomasw",
+                      "archetype": "passionate advocate",
+                      "stance": 0.7,
+                      "posts": 1,
+                      "engagement": 0
+                    }
+                  ],
+                  "quotes": [
+                    {
+                      "id": "po_12",
+                      "by": "u/tomasw",
+                      "name": "Tomas Weber",
+                      "plat": "rd",
+                      "round": 2,
+                      "body": "Everyone's mad at the table and missing the context: three years flat while hardware went vertical, plus real investment the whole time. My startup survived on this platform. The 2% lines ARE the story; the outliers…",
+                      "sentiment": 0,
+                      "engagement": 0,
+                      "kind": "post"
+                    }
+                  ],
+                  "sentimentByRound": []
+                },
+                {
+                  "key": "opponents",
+                  "label": "Opponents of Scaleway",
+                  "size": 4,
+                  "share": 0.5,
+                  "avgStance": -0.24,
+                  "posts": 13,
+                  "engagement": 4,
+                  "leaders": [
+                    {
+                      "handle": "@ravimenon",
+                      "archetype": "power user",
+                      "stance": -0.24,
+                      "posts": 4,
+                      "engagement": 2
+                    },
+                    {
+                      "handle": "@marajensen",
+                      "archetype": "power user",
+                      "stance": -0.21,
+                      "posts": 5,
+                      "engagement": 1
+                    },
+                    {
+                      "handle": "@priyanair",
+                      "archetype": "pragmatic skeptic",
+                      "stance": -0.21,
+                      "posts": 3,
+                      "engagement": 1
+                    }
+                  ],
+                  "quotes": [
+                    {
+                      "id": "po_1",
+                      "by": "@marajensen",
+                      "name": "Mara Jensen",
+                      "plat": "tw",
+                      "round": 1,
+                      "body": "Scaleway just dropped the June price list and STARDUST1-S went from €0.00015 to €0.0006/hr. 4x. On the tier people chose because it was negligible. Read the table before the blog post.",
+                      "sentiment": 0,
+                      "attrSentiment": 0,
+                      "engagement": 0,
+                      "kind": "post"
+                    },
+                    {
+                      "id": "po_3",
+                      "by": "@priyanair",
+                      "name": "Priya Nair",
+                      "plat": "tw",
+                      "round": 1,
+                      "body": "Ran the Scaleway June numbers for a client: ~2% on most compute, but serverless memory doubled and Dedibox up 15-17%. The headline says precision, the table says the bursty stuff pays. Show me the invoice logic.",
+                      "sentiment": 0,
+                      "attrSentiment": 0,
+                      "engagement": 0,
+                      "kind": "post"
+                    }
+                  ],
+                  "sentimentByRound": [
+                    {
+                      "round": 1,
+                      "value": 0
+                    },
+                    {
+                      "round": 3,
+                      "value": 0
+                    }
+                  ]
+                },
+                {
+                  "key": "undecided",
+                  "label": "Undecided / watching",
+                  "size": 3,
+                  "share": 0.38,
+                  "avgStance": -0.04,
+                  "posts": 2,
+                  "engagement": 2,
+                  "leaders": [
+                    {
+                      "handle": "@ingridlarsen",
+                      "archetype": "industry professional",
+                      "stance": -0.18,
+                      "posts": 1,
+                      "engagement": 2
+                    },
+                    {
+                      "handle": "@lenafischer",
+                      "archetype": "casual scroller",
+                      "stance": -0.13,
+                      "posts": 1,
+                      "engagement": 0
+                    },
+                    {
+                      "handle": "u/samokafor",
+                      "archetype": "curious newcomer",
+                      "stance": 0.2,
+                      "posts": 0,
+                      "engagement": 0
+                    }
+                  ],
+                  "quotes": [
+                    {
+                      "id": "po_5",
+                      "by": "@ingridlarsen",
+                      "name": "Ingrid Larsen",
+                      "plat": "tw",
+                      "round": 1,
+                      "body": "Modeled it: the ~2% compute adjustments roughly track input cost inflation. The outliers (STARDUST 4x, DNS 7x, serverless 2x) are repricing, not passthrough. Those deserve their own justification.",
+                      "sentiment": 0.32,
+                      "engagement": 2,
+                      "kind": "post"
+                    },
+                    {
+                      "id": "po_10",
+                      "by": "@lenafischer",
+                      "name": "Lena Fischer",
+                      "plat": "tw",
+                      "round": 2,
+                      "body": "My side project runs on STARDUST1-S because it cost basically nothing. At 4x I have to actually think about it now. Genuinely sad, it was perfect for hobby stuff.",
+                      "sentiment": 0.76,
+                      "engagement": 0,
+                      "kind": "post"
+                    }
+                  ],
+                  "sentimentByRound": []
+                }
+              ],
+              "polarization": 0.44,
+              "verdict": "1 supporter vs 4 opponents around Scaleway (3 still undecided) — the population is splitting into camps."
+            },
+            "crossPlatform": {
+              "totals": {
+                "twitterPosts": 14,
+                "redditPosts": 2,
+                "twitterEngagement": 6,
+                "redditEngagement": 0,
+                "twitterEscalations": 0,
+                "redditEscalations": 0
+              },
+              "rows": [
+                {
+                  "entity": "Scaleway",
+                  "twitter": 0,
+                  "reddit": 0,
+                  "divergence": 0,
+                  "twPosts": 3,
+                  "rdPosts": 1
+                },
+                {
+                  "entity": "STARDUST1-S",
+                  "twitter": 0.38,
+                  "reddit": null,
+                  "divergence": 0,
+                  "twPosts": 2,
+                  "rdPosts": 0
+                },
+                {
+                  "entity": "Three years of flat prices",
+                  "twitter": 0.32,
+                  "reddit": null,
+                  "divergence": 0,
+                  "twPosts": 1,
+                  "rdPosts": 0
+                }
+              ],
+              "maxDivergence": {
+                "entity": "Scaleway",
+                "value": 0
+              }
+            },
+            "timeline": [
+              {
+                "round": 2,
+                "kind": "rally",
+                "text": "First strong endorsement: @lenafischer — \"My side project runs on STARDUST1-S because it cost basically nothing. At 4x I have to actually think about it now.…\"",
+                "postIds": [
+                  "po_10"
+                ]
+              }
+            ],
+            "quoteBank": {
+              "positive": [],
+              "negative": [],
+              "mixed": [
+                {
+                  "id": "po_1",
+                  "by": "@marajensen",
+                  "name": "Mara Jensen",
+                  "plat": "tw",
+                  "round": 1,
+                  "body": "Scaleway just dropped the June price list and STARDUST1-S went from €0.00015 to €0.0006/hr. 4x. On the tier people chose because it was negligible. Read the table before the blog post.",
+                  "sentiment": 0,
+                  "attrSentiment": 0,
+                  "engagement": 0,
+                  "kind": "post"
+                },
+                {
+                  "id": "po_3",
+                  "by": "@priyanair",
+                  "name": "Priya Nair",
+                  "plat": "tw",
+                  "round": 1,
+                  "body": "Ran the Scaleway June numbers for a client: ~2% on most compute, but serverless memory doubled and Dedibox up 15-17%. The headline says precision, the table says the bursty stuff pays. Show me the invoice logic.",
+                  "sentiment": 0,
+                  "attrSentiment": 0,
+                  "engagement": 0,
+                  "kind": "post"
+                },
+                {
+                  "id": "po_14",
+                  "by": "u/devonpark",
+                  "name": "Devon Park",
+                  "plat": "rd",
+                  "round": 3,
+                  "body": "STARDUST going 4x kills the exact use case that made Scaleway lovable for tinkerers. Enterprises won't blink at 2%. Hobbyists feel 400%. Different customers, different pain, same announcement.",
+                  "sentiment": 0,
+                  "attrSentiment": 0,
+                  "engagement": 0,
+                  "kind": "post"
+                }
+              ]
+            },
+            "amplification": {
+              "viralPosts": [],
+              "organicEngagementShare": null,
+              "organicPostCount": 0
+            },
+            "escalationChains": [],
+            "leaderboards": [
+              {
+                "handle": "@ingridlarsen",
+                "archetype": "industry professional",
+                "posts": 1,
+                "engagement": 2
+              },
+              {
+                "handle": "@ravimenon",
+                "archetype": "power user",
+                "posts": 4,
+                "engagement": 2
+              },
+              {
+                "handle": "@marajensen",
+                "archetype": "power user",
+                "posts": 5,
+                "engagement": 1
+              },
+              {
+                "handle": "@priyanair",
+                "archetype": "pragmatic skeptic",
+                "posts": 3,
+                "engagement": 1
+              },
+              {
+                "handle": "u/devonpark",
+                "archetype": "power user",
+                "posts": 1,
+                "engagement": 0
+              },
+              {
+                "handle": "u/tomasw",
+                "archetype": "passionate advocate",
+                "posts": 1,
+                "engagement": 0
+              }
+            ],
+            "topPosts": [
+              {
+                "id": "po_5",
+                "by": "@ingridlarsen",
+                "plat": "tw",
+                "round": 1,
+                "body": "Modeled it: the ~2% compute adjustments roughly track input cost inflation. The outliers (STARDUST 4x, DNS 7x, serverless 2x) are repricing, not passthrough. Those deserve their own justification.",
+                "engagement": 2,
+                "sentiment": 0.32
+              },
+              {
+                "id": "po_13",
+                "by": "@marajensen",
+                "plat": "tw",
+                "round": 3,
+                "body": "Final thought before June 1: the table is precise and the framing is partnership, but precision without an exit and partnership without a vote is just a well-formatted bill. See you on the other side.",
+                "engagement": 1,
+                "sentiment": 0
+              },
+              {
+                "id": "po_16",
+                "by": "@ravimenon",
+                "plat": "tw",
+                "round": 3,
+                "body": "Locked my H100 reservation through May. After June 1 I re-evaluate against the hyperscalers, because 10% on premium was already the whole margin conversation. Sovereignty is nice; runway is nicer.",
+                "engagement": 1,
+                "sentiment": -0.32
+              },
+              {
+                "id": "po_4",
+                "by": "@priyanair",
+                "plat": "tw",
+                "round": 1,
+                "body": "Partnership language, unilateral change. No vote, no opt-out, no grandfathering mentioned. Call it a price rise, not a partnership.",
+                "engagement": 1,
+                "sentiment": 0
+              },
+              {
+                "id": "po_7",
+                "by": "@ravimenon",
+                "plat": "tw",
+                "round": 1,
+                "body": "Key Manager versions €0.04 to €0.06/key/month. Fifty percent more for doing secrets correctly. Odd choice of what to tax.",
+                "engagement": 1,
+                "sentiment": 0
+              },
+              {
+                "id": "po_1",
+                "by": "@marajensen",
+                "plat": "tw",
+                "round": 1,
+                "body": "Scaleway just dropped the June price list and STARDUST1-S went from €0.00015 to €0.0006/hr. 4x. On the tier people chose because it was negligible. Read the table before the blog post.",
+                "engagement": 0,
+                "sentiment": 0
+              },
+              {
+                "id": "po_10",
+                "by": "@lenafischer",
+                "plat": "tw",
+                "round": 2,
+                "body": "My side project runs on STARDUST1-S because it cost basically nothing. At 4x I have to actually think about it now. Genuinely sad, it was perfect for hobby stuff.",
+                "engagement": 0,
+                "sentiment": 0.76
+              },
+              {
+                "id": "po_11",
+                "by": "@ravimenon",
+                "plat": "tw",
+                "round": 2,
+                "body": "Ingrid's right that 2% tracks inflation, but GPU was already premium and now it's 10% more premium mid-runway. And serverless doubling hits exactly the workloads that can't predict spend. The…",
+                "engagement": 0,
+                "sentiment": 0
+              },
+              {
+                "id": "po_12",
+                "by": "u/tomasw",
+                "plat": "rd",
+                "round": 2,
+                "body": "Everyone's mad at the table and missing the context: three years flat while hardware went vertical, plus real investment the whole time. My startup survived on this platform. The 2% lines ARE the…",
+                "engagement": 0,
+                "sentiment": 0
+              },
+              {
+                "id": "po_14",
+                "by": "u/devonpark",
+                "plat": "rd",
+                "round": 3,
+                "body": "STARDUST going 4x kills the exact use case that made Scaleway lovable for tinkerers. Enterprises won't blink at 2%. Hobbyists feel 400%. Different customers, different pain, same announcement.",
+                "engagement": 0,
+                "sentiment": 0
+              }
+            ],
+            "movers": [
+              {
+                "personaId": "p_5",
+                "entity": "Partnership framing",
+                "from": -0.07,
+                "to": -0.14
+              },
+              {
+                "personaId": "p_1",
+                "entity": "STARDUST1-S",
+                "from": -0.8,
+                "to": -0.74
+              },
+              {
+                "personaId": "p_1",
+                "entity": "DNS zones for external domains",
+                "from": -0.55,
+                "to": -0.49
+              },
+              {
+                "personaId": "p_7",
+                "entity": "STARDUST1-S",
+                "from": -0.5,
+                "to": -0.56
+              },
+              {
+                "personaId": "p_5",
+                "entity": "June 2026 price increase",
+                "from": -0.45,
+                "to": -0.39
+              },
+              {
+                "personaId": "p_7",
+                "entity": "Partnership framing",
+                "from": -0.3,
+                "to": -0.36
+              },
+              {
+                "personaId": "p_7",
+                "entity": "Serverless memory pricing",
+                "from": -0.3,
+                "to": -0.36
+              },
+              {
+                "personaId": "p_7",
+                "entity": "June 2026 price increase",
+                "from": -0.16,
+                "to": -0.22
+              }
+            ]
+          },
+          "evidence": [
+            {
+              "entity": "Scaleway",
+              "posts": [
+                {
+                  "id": "po_1",
+                  "by": "@marajensen",
+                  "plat": "tw",
+                  "sentiment": 0,
+                  "engagement": 0,
+                  "body": "Scaleway just dropped the June price list and STARDUST1-S went from €0.00015 to €0.0006/hr. 4x. On the tier people chose because it was negligible. Read the table before the blog post."
+                },
+                {
+                  "id": "po_14",
+                  "by": "u/devonpark",
+                  "plat": "rd",
+                  "sentiment": 0,
+                  "engagement": 0,
+                  "body": "STARDUST going 4x kills the exact use case that made Scaleway lovable for tinkerers. Enterprises won't blink at 2%. Hobbyists feel 400%. Different customers, different pain, same announcement."
+                },
+                {
+                  "id": "po_15",
+                  "by": "@priyanair",
+                  "plat": "tw",
+                  "sentiment": 0,
+                  "engagement": 0,
+                  "body": "Three rounds in and nobody from Scaleway has answered the only question that matters to my clients: what does leaving cost? Price transparency without exit transparency is half a disclosure."
+                }
+              ]
+            },
+            {
+              "entity": "June 2026 price increase",
+              "posts": []
+            },
+            {
+              "entity": "STARDUST1-S",
+              "posts": [
+                {
+                  "id": "po_10",
+                  "by": "@lenafischer",
+                  "plat": "tw",
+                  "sentiment": 0.76,
+                  "engagement": 0,
+                  "body": "My side project runs on STARDUST1-S because it cost basically nothing. At 4x I have to actually think about it now. Genuinely sad, it was perfect for hobby stuff."
+                },
+                {
+                  "id": "po_1",
+                  "by": "@marajensen",
+                  "plat": "tw",
+                  "sentiment": 0,
+                  "engagement": 0,
+                  "body": "Scaleway just dropped the June price list and STARDUST1-S went from €0.00015 to €0.0006/hr. 4x. On the tier people chose because it was negligible. Read the table before the blog post."
+                }
+              ]
+            },
+            {
+              "entity": "Serverless memory pricing",
+              "posts": []
+            }
+          ]
+        }
+      }
+    ],
+    "createdAt": "2026-10-12T03:00:24.518Z"
+  },
+  "next": "report({action:\"submit\", task_id, draft})"
+}

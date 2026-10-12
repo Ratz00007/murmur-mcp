@@ -1,0 +1,11 @@
+{
+  "step": "done",
+  "taskIds": {
+    "ontology": "t_1",
+    "personas": "t_2",
+    "sim": "t_5",
+    "dossier": "t_6"
+  },
+  "round": 3,
+  "worldId": "w_6872ba5b"
+}

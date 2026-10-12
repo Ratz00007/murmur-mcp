@@ -1,0 +1,60 @@
+{
+  "protocol": "PROTOCOL.md section 7, frozen Arm A prompt, verbatim",
+  "observation_id": "v4",
+  "arm": "A-naive-baseline",
+  "run_at": "2026-09-28",
+  "operator_note": "Single operator who also wrote the answer key. Contamination is unavoidable and applies to both arms equally; the kill criterion rests on the DIFFERENCE. Arm A was generated from the announcement text only, without reopening the key file.",
+  "blind_input": "vendor announcement only (Scaleway pricing update, 11041 chars). Never shown the thread.",
+  "objections": [
+    {
+      "label": "STARDUST1-S quadruples overnight",
+      "explanation": "The cheapest compute tier jumps from €0.00015 to €0.0006 per hour — a 4x increase buried in a table of ~2% adjustments. Entry-level and hobby users chose this tier precisely because it was negligible cost.",
+      "damage": "high"
+    },
+    {
+      "label": "DNS zone price up 7x",
+      "explanation": "DNS for external domains goes from €0.001 to €0.007 per hour. Small absolute numbers, but a 7x multiple with no technical justification given, on a service with near-zero marginal cost.",
+      "damage": "high"
+    },
+    {
+      "label": "Serverless memory bills double unpredictably",
+      "explanation": "Serverless Jobs, Containers and Functions memory roughly double per GB-second. Bursty workloads that chose serverless for cost control now face unpredictable bills with no cap mentioned.",
+      "damage": "high"
+    },
+    {
+      "label": "Dedibox customers hit hardest in absolute terms",
+      "explanation": "Bare-metal Dedibox plans rise 15-17% (e.g. Core-10-S €199.99 to €229.99 monthly). These are the most committed customers with the highest switching costs, and they absorb the largest absolute increases.",
+      "damage": "high"
+    },
+    {
+      "label": "Partnership language over a unilateral change",
+      "explanation": "The post frames the hike as something partners do together, but customers get no vote, no opt-out, and no negotiation. The framing invites the exact cynicism it tries to pre-empt.",
+      "damage": "medium"
+    },
+    {
+      "label": "One month notice for budget cycles",
+      "explanation": "Announced April 27, effective June 1. Teams on quarterly or annual budget cycles cannot replan infrastructure spend in five weeks, so the increase lands as an unbudgeted overrun.",
+      "damage": "medium"
+    },
+    {
+      "label": "No exit assistance; migration costs make it stickier",
+      "explanation": "Nothing in the announcement addresses portability, migration tooling, or egress terms. A price rise without an exit path reads as confidence that customers cannot easily leave.",
+      "damage": "medium"
+    },
+    {
+      "label": "Key Manager up 50 percent, a tax on good practice",
+      "explanation": "Version storage goes from €0.04 to €0.06 per key per month. Customers doing the right thing (versioned secrets) pay the steepest proportional increase outside the headline outliers.",
+      "damage": "medium"
+    },
+    {
+      "label": "GPU surcharge lands on AI startups mid-runway",
+      "explanation": "H100 instances rise ~10% on already-premium hourly rates. Early-stage AI companies with fixed compute budgets and no leverage face an immediate runway hit.",
+      "damage": "medium"
+    },
+    {
+      "label": "No grandfathering for existing customers",
+      "explanation": "Three years of flat prices are cited as generosity, but existing customers get no loyalty recognition — no phased rollout, no legacy tier, no discount. Loyalty flows one way.",
+      "damage": "low"
+    }
+  ]
+}

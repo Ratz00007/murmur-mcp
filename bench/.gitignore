@@ -7,4 +7,11 @@
 data/
 data-pairs/
 data-arms/
-data-vendor/
+# data-vendor/ holds both regenerable and irreplaceable artifacts. Fetched
+# reactions and selection outputs are regenerable and stay ignored; human
+# judgement (the answer key, both arms' outputs, the score) is tracked.
+# NOTE: git cannot re-include files under an ignored directory, so the
+# regenerable subsets are listed explicitly rather than ignoring data-vendor/.
+data-vendor/reactions/
+data-vendor/pairs.json
+data-vendor/v4-announcement.txt

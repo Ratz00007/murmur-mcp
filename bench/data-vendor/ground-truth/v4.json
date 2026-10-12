@@ -1,0 +1,69 @@
+{
+  "protocol": "PROTOCOL.md (sealed e700a3e, amended 79045c2/42ef5d5/7157960)",
+  "observation_id": "v4",
+  "vendor": "Scaleway",
+  "announcement_url": "https://www.scaleway.com/en/blog/a-transparent-update-on-scaleway-pricing/",
+  "reaction_permalink": "https://www.reddit.com/r/sysadmin/comments/1sy0vat/scaleway_announces_price_hike_effective_june_1st/",
+  "extracted_at": "2026-09-28",
+  "extractor": "single operator, full hand audit (12/12 comments read)",
+  "rubric": "PROTOCOL.md section 6, applied strictly: specific, actionable, about the announced change",
+  "objections": [
+    {
+      "label": "No clear exit path off Scaleway",
+      "paraphrase": "If prices rise, can workloads actually be moved to another provider or back on-premise, or does the cost and effort of migrating lock customers in?",
+      "evidence_comment_ids": ["oissbbr"],
+      "evidence_quote": "You are able to restore to another provider or to local self hosted options right?",
+      "announcement_preempts": false,
+      "preemption_note": "The announcement details the pricing change product by product but does not discuss portability, migration assistance, or exit terms."
+    }
+  ],
+  "considered_and_excluded": [
+    {
+      "comment_id": "oiqq0eo",
+      "reason": "Industry prediction about all cloud services, not a specific complaint about Scaleway's change."
+    },
+    {
+      "comment_id": "oir2k1y",
+      "reason": "General on-premise vs cloud argument, not about this change."
+    },
+    {
+      "comment_id": "oiqty4d",
+      "reason": "Explains and justifies the increase; not a complaint."
+    },
+    {
+      "comment_id": "oiqqiim",
+      "reason": "General market-timing complaint ('worst time to move to the cloud'), not specific to the announced change. Borderline; excluded under a strict reading of 'specific'."
+    },
+    {
+      "comment_id": "oise74h",
+      "reason": "Personal anecdote about a client, no critique of the change."
+    },
+    {
+      "comment_id": "oiqu02k",
+      "reason": "Reply within the on-premise debate, not about the change."
+    },
+    {
+      "comment_id": "oisy5ei",
+      "reason": "About support billing rates, unclear and not about the change."
+    },
+    {
+      "comment_id": "oisja0o",
+      "reason": "Predicts annual increases generally; aimed at the poster's situation, not a specific actionable concern about this announcement. Borderline; excluded under a strict reading."
+    },
+    {
+      "comment_id": "oissj3v",
+      "reason": "Interpersonal thread continuation, no critique of the change."
+    },
+    {
+      "comment_id": "oiswuqh",
+      "reason": "Career aside, off-topic."
+    },
+    {
+      "comment_id": "oiqtfeo",
+      "reason": "Removed."
+    }
+  ],
+  "density_note": "1 objection from 12 comments. A thin thread makes recall nearly free to obtain by chance, which is why N=1 cannot power the kill criterion. Recorded, not worked around.",
+  "preemption_rate": 0.0,
+  "preemption_note": "The single ground-truth objection is not stated or answered in the announcement."
+}
