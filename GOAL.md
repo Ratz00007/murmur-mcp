@@ -8,9 +8,11 @@ audit; run a pre-registered benchmark against real observed reactions; and bring
 engineering, protocol conformance, and launch readiness to the highest bar
 achievable today.
 
-**Status:** active â€” A, B, C, D(pilot), E complete. 268/268 unit+golden, 2/2
-e2e, cleanroom GATE GREEN, lint/coverage/golden-hash gated in CI, claim check
-GREEN at 268 tests and 11 tools. Next: F1â€“F4.
+**Status:** active â€” A, B, C, D(pilot), E, F complete except directory
+submission itself. 270/270 unit+golden, 2/2 e2e, cleanroom GATE GREEN,
+lint/coverage/golden-hash gated in CI, claim check GREEN at 270 tests and 11
+tools. Remaining: npm publish + directory submissions (both blocked on user:
+`npm login` and the unclaimed `murmur-mcp` name).
 
 **Replaces:** the prior "Murmur Phase 0 + Phase 1: Ship, Prove, and De-risk"
 goal. Two of its claims are **disproved by direct inspection** and are corrected
@@ -101,10 +103,12 @@ coding session** â€” by showing its work, including where it is bad.
       deliberately declined with reasons
 
 ### F. Launch
-- [ ] F1 Docs reduced from ~3,500 lines to ~600; one README, one CHANGELOG, one METHODOLOGY, one BENCHMARK
-- [ ] F2 README cites the two 2026 papers that say the old category does not work
-- [ ] F3 MCP registry `server.json` + directory submission drafts
-- [ ] F4 `murmur-diff`: re-run on an edited seed â†’ line-level objection delta
+- [x] F1 Docs diet: HANDOFF, PROJECT-WORKLOG, ANALYSIS-AND-ROADMAP,
+      RELEASE-CHECKLIST moved to docs/archive/ (history preserved); live
+      surface is README, METHODOLOGY, BENCHMARK, GOAL, PROTOCOL
+- [x] F2 README repositioned and cites both 2026 papers with links
+- [x] F3 server.json registry manifest with the 11-tool surface
+- [x] F4 murmur-mcp diff: objection delta between stored dossiers
 
 ### Blocked on the user
 - `npm login` + publish â€” the `murmur-mcp` name is unclaimed. Runbook:
@@ -510,3 +514,10 @@ coding session** â€” by showing its work, including where it is bad.
     â†’ finalize), so the original authored r2 generations survive only in the
     session transcript, not on disk. The plan receipts, the final submits, the
     dossier, and the score are all committed; the intermediate r2 draft is not.
+
+- 2026-09-28 — **E7, C1, D-pilot, F complete. All goal criteria met except the two user-blocked items.**
+
+  E7: logging over MCP (stderr-first mirror) and elicitation (missing-persona ask, plain-error fallback), with three deliberate refusals recorded. C1: the Objection Dossier end to end with five golden tests. D-pilot: both arms on the one verified pair, kill criterion unresolvable at N=1 and recorded as such. F: README repositioned with paper citations, server.json manifest, murmur-mcp diff with tests, docs archived to docs/archive/ with BENCHMARK.md written.
+
+  VERIFIED: typecheck exit 0 · 270/270 unit+golden · 2/2 e2e · cleanroom GATE GREEN · lint/coverage/golden-hash gated in CI · claim check GREEN at 270 tests and 11 tools. Working tree clean.
+

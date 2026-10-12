@@ -182,22 +182,24 @@ publish it in `gallery/` and replace this line with the measured figure.
 
 ## Where to read more
 
-- [`ANALYSIS-AND-ROADMAP.md`](ANALYSIS-AND-ROADMAP.md) — the blunt review that
-  produced this codebase, the phase plan, its status, and the agreed guardrails
-- [`RELEASE-CHECKLIST.md`](RELEASE-CHECKLIST.md) — what is left before launch,
-  in order (repo, npm, real-LLM flagship run, directories)
+- [`METHODOLOGY.md`](METHODOLOGY.md) — what a run is and is not, the metrics
+  that restate each other, and how to argue with a report
+- [`BENCHMARK.md`](BENCHMARK.md) — the pre-registered attempt to measure recall
+  against real reactions, and what it found
+- [`GOAL.md`](GOAL.md) — the standing objective, success criteria, and the full
+  build log with verification evidence
 - [`gallery/`](gallery/README.md) — published runs (real ones and clearly
   labeled mock measurements)
-- [`murmur-demo/FLAGSHIP-DEMO.md`](murmur-demo/FLAGSHIP-DEMO.md) — the 48 × 8
-  real-LLM protocol and its results table
+- [`murmur-demo/FLAGSHIP-DEMO.md`](murmur-demo/FLAGSHIP-DEMO.md) — the real-LLM
+  protocol and its status (blocked on model access, recorded honestly)
 - [`murmur/GOOD-FIRST-ISSUES.md`](murmur/GOOD-FIRST-ISSUES.md) — ten scoped
   starter tasks for contributors
-- [`PROJECT-WORKLOG.md`](PROJECT-WORKLOG.md) — the full build journal (design
-  decisions, test counts, what was cut and why)
+- [`docs/archive/`](docs/archive/) — superseded process docs (handoffs,
+  worklogs, roadmaps, release checklists), kept for history
 
 | Topic | File |
 |---|---|
-| Project journal (how it was built) | `PROJECT-WORKLOG.md` |
+| Project goal and build log | `GOAL.md` |
 | Original PRD + technical plan (24 pp) | `murmur/docs/Murmur-PRD-Technical-Plan-v1.0.pdf` |
 | Install matrix, guarantees, layout | `murmur/README.md` |
 | Release notes | `murmur/CHANGELOG.md` + `murmur/packages/server/CHANGELOG.md` |

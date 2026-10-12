@@ -113,14 +113,14 @@ if (registerCalls !== 8) {
 // Documents that make a PRESENT-TENSE claim about the current suite. A wrong
 // number here is a lie a reader will act on.
 const CURRENT_CLAIM_DOCS = [
-  "README.md", "RELEASE-CHECKLIST.md",
+  "README.md",
   "murmur/README.md", "murmur/CONTRIBUTING.md",
 ];
 
 // Dated records. "42/42 green" in a build journal is accurate for the day it
 // was written, and rewriting it would falsify the record rather than fix a
 // lie. Reported so drift is visible, never failed.
-const HISTORICAL_DOCS = ["PROJECT-WORKLOG.md", "murmur/CHANGELOG.md", "murmur/packages/server/CHANGELOG.md"];
+const HISTORICAL_DOCS = ["docs/archive/PROJECT-WORKLOG.md", "murmur/CHANGELOG.md", "murmur/packages/server/CHANGELOG.md"];
 
 const COUNT_CLAIM = /\b(\d{2,3})\s+(?:unit\s*\+\s*golden|unit and golden|passing)?\s*tests?\b|\b(\d{2,3})\/(\d{2,3})\s+unit\+golden\b|\b(\d{2,3})\/(\d{2,3})\s+unit\s+and\s+golden\b/gi;
 
