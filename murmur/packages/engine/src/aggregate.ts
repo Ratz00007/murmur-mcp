@@ -3,11 +3,17 @@
  * stored state: sentiment per entity, stance migration, escalation chains,
  * engagement peaks, leaderboards, timelines.
  */
-import type { Entity, EscalationChain, Post, RoundStats, World } from "./types.js";
+import type {
+  Entity,
+  EscalationChain,
+  Post,
+  RoundStats,
+  World,
+} from "./types.js";
 import type { Storage } from "./store/storage.js";
 import { scoreSentiment } from "./sentiment.js";
 import { engagementScore } from "./util/engagement.js";
-import { round2Safe } from "./util/text.js";
+import { FETCH_ALL, round2Safe } from "./util/text.js";
 import { applyOpinionDynamics } from "./dynamics/opinion.js";
 
 export interface Mover {
@@ -18,7 +24,12 @@ export interface Mover {
 }
 
 /** Stance migration: personas drift toward what they expressed this round. */
-export function computeMovers(storage: Storage, world: World, resolve: (id: string) => import("./types.js").Persona | undefined, newPosts: Post[]): Mover[] {
+export function computeMovers(
+  storage: Storage,
+  world: World,
+  resolve: (id: string) => import("./types.js").Persona | undefined,
+  newPosts: Post[],
+): Mover[] {
   const movers: Mover[] = [];
   const entities = storage.listEntities(world.id);
   const byPersona = new Map<string, Post[]>();
@@ -28,21 +39,40 @@ export function computeMovers(storage: Storage, world: World, resolve: (id: stri
     if (arr) arr.push(p);
     else byPersona.set(p.personaId, [p]);
   }
-  for (const [personaId, posts] of [...byPersona.entries()].sort((a, b) => a[0].localeCompare(b[0], "en", { numeric: true }))) {
+  for (const [personaId, posts] of [...byPersona.entries()].sort((a, b) =>
+    a[0].localeCompare(b[0], "en", { numeric: true }),
+  )) {
     const persona = resolve(personaId);
     if (!persona) continue;
     const entities2 = entities;
     const entityNames = new Map(entities2.map((e) => [e.id, e.name]));
     for (const entity of entities2) {
-      const relevant = posts.filter((p) => p.mentions.some((m) => m.entityId === entity.id));
+      const relevant = posts.filter((p) =>
+        p.mentions.some((m) => m.entityId === entity.id),
+      );
       if (relevant.length === 0) continue;
-      const expressed = mean(relevant.flatMap((p) => p.mentions.filter((m) => m.entityId === entity.id).map((m) => m.score)).filter((v) => Math.abs(v) >= 0.15));
+      const expressed = mean(
+        relevant
+          .flatMap((p) =>
+            p.mentions
+              .filter((m) => m.entityId === entity.id)
+              .map((m) => m.score),
+          )
+          .filter((v) => Math.abs(v) >= 0.15),
+      );
       if (expressed === null) continue;
       const current = persona.stances[entity.id] ?? 0;
-      const next = round2Safe(Math.max(-1, Math.min(1, current + 0.1 * (expressed - current))));
+      const next = round2Safe(
+        Math.max(-1, Math.min(1, current + 0.1 * (expressed - current))),
+      );
       if (Math.abs(next - current) >= 0.02) {
         persona.stances[entity.id] = next;
-        movers.push({ personaId, entity: entityNames.get(entity.id) ?? entity.id, from: round2Safe(current), to: next });
+        movers.push({
+          personaId,
+          entity: entityNames.get(entity.id) ?? entity.id,
+          from: round2Safe(current),
+          to: next,
+        });
       }
     }
     storage.patchPersona(world.id, persona.id, { stances: persona.stances });
@@ -54,16 +84,27 @@ export function computeMovers(storage: Storage, world: World, resolve: (id: stri
   // `dynamics:${round}:${i}`) inside applyOpinionDynamics, so replays of the
   // same world seed stay byte-identical. Round comes from this round's posts
   // (the world round has not advanced yet at this point in ingest).
-  const dynRound = newPosts.length > 0 ? Math.max(...newPosts.map((p) => p.round)) : world.round + 1;
+  const dynRound =
+    newPosts.length > 0
+      ? Math.max(...newPosts.map((p) => p.round))
+      : world.round + 1;
   const dynPopulation = storage.listPersonas(world.id);
-  const dyn = applyOpinionDynamics(world, dynRound, { ...(world.config.dynamics ?? {}), personas: dynPopulation });
+  const dyn = applyOpinionDynamics(world, dynRound, {
+    ...(world.config.dynamics ?? {}),
+    personas: dynPopulation,
+  });
   if (dyn.changed.length > 0) {
     const entityNames = new Map(entities.map((e) => [e.id, e.name]));
     const byDynId = new Map(dynPopulation.map((p) => [p.id, p]));
     for (const m of dyn.changed) {
       // Same migration threshold as the self-expression movers above.
       if (Math.abs(m.to - m.from) >= 0.02) {
-        movers.push({ personaId: m.personaId, entity: entityNames.get(m.entityId) ?? m.entityId, from: round2Safe(m.from), to: m.to });
+        movers.push({
+          personaId: m.personaId,
+          entity: entityNames.get(m.entityId) ?? m.entityId,
+          from: round2Safe(m.from),
+          to: m.to,
+        });
       }
     }
     for (const id of new Set(dyn.changed.map((m) => m.personaId))) {
@@ -86,14 +127,31 @@ export function buildRoundStats(
   activated: string[],
   lurkers: string[],
   movers: Mover[],
-  newViral: string[]
+  newViral: string[],
 ): RoundStats {
-  const posts = storage.listPosts(world.id, { minRound: round, maxRound: round, limit: 100000 });
+  const posts = storage.listPosts(world.id, {
+    minRound: round,
+    maxRound: round,
+    limit: FETCH_ALL,
+  });
   const entities = storage.listEntities(world.id);
   const entityNames = new Map(entities.map((e) => [e.id, e.name]));
   const postsByPlatform = { twitter: 0, reddit: 0 };
-  const actions = { posts: 0, replies: 0, comments: 0, reposts: 0, quotes: 0, votes: 0 };
-  const engagement = { likes: 0, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 };
+  const actions = {
+    posts: 0,
+    replies: 0,
+    comments: 0,
+    reposts: 0,
+    quotes: 0,
+    votes: 0,
+  };
+  const engagement = {
+    likes: 0,
+    reposts: 0,
+    upvotes: 0,
+    downvotes: 0,
+    impressions: 0,
+  };
   const sentimentAcc = new Map<string, number[]>();
   for (const p of posts) {
     postsByPlatform[p.platform]++;
@@ -118,11 +176,19 @@ export function buildRoundStats(
   actions.votes = engagement.likes + engagement.upvotes + engagement.downvotes;
   const sentimentByEntity: Record<string, number> = {};
   for (const [id, arr] of [...sentimentAcc.entries()].sort()) {
+    const name = entityNames.get(id);
     const m = mean(arr);
-    if (m !== null && entityNames.has(id)) sentimentByEntity[entityNames.get(id)!] = round2Safe(m);
+    if (name !== undefined && m !== null)
+      sentimentByEntity[name] = round2Safe(m);
   }
   const escalations = escalationChains(storage, world, round, 5);
-  const injections = storage.listEvents(world.id, { type: "injection", sinceRound: round, upToRound: round }).map((e) => e.id);
+  const injections = storage
+    .listEvents(world.id, {
+      type: "injection",
+      sinceRound: round,
+      upToRound: round,
+    })
+    .map((e) => e.id);
   return {
     round,
     postsByPlatform,
@@ -139,31 +205,49 @@ export function buildRoundStats(
 }
 
 /** Reply/comment chains where sentiment intensifies as the thread deepens. */
-export function escalationChains(storage: Storage, world: World, round: number, top = 5): EscalationChain[] {
-  const posts = storage.listPosts(world.id, { minRound: round - 2, maxRound: round, limit: 100000 });
+export function escalationChains(
+  storage: Storage,
+  world: World,
+  round: number,
+  top = 5,
+): EscalationChain[] {
+  const posts = storage.listPosts(world.id, {
+    minRound: round - 2,
+    maxRound: round,
+    limit: FETCH_ALL,
+  });
   const byId = new Map(posts.map((p) => [p.id, p]));
   const children = new Map<string, Post[]>();
   const roots: Post[] = [];
   for (const p of posts) {
     if (p.kind === "reply" || p.kind === "comment") {
-      if (!byId.has(p.parentId ?? "")) {
+      const parentId = p.parentId;
+      if (parentId === undefined || parentId === null || !byId.has(parentId)) {
         roots.push(p);
         continue;
       }
-      const arr = children.get(p.parentId!);
+      const arr = children.get(parentId);
       if (arr) arr.push(p);
-      else children.set(p.parentId!, [p]);
+      else children.set(parentId, [p]);
     }
   }
   const chains: EscalationChain[] = [];
   const walk = (path: Post[]) => {
     const leaf = path[path.length - 1];
-    const kids = (children.get(leaf.id) ?? []).sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));
+    const kids = (children.get(leaf.id) ?? []).sort((a, b) =>
+      a.id.localeCompare(b.id, "en", { numeric: true }),
+    );
     if (kids.length === 0) {
       if (path.length >= 3) {
         const sentiments = path.map((p) => postSentiment(p));
-        const intensify = sentiments.slice(1).filter((s, i) => Math.abs(s) >= Math.abs(sentiments[i]) - 0.05).length;
-        const grew = Math.abs(sentiments[sentiments.length - 1]) > Math.abs(sentiments[0]) + 0.1;
+        const intensify = sentiments
+          .slice(1)
+          .filter(
+            (s, i) => Math.abs(s) >= Math.abs(sentiments[i]) - 0.05,
+          ).length;
+        const grew =
+          Math.abs(sentiments[sentiments.length - 1]) >
+          Math.abs(sentiments[0]) + 0.1;
         if (intensify >= path.length / 2 && grew) {
           chains.push({
             rootId: path[0].id,
@@ -171,7 +255,9 @@ export function escalationChains(storage: Storage, world: World, round: number, 
             depth: path.length,
             participants: [...new Set(path.map((p) => p.personaId))],
             finalSentiment: round2Safe(sentiments[sentiments.length - 1]),
-            severity: round2Safe(path.length * (Math.abs(sentiments[sentiments.length - 1]) + 0.3)),
+            severity: round2Safe(
+              path.length * (Math.abs(sentiments[sentiments.length - 1]) + 0.3),
+            ),
           });
         }
       }
@@ -179,8 +265,13 @@ export function escalationChains(storage: Storage, world: World, round: number, 
     }
     for (const k of kids) walk([...path, k]);
   };
-  for (const r of roots.sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }))) walk([r]);
-  return chains.sort((a, b) => b.severity - a.severity || a.rootId.localeCompare(b.rootId)).slice(0, top);
+  for (const r of roots.sort((a, b) =>
+    a.id.localeCompare(b.id, "en", { numeric: true }),
+  ))
+    walk([r]);
+  return chains
+    .sort((a, b) => b.severity - a.severity || a.rootId.localeCompare(b.rootId))
+    .slice(0, top);
 }
 
 export function postSentiment(p: Post): number {
@@ -198,19 +289,34 @@ export interface LeaderRow {
   engagementGiven: number;
 }
 
-export function leaderboards(storage: Storage, world: World, limit = 10): LeaderRow[] {
+export function leaderboards(
+  storage: Storage,
+  world: World,
+  limit = 10,
+): LeaderRow[] {
   const personas = storage.listPersonas(world.id);
-  const posts = storage.listPosts(world.id, { limit: 100000 });
+  const posts = storage.listPosts(world.id, { limit: FETCH_ALL });
   const rows = personas.map((p) => {
     const own = posts.filter((x) => x.personaId === p.id);
-    const received = own.reduce(
-      (a, x) => a + engagementScore(x.metrics),
-      0
-    );
+    const received = own.reduce((a, x) => a + engagementScore(x.metrics), 0);
     const given = 0; // generated votes are metric bumps on others' posts, never on their own
-    return { personaId: p.id, handle: p.handle, name: p.name, archetype: p.archetype, posts: own.length, engagementReceived: received, engagementGiven: given };
+    return {
+      personaId: p.id,
+      handle: p.handle,
+      name: p.name,
+      archetype: p.archetype,
+      posts: own.length,
+      engagementReceived: received,
+      engagementGiven: given,
+    };
   });
-  return rows.sort((a, b) => b.engagementReceived - a.engagementReceived || a.personaId.localeCompare(b.personaId)).slice(0, limit);
+  return rows
+    .sort(
+      (a, b) =>
+        b.engagementReceived - a.engagementReceived ||
+        a.personaId.localeCompare(b.personaId),
+    )
+    .slice(0, limit);
 }
 
 export interface TimelineRow {
@@ -257,20 +363,35 @@ export function engagementPeaks(rows: TimelineRow[]): number[] {
 }
 
 /** Per-round sentiment curve for one entity, over the whole run. */
-export function sentimentCurve(storage: Storage, world: World, entity: Entity): { round: number; value: number }[] {
+export function sentimentCurve(
+  storage: Storage,
+  world: World,
+  entity: Entity,
+): { round: number; value: number }[] {
   const out: { round: number; value: number }[] = [];
   for (let r = 1; r <= world.round; r++) {
-    const posts = storage.listPosts(world.id, { minRound: r, maxRound: r, limit: 100000 });
-    const scores = posts.flatMap((p) => p.mentions.filter((m) => m.entityId === entity.id).map((m) => m.score));
+    const posts = storage.listPosts(world.id, {
+      minRound: r,
+      maxRound: r,
+      limit: FETCH_ALL,
+    });
+    const scores = posts.flatMap((p) =>
+      p.mentions.filter((m) => m.entityId === entity.id).map((m) => m.score),
+    );
     const m = mean(scores);
     if (m !== null) out.push({ round: r, value: round2Safe(m) });
   }
   return out;
 }
 
-export function topPostsByEngagement(storage: Storage, world: World, limit = 10, minAbsSentiment = 0): { post: Post; sentiment: number }[] {
+export function topPostsByEngagement(
+  storage: Storage,
+  world: World,
+  limit = 10,
+  minAbsSentiment = 0,
+): { post: Post; sentiment: number }[] {
   const posts = storage
-    .listPosts(world.id, { limit: 100000 })
+    .listPosts(world.id, { limit: FETCH_ALL })
     .filter((p) => p.kind !== "repost");
   const scored = posts.map((p) => {
     const engagement = engagementScore(p.metrics);
@@ -278,9 +399,10 @@ export function topPostsByEngagement(storage: Storage, world: World, limit = 10,
   });
   return scored
     .filter((s) => Math.abs(s.sentiment) >= minAbsSentiment)
-    .sort((a, b) => b.engagement - a.engagement || a.post.id.localeCompare(b.post.id))
+    .sort(
+      (a, b) =>
+        b.engagement - a.engagement || a.post.id.localeCompare(b.post.id),
+    )
     .slice(0, limit)
     .map((s) => ({ post: s.post, sentiment: round2Safe(s.sentiment) }));
 }
-
-

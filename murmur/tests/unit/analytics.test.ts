@@ -43,21 +43,33 @@ import {
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "murmur-analytics-"));
 
-function newWorld(seed = "analytics-1"): { db: Storage; world: World; dir: string } {
+function newWorld(seed = "analytics-1"): {
+  db: Storage;
+  world: World;
+  dir: string;
+} {
   const dir = tmp();
   const db = new Storage(openDatabase(path.join(dir, "murmur.db")));
   const world = db.createWorld({ name: "analytics world", seed });
   return { db, world, dir };
 }
 
-function persona(over: Partial<Persona> & { id: string }): Omit<Persona, "worldId" | "createdAt"> {
+function persona(
+  over: Partial<Persona> & { id: string },
+): Omit<Persona, "worldId" | "createdAt"> {
   const suffix = over.id.replace(/^p_/, "");
   return {
     name: `P${suffix}`,
     handle: `@p${suffix}`,
     archetype: "casual",
     bio: "bio",
-    traits: { openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, emotionalStability: 0.5 },
+    traits: {
+      openness: 0.5,
+      conscientiousness: 0.5,
+      extraversion: 0.5,
+      agreeableness: 0.5,
+      emotionalStability: 0.5,
+    },
     stances: {},
     platform: "both",
     activity: 0.5,
@@ -90,11 +102,31 @@ function post(over: Partial<Post> & { id: string; worldId: string }): Post {
  * both platforms, and a round_stats event per round so the timeline, mover and
  * escalation readers all have data.
  */
-function fixture(): { db: Storage; world: World; focus: Entity; other: Entity; dir: string } {
+function fixture(): {
+  db: Storage;
+  world: World;
+  focus: Entity;
+  other: Entity;
+  dir: string;
+} {
   const { db, world, dir } = newWorld();
   const { inserted } = db.insertEntities(world.id, [
-    { name: "Acme Cloud", type: "org", description: "the company", salience: 0.9, anchors: [], motives: [] },
-    { name: "Nimbus Labs", type: "org", description: "the rival", salience: 0.7, anchors: [], motives: [] },
+    {
+      name: "Acme Cloud",
+      type: "org",
+      description: "the company",
+      salience: 0.9,
+      anchors: [],
+      motives: [],
+    },
+    {
+      name: "Nimbus Labs",
+      type: "org",
+      description: "the rival",
+      salience: 0.7,
+      anchors: [],
+      motives: [],
+    },
   ]);
   const focus = inserted[0];
   const other = inserted[1];
@@ -108,7 +140,7 @@ function fixture(): { db: Storage; world: World; focus: Entity; other: Entity; d
       persona({ id: "p_4", stances: { [focus.id]: -0.7 } }),
       persona({ id: "p_5", stances: { [focus.id]: -0.4 } }),
       persona({ id: "p_6", stances: { [focus.id]: 0.05 } }), // inside the ±0.2 deadband → undecided
-    ].map((p) => p as Omit<Persona, "worldId" | "createdAt">)
+    ].map((p) => p as Omit<Persona, "worldId" | "createdAt">),
   );
 
   for (let r = 1; r <= 3; r++) {
@@ -119,8 +151,17 @@ function fixture(): { db: Storage; world: World; focus: Entity; other: Entity; d
         round: r,
         personaId: `p_${i}`,
         platform: "twitter",
-        body: i <= 3 ? "Acme Cloud great reliability" : "Acme Cloud terrible paywall ripoff",
-        metrics: { likes: i, reposts: 0, upvotes: 0, downvotes: 0, impressions: 10 },
+        body:
+          i <= 3
+            ? "Acme Cloud great reliability"
+            : "Acme Cloud terrible paywall ripoff",
+        metrics: {
+          likes: i,
+          reposts: 0,
+          upvotes: 0,
+          downvotes: 0,
+          impressions: 10,
+        },
         mentions: [{ entityId: focus.id, score: i <= 3 ? 0.6 : -0.7 }],
       });
       const rd = post({
@@ -131,7 +172,13 @@ function fixture(): { db: Storage; world: World; focus: Entity; other: Entity; d
         platform: "reddit",
         kind: "post",
         body: i <= 3 ? "Acme Cloud good news" : "Acme Cloud bad news",
-        metrics: { likes: 0, reposts: 0, upvotes: i, downvotes: 0, impressions: 5 },
+        metrics: {
+          likes: 0,
+          reposts: 0,
+          upvotes: i,
+          downvotes: 0,
+          impressions: 5,
+        },
         mentions: [{ entityId: focus.id, score: i <= 3 ? 0.4 : -0.5 }],
       });
       db.insertPost(tw);
@@ -145,18 +192,46 @@ function fixture(): { db: Storage; world: World; focus: Entity; other: Entity; d
         stats: {
           round: r,
           postsByPlatform: { twitter: 6, reddit: 6 },
-          actions: { posts: 12, replies: 0, comments: 0, reposts: 0, quotes: 0, votes: 0 },
-          engagement: { likes: 21, reposts: 0, upvotes: 21, downvotes: 0, impressions: 90 },
+          actions: {
+            posts: 12,
+            replies: 0,
+            comments: 0,
+            reposts: 0,
+            quotes: 0,
+            votes: 0,
+          },
+          engagement: {
+            likes: 21,
+            reposts: 0,
+            upvotes: 21,
+            downvotes: 0,
+            impressions: 90,
+          },
           sentimentByEntity: { "Acme Cloud": r <= 2 ? 0.5 : 0.2 },
-          topMovers: r === 1 ? [{ personaId: "p_1", entity: "Acme Cloud", from: 0.5, to: 0.8 }] : [],
-          escalations: r === 2 ? [{ rootId: "po_tw_2_1", path: ["po_tw_2_1", "po_tw_2_2"], depth: 2, participants: ["p_1", "p_2"], finalSentiment: -0.8, severity: 1.4 }] : [],
+          topMovers:
+            r === 1
+              ? [{ personaId: "p_1", entity: "Acme Cloud", from: 0.5, to: 0.8 }]
+              : [],
+          escalations:
+            r === 2
+              ? [
+                  {
+                    rootId: "po_tw_2_1",
+                    path: ["po_tw_2_1", "po_tw_2_2"],
+                    depth: 2,
+                    participants: ["p_1", "p_2"],
+                    finalSentiment: -0.8,
+                    severity: 1.4,
+                  },
+                ]
+              : [],
           newViral: [],
           injections: [],
           activated: ["p_1"],
           lurkers: [],
         },
       },
-      "world"
+      "world",
     );
   }
   db.updateWorld(world.id, { round: 3 });
@@ -192,13 +267,22 @@ describe("attributedSentiment", () => {
   it("falls back to post-level sentiment when no sentence names the entity", () => {
     // A post about the rival only still yields a finite, rival-scored number
     // rather than 0 — the fallback is the whole-post score, not a zero.
-    const rivalOnly = post({ id: "po_attr_rival", worldId: world.id, body: "Nimbus Labs is great", mentions: [] });
+    const rivalOnly = post({
+      id: "po_attr_rival",
+      worldId: world.id,
+      body: "Nimbus Labs is great",
+      mentions: [],
+    });
     const score = attributedSentiment(rivalOnly, focus, ["Nimbus Labs"]);
     expect(score).toBeGreaterThan(0);
   });
 
   it("is word-bounded: a longer word that merely starts with the name is not a mention", () => {
-    const p = post({ id: "po_attr_2", worldId: world.id, body: "Acmeless is terrible. AcmeCloud is awful." });
+    const p = post({
+      id: "po_attr_2",
+      worldId: world.id,
+      body: "Acmeless is terrible. AcmeCloud is awful.",
+    });
     const e: Entity = { ...focus, name: "Acme" };
     // No sentence names "Acme" as a word, so the whole-post score applies and
     // the post is not treated as being about the entity at all.
@@ -206,19 +290,33 @@ describe("attributedSentiment", () => {
   });
 
   it("is case-insensitive", () => {
-    const p = post({ id: "po_attr_2b", worldId: world.id, body: "ACME CLOUD is great." });
+    const p = post({
+      id: "po_attr_2b",
+      worldId: world.id,
+      body: "ACME CLOUD is great.",
+    });
     const e: Entity = { ...focus, name: "acme cloud" };
     expect(attributedSentiment(p, e)).toBeGreaterThan(0);
   });
 
   it("includes the two following sentences after the anchor, where punchlines live", () => {
-    const p = post({ id: "po_attr_3", worldId: world.id, body: "Neutral. Acme Cloud is great. Also great. Also great." });
+    const p = post({
+      id: "po_attr_3",
+      worldId: world.id,
+      body: "Neutral. Acme Cloud is great. Also great. Also great.",
+    });
     expect(attributedSentiment(p, focus, [])).toBeGreaterThan(0.3);
   });
 
   it("ignores the entity's own name in the other-entity list", () => {
-    const p = post({ id: "po_attr_4", worldId: world.id, body: "Acme Cloud is great." });
-    expect(attributedSentiment(p, focus, ["Acme Cloud", other.name])).toBe(attributedSentiment(p, focus, [other.name]));
+    const p = post({
+      id: "po_attr_4",
+      worldId: world.id,
+      body: "Acme Cloud is great.",
+    });
+    expect(attributedSentiment(p, focus, ["Acme Cloud", other.name])).toBe(
+      attributedSentiment(p, focus, [other.name]),
+    );
   });
 
   it("returns 0 for an empty post body rather than throwing", () => {
@@ -260,9 +358,15 @@ describe("factionAnalysis", () => {
         personaId: "p_1",
         kind: "repost",
         body: "Acme Cloud great",
-        metrics: { likes: 99, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 },
+        metrics: {
+          likes: 99,
+          reposts: 0,
+          upvotes: 0,
+          downvotes: 0,
+          impressions: 0,
+        },
         mentions: [{ entityId: focus.id, score: 0.9 }],
-      })
+      }),
     );
     const after = factionAnalysis(db, world, focus);
     const sup = after.factions.find((f) => f.key === "supporters")!;
@@ -279,7 +383,9 @@ describe("factionAnalysis", () => {
     for (const f of a.factions) {
       expect(f.leaders.length).toBeLessThanOrEqual(3);
       for (let i = 1; i < f.leaders.length; i++) {
-        expect(f.leaders[i - 1].engagement).toBeGreaterThanOrEqual(f.leaders[i].engagement);
+        expect(f.leaders[i - 1].engagement).toBeGreaterThanOrEqual(
+          f.leaders[i].engagement,
+        );
       }
     }
     db.close();
@@ -294,17 +400,30 @@ describe("factionAnalysis", () => {
         worldId: world.id,
         personaId: "p_1",
         body: "completely unrelated chatter about nothing at all",
-        metrics: { likes: 50, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 },
-      })
+        metrics: {
+          likes: 50,
+          reposts: 0,
+          upvotes: 0,
+          downvotes: 0,
+          impressions: 0,
+        },
+      }),
     );
     const a = factionAnalysis(db, world, focus);
     for (const f of a.factions) {
       const authors = f.quotes.map((q) => q.by);
-      expect(new Set(authors).size, `faction ${f.key} repeats an author`).toBe(authors.length);
+      expect(new Set(authors).size, `faction ${f.key} repeats an author`).toBe(
+        authors.length,
+      );
       for (const q of f.quotes) {
         const p = db.getPost(world.id, q.id)!;
-        expect(p.mentions.some((m) => m.entityId === focus.id) || p.body.length > 0).toBe(true);
-        expect(q.attrSentiment, "a quote that names the focus carries attributed sentiment").toBeTypeOf("number");
+        expect(
+          p.mentions.some((m) => m.entityId === focus.id) || p.body.length > 0,
+        ).toBe(true);
+        expect(
+          q.attrSentiment,
+          "a quote that names the focus carries attributed sentiment",
+        ).toBeTypeOf("number");
       }
     }
     db.close();
@@ -314,9 +433,13 @@ describe("factionAnalysis", () => {
   it("honours the exclude set when another section already claimed the quotes", () => {
     const { db, world, focus, dir } = fixture();
     const all = factionAnalysis(db, world, focus);
-    const claimed = new Set(all.factions.flatMap((f) => f.quotes.map((q) => q.id)));
+    const claimed = new Set(
+      all.factions.flatMap((f) => f.quotes.map((q) => q.id)),
+    );
     const second = factionAnalysis(db, world, focus, claimed);
-    const secondIds = new Set(second.factions.flatMap((f) => f.quotes.map((q) => q.id)));
+    const secondIds = new Set(
+      second.factions.flatMap((f) => f.quotes.map((q) => q.id)),
+    );
     for (const id of secondIds) expect(claimed.has(id)).toBe(false);
     db.close();
     fs.rmSync(dir, { recursive: true, force: true });
@@ -327,7 +450,7 @@ describe("factionAnalysis", () => {
     const a = factionAnalysis(db, world, null);
     const und = a.factions.find((f) => f.key === "undecided")!;
     expect(und.size).toBe(6);
-    expect(a.factions.find((f) => f.key === "supporters")!.size).toBe(0);
+    expect(a.factions.find((f) => f.key === "supporters")?.size).toBe(0);
     // No commitment → no polarization, and the mood is the "coalescing" one.
     expect(a.polarization).toBe(0);
     expect(a.verdict).toContain("still coalescing");
@@ -357,23 +480,30 @@ describe("crossPlatform", () => {
 
     // The rival is never mentioned, so it is dropped from the table entirely.
     expect(c.rows.map((r) => r.entity)).toEqual(["Acme Cloud"]);
-    expect(c.maxDivergence!.value).toBe(0);
+    expect(c.maxDivergence?.value).toBe(0);
     db.close();
     fs.rmSync(dir, { recursive: true, force: true });
   });
 
   it("returns null platform means and no maxDivergence when an entity is one-platform only", () => {
     const { db, world, focus, dir } = fixture();
-    for (const p of db.listPosts(world.id, { platform: "reddit" }).slice(0, 9)) {
+    for (const p of db
+      .listPosts(world.id, { platform: "reddit" })
+      .slice(0, 9)) {
       db.updatePostMetrics(world.id, p.id, p.metrics);
     }
     // Remove every reddit post: the entity now has Twitter only.
-    db.db.prepare("DELETE FROM posts WHERE world_id=? AND platform='reddit'").run(world.id);
+    db.db
+      .prepare("DELETE FROM posts WHERE world_id=? AND platform='reddit'")
+      .run(world.id);
     const c = crossPlatform(db, world, [focus]);
     const row = c.rows[0];
     expect(row.reddit).toBeNull();
     expect(row.twPosts).toBeGreaterThan(0);
-    expect(c.maxDivergence, "a one-sided entity has no comparable split").toBeNull();
+    expect(
+      c.maxDivergence,
+      "a one-sided entity has no comparable split",
+    ).toBeNull();
     db.close();
     fs.rmSync(dir, { recursive: true, force: true });
   });
@@ -400,10 +530,16 @@ describe("controversyIndex", () => {
     expect(c.drivers[2].weight).toBe(30);
     // 40·polarization + 30·negShare + 30·clamp(escPerRound/2)
     const recomputed = Math.round(
-      c.drivers.reduce((acc, d) => acc + d.value * d.weight, 0)
+      c.drivers.reduce((acc, d) => acc + d.value * d.weight, 0),
     );
     expect(c.score).toBe(recomputed);
-    expect(["low-stakes", "simmering", "contested", "polarized", "combustible"]).toContain(c.label);
+    expect([
+      "low-stakes",
+      "simmering",
+      "contested",
+      "polarized",
+      "combustible",
+    ]).toContain(c.label);
     expect(c.drivers[2].label).toContain("1 chains over 3 rounds");
     db.close();
     fs.rmSync(dir, { recursive: true, force: true });
@@ -461,10 +597,25 @@ describe("personaArcs and startStances", () => {
         stats: {
           round: 2,
           postsByPlatform: { twitter: 0, reddit: 0 },
-          actions: { posts: 0, replies: 0, comments: 0, reposts: 0, quotes: 0, votes: 0 },
-          engagement: { likes: 0, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 },
+          actions: {
+            posts: 0,
+            replies: 0,
+            comments: 0,
+            reposts: 0,
+            quotes: 0,
+            votes: 0,
+          },
+          engagement: {
+            likes: 0,
+            reposts: 0,
+            upvotes: 0,
+            downvotes: 0,
+            impressions: 0,
+          },
           sentimentByEntity: {},
-          topMovers: [{ personaId: "p_4", entity: "Acme Cloud", from: 0.3, to: -0.7 }],
+          topMovers: [
+            { personaId: "p_4", entity: "Acme Cloud", from: 0.3, to: -0.7 },
+          ],
           escalations: [],
           newViral: [],
           injections: [],
@@ -472,7 +623,7 @@ describe("personaArcs and startStances", () => {
           lurkers: [],
         },
       },
-      "world"
+      "world",
     );
     const arcs = personaArcs(db, world, focus, 6);
     const p4 = arcs.find((a) => a.personaId === "p_4")!;
@@ -487,7 +638,9 @@ describe("personaArcs and startStances", () => {
     const arcs = personaArcs(db, world, focus, 2);
     expect(arcs).toHaveLength(2);
     for (let i = 1; i < arcs.length; i++) {
-      expect(Math.abs(arcs[i - 1].delta)).toBeGreaterThanOrEqual(Math.abs(arcs[i].delta));
+      expect(Math.abs(arcs[i - 1].delta)).toBeGreaterThanOrEqual(
+        Math.abs(arcs[i].delta),
+      );
     }
     db.close();
     fs.rmSync(dir, { recursive: true, force: true });
@@ -508,7 +661,7 @@ describe("personaArcs and startStances", () => {
     const arcs = personaArcs(db, world, focus, 6, new Set(claimed));
     const p1 = arcs.find((a) => a.personaId === "p_1")!;
     expect(p1.signatureQuote).not.toBeNull();
-    expect(claimed).not.toContain(p1.signatureQuote!.id);
+    expect(claimed).not.toContain(p1.signatureQuote?.id);
     db.close();
     fs.rmSync(dir, { recursive: true, force: true });
   });
@@ -519,10 +672,16 @@ describe("personaArcs and startStances", () => {
     // alternative is a persona spotlight with no quote at all.
     const { db, world, focus, dir } = fixture();
     const all = db.listPosts(world.id, { personaId: "p_1", limit: 100000 });
-    const arcs = personaArcs(db, world, focus, 6, new Set(all.map((p) => p.id)));
+    const arcs = personaArcs(
+      db,
+      world,
+      focus,
+      6,
+      new Set(all.map((p) => p.id)),
+    );
     const p1 = arcs.find((a) => a.personaId === "p_1")!;
     expect(p1.signatureQuote).not.toBeNull();
-    expect(all.some((p) => p.id === p1.signatureQuote!.id)).toBe(true);
+    expect(all.some((p) => p.id === p1.signatureQuote?.id)).toBe(true);
     db.close();
     fs.rmSync(dir, { recursive: true, force: true });
   });
@@ -535,7 +694,13 @@ describe("personaArcs and startStances", () => {
         handle: "@quiet",
         archetype: "lurker",
         bio: "never posts",
-        traits: { openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, emotionalStability: 0.5 },
+        traits: {
+          openness: 0.5,
+          conscientiousness: 0.5,
+          extraversion: 0.5,
+          agreeableness: 0.5,
+          emotionalStability: 0.5,
+        },
         stances: { [focus.id]: 0.3 },
         platform: "twitter",
         activity: 0.5,
@@ -543,7 +708,9 @@ describe("personaArcs and startStances", () => {
         follows: [],
       },
     ] as never);
-    const quietId = db.listPersonas(world.id).find((p) => p.handle === "@quiet")!.id;
+    const quietId = db
+      .listPersonas(world.id)
+      .find((p) => p.handle === "@quiet")?.id;
     const arcs = personaArcs(db, world, focus, 12);
     const quiet = arcs.find((a) => a.personaId === quietId)!;
     expect(quiet).toBeTruthy();
@@ -563,17 +730,28 @@ describe("quoteBank", () => {
         worldId: world.id,
         personaId: "p_1",
         body: "unrelated chatter",
-        metrics: { likes: 100, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 },
-      })
+        metrics: {
+          likes: 100,
+          reposts: 0,
+          upvotes: 0,
+          downvotes: 0,
+          impressions: 0,
+        },
+      }),
     );
     const bank = quoteBank(db, world, focus, 3);
     for (const q of [...bank.positive, ...bank.negative, ...bank.mixed]) {
       const p = db.getPost(world.id, q.id)!;
-      expect(p.body, "a quote that never names the focus must not reach the bank").toContain("Acme");
+      expect(
+        p.body,
+        "a quote that never names the focus must not reach the bank",
+      ).toContain("Acme");
     }
     expect(bank.positive.every((q) => q.attrSentiment! >= 0.3)).toBe(true);
     expect(bank.negative.every((q) => q.attrSentiment! <= -0.3)).toBe(true);
-    expect(bank.mixed.every((q) => Math.abs(q.attrSentiment!) < 0.3)).toBe(true);
+    expect(bank.mixed.every((q) => Math.abs(q.attrSentiment!) < 0.3)).toBe(
+      true,
+    );
     db.close();
     fs.rmSync(dir, { recursive: true, force: true });
   });
@@ -596,12 +774,17 @@ describe("quoteBank", () => {
     // Only one persona speaks, so perBucket=3 is unreachable with the
     // no-repeat rule; the top-up path must still produce quotes.
     for (const p of db.listPersonas(world.id)) {
-      if (p.id !== "p_1") db.patchPersona(world.id, p.id, { platform: "twitter" });
+      if (p.id !== "p_1")
+        db.patchPersona(world.id, p.id, { platform: "twitter" });
     }
-    db.db.prepare("DELETE FROM posts WHERE world_id=? AND persona_id != 'p_1'").run(world.id);
+    db.db
+      .prepare("DELETE FROM posts WHERE world_id=? AND persona_id != 'p_1'")
+      .run(world.id);
     const bank = quoteBank(db, world, focus, 3);
     expect(bank.positive.length).toBeGreaterThan(0);
-    expect(new Set(bank.positive.map((q) => q.id)).size).toBe(bank.positive.length);
+    expect(new Set(bank.positive.map((q) => q.id)).size).toBe(
+      bank.positive.length,
+    );
     db.close();
     fs.rmSync(dir, { recursive: true, force: true });
   });
@@ -652,8 +835,18 @@ describe("momentum", () => {
   });
 
   it("reports quiet for an empty or all-zero series", () => {
-    expect(momentum([])).toEqual({ firstHalf: 0, secondHalf: 0, pct: 0, trend: "quiet" });
-    expect(momentum([row(0), row(0)])).toEqual({ firstHalf: 0, secondHalf: 0, pct: 0, trend: "quiet" });
+    expect(momentum([])).toEqual({
+      firstHalf: 0,
+      secondHalf: 0,
+      pct: 0,
+      trend: "quiet",
+    });
+    expect(momentum([row(0), row(0)])).toEqual({
+      firstHalf: 0,
+      secondHalf: 0,
+      pct: 0,
+      trend: "quiet",
+    });
   });
 
   it("reports pct 1 when the first half is silent but the second half is not", () => {
@@ -678,7 +871,9 @@ describe("momentum", () => {
 
   it("classifies cooling and steady at the ±25% boundaries", () => {
     // cooling: second half 30 vs first half 60 → pct -0.5
-    expect(momentum([row(30), row(30), row(20), row(10)]).trend).toBe("cooling");
+    expect(momentum([row(30), row(30), row(20), row(10)]).trend).toBe(
+      "cooling",
+    );
     // steady: second half 55 vs first half 50 → pct 0.1
     expect(momentum([row(25), row(25), row(30), row(25)]).trend).toBe("steady");
     // exactly +25% is steady, not accelerating (the test is strict >).
@@ -715,10 +910,13 @@ describe("projectCurve", () => {
   });
 
   it("clamps the extrapolation to [-1, 1]", () => {
-    const p = projectCurve([
-      { round: 1, value: 0.5 },
-      { round: 2, value: 0.9 },
-    ], 20);
+    const p = projectCurve(
+      [
+        { round: 1, value: 0.5 },
+        { round: 2, value: 0.9 },
+      ],
+      20,
+    );
     for (const point of p.points) {
       expect(point.value).toBeLessThanOrEqual(1);
       expect(point.value).toBeGreaterThanOrEqual(-1);
@@ -738,7 +936,13 @@ describe("projectCurve", () => {
 describe("entityTrends", () => {
   it("reports direction, volume, peak round and delta from a real sentiment curve", () => {
     const { db, world, focus, dir } = fixture();
-    const trends = entityTrends(db, world, [focus], (e) => sentimentCurve(db, world, e), 6);
+    const trends = entityTrends(
+      db,
+      world,
+      [focus],
+      (e) => sentimentCurve(db, world, e),
+      6,
+    );
     expect(trends).toHaveLength(1);
     const t = trends[0];
     expect(t.entity).toBe("Acme Cloud");
@@ -773,7 +977,13 @@ describe("entityTrends", () => {
 
   it("drops entities the crowd never mentioned", () => {
     const { db, world, focus, other, dir } = fixture();
-    const trends = entityTrends(db, world, [focus, other], (e) => sentimentCurve(db, world, e), 6);
+    const trends = entityTrends(
+      db,
+      world,
+      [focus, other],
+      (e) => sentimentCurve(db, world, e),
+      6,
+    );
     expect(trends.map((t) => t.entity)).toEqual(["Acme Cloud"]);
     db.close();
     fs.rmSync(dir, { recursive: true, force: true });
@@ -782,10 +992,18 @@ describe("entityTrends", () => {
   it("honours the limit", () => {
     const { db, world, dir } = fixture();
     db.insertPost(
-      post({ id: "po_extra", worldId: world.id, personaId: "p_2", body: "Nimbus Labs great", mentions: [{ entityId: "e_2", score: 0.3 }] })
+      post({
+        id: "po_extra",
+        worldId: world.id,
+        personaId: "p_2",
+        body: "Nimbus Labs great",
+        mentions: [{ entityId: "e_2", score: 0.3 }],
+      }),
     );
     const all = db.listEntities(world.id);
-    expect(entityTrends(db, world, all, () => [{ round: 1, value: 0.1 }], 1)).toHaveLength(1);
+    expect(
+      entityTrends(db, world, all, () => [{ round: 1, value: 0.1 }], 1),
+    ).toHaveLength(1);
     db.close();
     fs.rmSync(dir, { recursive: true, force: true });
   });
@@ -802,18 +1020,40 @@ describe("allEscalations", () => {
         stats: {
           round: 3,
           postsByPlatform: { twitter: 0, reddit: 0 },
-          actions: { posts: 0, replies: 0, comments: 0, reposts: 0, quotes: 0, votes: 0 },
-          engagement: { likes: 0, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 },
+          actions: {
+            posts: 0,
+            replies: 0,
+            comments: 0,
+            reposts: 0,
+            quotes: 0,
+            votes: 0,
+          },
+          engagement: {
+            likes: 0,
+            reposts: 0,
+            upvotes: 0,
+            downvotes: 0,
+            impressions: 0,
+          },
           sentimentByEntity: {},
           topMovers: [],
-          escalations: [{ rootId: "po_tw_2_1", path: ["po_tw_2_1", "po_tw_2_2"], depth: 2, participants: ["p_1", "p_2"], finalSentiment: -0.8, severity: 1.4 }],
+          escalations: [
+            {
+              rootId: "po_tw_2_1",
+              path: ["po_tw_2_1", "po_tw_2_2"],
+              depth: 2,
+              participants: ["p_1", "p_2"],
+              finalSentiment: -0.8,
+              severity: 1.4,
+            },
+          ],
           newViral: [],
           injections: [],
           activated: [],
           lurkers: [],
         },
       },
-      "world"
+      "world",
     );
     const chains = allEscalations(db, world);
     expect(chains).toHaveLength(1);
@@ -839,7 +1079,13 @@ describe("amplification", () => {
       worldId: world.id,
       personaId: "p_1",
       body: "Acme Cloud is great",
-      metrics: { likes: 9, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 },
+      metrics: {
+        likes: 9,
+        reposts: 0,
+        upvotes: 0,
+        downvotes: 0,
+        impressions: 0,
+      },
       mentions: [{ entityId: focus.id, score: 0.5 }],
     });
     db.insertPost(root);
@@ -852,8 +1098,14 @@ describe("amplification", () => {
           kind: "repost",
           parentId: root.id,
           body: "↻ Acme Cloud is great",
-          metrics: { likes: 0, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 },
-        })
+          metrics: {
+            likes: 0,
+            reposts: 0,
+            upvotes: 0,
+            downvotes: 0,
+            impressions: 0,
+          },
+        }),
       );
     }
     const a = amplification(db, world);
@@ -862,8 +1114,18 @@ describe("amplification", () => {
     expect(viral.engagement).toBe(9);
     expect(viral.amplifiers.sort()).toEqual(["@p2", "@p3", "@p4"]);
     // Reposts are never themselves "viral posts" even when highly engaged.
-    db.updatePostMetrics(world.id, `po_viral_child_2`, { likes: 500, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 });
-    expect(amplification(db, world).viralPosts.some((v) => v.id === "po_viral_child_2")).toBe(false);
+    db.updatePostMetrics(world.id, `po_viral_child_2`, {
+      likes: 500,
+      reposts: 0,
+      upvotes: 0,
+      downvotes: 0,
+      impressions: 0,
+    });
+    expect(
+      amplification(db, world).viralPosts.some(
+        (v) => v.id === "po_viral_child_2",
+      ),
+    ).toBe(false);
     db.close();
     fs.rmSync(dir, { recursive: true, force: true });
   });
@@ -871,7 +1133,13 @@ describe("amplification", () => {
   it("excludes reddit posts from the viral list — virality is a twitter-only mechanic", () => {
     const { db, world, dir } = fixture();
     for (const p of db.listPosts(world.id, { platform: "reddit" })) {
-      db.updatePostMetrics(world.id, p.id, { likes: 0, reposts: 0, upvotes: 500, downvotes: 0, impressions: 0 });
+      db.updatePostMetrics(world.id, p.id, {
+        likes: 0,
+        reposts: 0,
+        upvotes: 500,
+        downvotes: 0,
+        impressions: 0,
+      });
     }
     expect(amplification(db, world).viralPosts).toEqual([]);
     db.close();
@@ -887,18 +1155,27 @@ describe("amplification", () => {
           worldId: world.id,
           personaId: `p_${(i % 6) + 1}`,
           body: "Acme Cloud great",
-          metrics: { likes: 20 - i, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 },
+          metrics: {
+            likes: 20 - i,
+            reposts: 0,
+            upvotes: 0,
+            downvotes: 0,
+            impressions: 0,
+          },
           mentions: [{ entityId: focus.id, score: 0.5 }],
-        })
+        }),
       );
     }
     const a = amplification(db, world);
     expect(a.viralPosts.length).toBe(5);
     expect(a.viralPosts[0].id).toBe("po_v0");
     for (let i = 1; i < a.viralPosts.length; i++) {
-      expect(a.viralPosts[i - 1].engagement).toBeGreaterThanOrEqual(a.viralPosts[i].engagement);
+      expect(a.viralPosts[i - 1].engagement).toBeGreaterThanOrEqual(
+        a.viralPosts[i].engagement,
+      );
     }
-    for (const v of a.viralPosts) expect(new Set(v.amplifiers).size).toBe(v.amplifiers.length);
+    for (const v of a.viralPosts)
+      expect(new Set(v.amplifiers).size).toBe(v.amplifiers.length);
     db.close();
     fs.rmSync(dir, { recursive: true, force: true });
   });
@@ -927,8 +1204,14 @@ describe("amplification", () => {
           kind: "repost",
           body: "↻ Acme Cloud great",
           origin: "organic",
-          metrics: { likes: 1, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 },
-        })
+          metrics: {
+            likes: 1,
+            reposts: 0,
+            upvotes: 0,
+            downvotes: 0,
+            impressions: 0,
+          },
+        }),
       );
     }
     const a = amplification(db, world);
@@ -942,13 +1225,28 @@ describe("amplification", () => {
 
   it("is null when total engagement is zero even with enough organic posts", () => {
     const { db, world, dir } = fixture();
-    db.db.prepare("UPDATE posts SET metrics=? WHERE world_id=?").run(
-      JSON.stringify({ likes: 0, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 }),
-      world.id
-    );
+    db.db
+      .prepare("UPDATE posts SET metrics=? WHERE world_id=?")
+      .run(
+        JSON.stringify({
+          likes: 0,
+          reposts: 0,
+          upvotes: 0,
+          downvotes: 0,
+          impressions: 0,
+        }),
+        world.id,
+      );
     for (let i = 0; i < 12; i++) {
       db.insertPost(
-        post({ id: `po_org0_${i}`, worldId: world.id, personaId: "p_1", kind: "repost", body: "x", origin: "organic" })
+        post({
+          id: `po_org0_${i}`,
+          worldId: world.id,
+          personaId: "p_1",
+          kind: "repost",
+          body: "x",
+          origin: "organic",
+        }),
       );
     }
     const a = amplification(db, world);

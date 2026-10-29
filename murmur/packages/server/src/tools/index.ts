@@ -111,24 +111,33 @@ export function registerTools(server: McpServer, ctx: ServerContext): void {
  * find out is before the first client connects.
  */
 export function assertToolSurface(): void {
-  const fromModules = Object.entries(MODULE_TOOL_NAMES).flatMap(([mod, names]) => names.map((n) => `${mod}:${n}`));
+  const fromModules = Object.entries(MODULE_TOOL_NAMES).flatMap(
+    ([mod, names]) => names.map((n) => `${mod}:${n}`),
+  );
   const declared = new Set<string>(TOOL_NAMES);
   const seen = new Set<string>();
   const problems: string[] = [];
 
   for (const entry of fromModules) {
     const name = entry.slice(entry.indexOf(":") + 1);
-    if (seen.has(name)) problems.push(`${name} is claimed by more than one module`);
+    if (seen.has(name))
+      problems.push(`${name} is claimed by more than one module`);
     seen.add(name);
-    if (!declared.has(name)) problems.push(`module registers ${name}, which TOOL_NAMES does not list`);
+    if (!declared.has(name))
+      problems.push(`module registers ${name}, which TOOL_NAMES does not list`);
   }
   for (const name of TOOL_NAMES) {
-    if (!seen.has(name)) problems.push(`TOOL_NAMES lists ${name}, which no module registers`);
+    if (!seen.has(name))
+      problems.push(`TOOL_NAMES lists ${name}, which no module registers`);
   }
   if (TOOL_COUNT !== TOOL_NAMES.length) {
-    problems.push(`TOOL_COUNT is ${TOOL_COUNT} but TOOL_NAMES has ${TOOL_NAMES.length} entries`);
+    problems.push(
+      `TOOL_COUNT is ${TOOL_COUNT} but TOOL_NAMES has ${TOOL_NAMES.length} entries`,
+    );
   }
   if (problems.length > 0) {
-    throw new Error(`tool surface is inconsistent — ${problems.length} problem(s):\n  - ${problems.join("\n  - ")}`);
+    throw new Error(
+      `tool surface is inconsistent — ${problems.length} problem(s):\n  - ${problems.join("\n  - ")}`,
+    );
   }
 }

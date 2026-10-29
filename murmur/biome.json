@@ -16,7 +16,7 @@
     ]
   },
   "formatter": {
-    "enabled": false
+    "enabled": true
   },
   "linter": {
     "enabled": true,
@@ -24,6 +24,18 @@
       "preset": "recommended"
     }
   },
+  "overrides": [
+    {
+      "includes": ["tests/**/*.ts", "packages/*/src/**/*.test.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "double",

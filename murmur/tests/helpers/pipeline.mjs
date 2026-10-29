@@ -4,7 +4,12 @@
  * tests/cleanroom/demo-run.mjs (via engine dist). The engine module is
  * injected, so both paths share one orchestration.
  */
-import { completeOntology, completePersonas, completeSim, completeReportTask } from "./mock-brain.mjs";
+import {
+  completeOntology,
+  completePersonas,
+  completeSim,
+  completeReportTask,
+} from "./mock-brain.mjs";
 
 export const SEED_CORPUS = `# Acme Cloud pricing change brief
 
@@ -22,10 +27,7 @@ Analysts note that Acme Cloud revenue grew steadily for three years, but the pri
 
 The changelog for the pricing release mentions an amnesty window for students and nonprofits. The FAQ says data exports remain free forever. Support response times will not change. The CEO of Acme Cloud posted a thread defending the decision, calling the pricing change an investment in the next decade of the platform.`;
 
-export async function runPipeline(
-  engine,
-  opts = {}
-) {
+export async function runPipeline(engine, opts = {}) {
   const o = {
     cwd: opts.cwd,
     worldName: opts.worldName ?? "pricing-reaction",
@@ -52,21 +54,44 @@ export async function runPipeline(
   const ontologyTask = engine.buildOntologyTask(storage, world);
   const ontologyTaskTokens = engine.estTokens(JSON.stringify(ontologyTask));
   const ontologyResult = completeOntology(ontologyTask);
-  const ontology = engine.applyOntology(storage, world, ontologyTask.id, ontologyResult);
-  if (ontology.rejected.length > 0) throw new Error("ontology rejected: " + JSON.stringify(ontology.rejected.slice(0, 3)));
+  const ontology = engine.applyOntology(
+    storage,
+    world,
+    ontologyTask.id,
+    ontologyResult,
+  );
+  if (ontology.rejected.length > 0)
+    throw new Error(
+      `ontology rejected: ${JSON.stringify(ontology.rejected.slice(0, 3))}`,
+    );
 
   engine.buildGraph(storage, world);
   // graph artifact (same file graph_export_mermaid writes when driven via MCP)
-  const graphResult = engine.graphQuery(storage, world, { minTension: 0, tokenBudget: 8000 });
+  const graphResult = engine.graphQuery(storage, world, {
+    minTension: 0,
+    tokenBudget: 8000,
+  });
   ws.writeAtomic(ws.graphPath(world.slug), engine.toMermaid(graphResult));
 
-  const personasTask = engine.buildPersonasTask(storage, world, { count: o.population });
+  const personasTask = engine.buildPersonasTask(storage, world, {
+    count: o.population,
+  });
   const personasTaskTokens = engine.estTokens(JSON.stringify(personasTask));
-  const personasResult = engine.applyPersonas(storage, world, personasTask.id, completePersonas(personasTask));
-  if (personasResult.rejected.length > 0) throw new Error("personas rejected: " + JSON.stringify(personasResult.rejected.slice(0, 3)));
+  const personasResult = engine.applyPersonas(
+    storage,
+    world,
+    personasTask.id,
+    completePersonas(personasTask),
+  );
+  if (personasResult.rejected.length > 0)
+    throw new Error(
+      `personas rejected: ${JSON.stringify(personasResult.rejected.slice(0, 3))}`,
+    );
 
   const w = () => storage.getWorld(world.id);
-  storage.updateWorld(world.id, { config: { ...w().config, rounds: o.rounds } });
+  storage.updateWorld(world.id, {
+    config: { ...w().config, rounds: o.rounds },
+  });
   storage.setStage(world.id, "configured");
 
   const batchTokens = [];
@@ -75,32 +100,60 @@ export async function runPipeline(
   while (w().round < o.rounds) {
     const targetRound = w().round + 1;
     if (o.injectAtRound === targetRound && o.injectText) {
-      storage.addEvent(world.id, targetRound, "injection", { text: o.injectText, subtype: "news" }, "all");
+      storage.addEvent(
+        world.id,
+        targetRound,
+        "injection",
+        { text: o.injectText, subtype: "news" },
+        "all",
+      );
     }
     const { task } = engine.buildSimBatch(storage, w());
     batchTokens.push(engine.estTokens(JSON.stringify(task)));
     const generations = completeSim(task);
     generationTokens.push(engine.estTokens(JSON.stringify(generations)));
     generationItems += task.items.length;
-    const result = engine.submitGenerations(storage, w(), task.id, generations, {});
+    const result = engine.submitGenerations(
+      storage,
+      w(),
+      task.id,
+      generations,
+      {},
+    );
     if (result.rejected.length > 0) {
       // mock brain must be schema-valid; if the validator disagrees, surface it loudly
-      throw new Error("sim rejected: " + JSON.stringify(result.rejected.slice(0, 5)));
+      throw new Error(
+        `sim rejected: ${JSON.stringify(result.rejected.slice(0, 5))}`,
+      );
     }
   }
 
-  const reportTask = engine.buildReportTask(storage, w(), "community reaction to the pricing change");
+  const reportTask = engine.buildReportTask(
+    storage,
+    w(),
+    "community reaction to the pricing change",
+  );
   const reportTaskTokens = engine.estTokens(JSON.stringify(reportTask));
   const draft = completeReportTask(reportTask);
   const draftTokens = engine.estTokens(JSON.stringify(draft));
   const validated = engine.validateReportDraft(storage, w(), draft);
-  if (validated.rejected.length > 0) throw new Error("report rejected: " + JSON.stringify(validated.rejected.slice(0, 3)));
-  const record = engine.storeReport(storage, w(), validated.draft, "community reaction to the pricing change");
+  if (validated.rejected.length > 0)
+    throw new Error(
+      `report rejected: ${JSON.stringify(validated.rejected.slice(0, 3))}`,
+    );
+  const record = engine.storeReport(
+    storage,
+    w(),
+    validated.draft,
+    "community reaction to the pricing change",
+  );
   const markdown = engine.renderReportMarkdown(storage, w(), record);
   const reportPath = ws.reportPath(w().slug, record.version);
   ws.writeAtomic(reportPath, markdown);
   // record path on the report row
-  storage.db.prepare("UPDATE reports SET path=? WHERE id=?").run(ws.rel(reportPath), record.id);
+  storage.db
+    .prepare("UPDATE reports SET path=? WHERE id=?")
+    .run(ws.rel(reportPath), record.id);
 
   return {
     storage,
@@ -121,7 +174,11 @@ export async function runPipeline(
       simTasks: batchTokens.reduce((a, b) => a + b, 0),
       simRounds: batchTokens.length,
       reportTask: reportTaskTokens,
-      inputTotal: ontologyTaskTokens + personasTaskTokens + batchTokens.reduce((a, b) => a + b, 0) + reportTaskTokens,
+      inputTotal:
+        ontologyTaskTokens +
+        personasTaskTokens +
+        batchTokens.reduce((a, b) => a + b, 0) +
+        reportTaskTokens,
       generations: generationTokens.reduce((a, b) => a + b, 0),
       draftTokens,
       outputTotal: generationTokens.reduce((a, b) => a + b, 0) + draftTokens,

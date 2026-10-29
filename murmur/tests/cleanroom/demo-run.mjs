@@ -12,8 +12,12 @@ import * as url from "node:url";
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..", "..");
 
-const { runPipeline } = await import(path.join(root, "tests", "helpers", "pipeline.mjs"));
-const engine = await import(path.join(root, "packages", "engine", "dist", "index.js"));
+const { runPipeline } = await import(
+  path.join(root, "tests", "helpers", "pipeline.mjs")
+);
+const engine = await import(
+  path.join(root, "packages", "engine", "dist", "index.js")
+);
 
 const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-demo-"));
 const t0 = Date.now();
@@ -24,7 +28,8 @@ const run = await runPipeline(engine, {
   rounds: 5,
   population: 12,
   injectAtRound: 3,
-  injectText: "Nimbus Labs announces a one-click import tool that undercuts Acme Cloud pricing by 30%",
+  injectText:
+    "Nimbus Labs announces a one-click import tool that undercuts Acme Cloud pricing by 30%",
 });
 const seconds = ((Date.now() - t0) / 1000).toFixed(1);
 
@@ -50,4 +55,4 @@ Report preview
 --------------
 `);
 const md = run.markdown.split("\n").slice(0, 24).join("\n");
-process.stdout.write(md + "\n…\n\n");
+process.stdout.write(`${md}\n…\n\n`);

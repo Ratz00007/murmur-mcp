@@ -33,7 +33,9 @@ describe("extractNumbers", () => {
     // u/ines8 produced the tokens "6" and "8", and the verifier rejected a
     // draft that was completely correct. Handles are interpolated straight into
     // the narrative, so this fires on any run with a digit in a handle.
-    const n = extractNumbers("Voices @grace6 and u/ines8 drove it; @elena4 replied");
+    const n = extractNumbers(
+      "Voices @grace6 and u/ines8 drove it; @elena4 replied",
+    );
     expect(n).toHaveLength(0);
   });
 
@@ -46,7 +48,9 @@ describe("extractNumbers", () => {
     // Regression: a `[@\/u]` character class matches a LITERAL u, so it
     // shredded "simulated" into "sim" + "ulated" and silently swallowed every
     // number after it. A verifier that drops numbers is worse than none.
-    const n = extractNumbers("Across this run 999999 simulated posts moved sentiment");
+    const n = extractNumbers(
+      "Across this run 999999 simulated posts moved sentiment",
+    );
     expect(n.map((x) => x.value)).toEqual([999999]);
   });
 
@@ -60,11 +64,15 @@ describe("extractNumbers", () => {
   });
 
   it("ignores dates, times, and versions", () => {
-    expect(extractNumbers("on 2026-06-15 at 08:00, version 1.2.3")).toHaveLength(0);
+    expect(
+      extractNumbers("on 2026-06-15 at 08:00, version 1.2.3"),
+    ).toHaveLength(0);
   });
 
   it("still finds real numbers next to ignored ones", () => {
-    const n = extractNumbers("See po_12: sentiment fell to -0.42 on 2026-06-15");
+    const n = extractNumbers(
+      "See po_12: sentiment fell to -0.42 on 2026-06-15",
+    );
     expect(n.map((x) => x.value)).toEqual([-0.42]);
   });
 

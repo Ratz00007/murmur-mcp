@@ -60,5 +60,6 @@
     "@murmur/prompts": "1.0.0",
     "@murmur/templates": "1.0.0",
     "@types/better-sqlite3": "^7.6.12"
-  }
+  },
+  "mcpName": "io.github.Ratz00007/murmur-mcp"
 }

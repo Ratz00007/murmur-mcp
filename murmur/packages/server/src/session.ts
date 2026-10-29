@@ -4,11 +4,22 @@
  * response (with resource-discipline enforcement: oversized payloads spill
  * to the world directory and are answered with receipts + pointers).
  */
-import { openDatabase, Storage, Workspace, estTokens, nowIso, type World } from "@murmur/engine";
+import {
+  openDatabase,
+  Storage,
+  Workspace,
+  estTokens,
+  nowIso,
+  type World,
+} from "@murmur/engine";
 import type { ZodTypeAny } from "zod";
 import { log } from "./logging.js";
 
-export type SamplingFn = (prompt: string, system: string, maxTokens: number) => Promise<string | null>;
+export type SamplingFn = (
+  prompt: string,
+  system: string,
+  maxTokens: number,
+) => Promise<string | null>;
 
 /**
  * Ask the user for a missing value through MCP elicitation, when the client
@@ -16,7 +27,10 @@ export type SamplingFn = (prompt: string, system: string, maxTokens: number) => 
  * unavailable or declined — callers MUST fall back to a plain error, because
  * most clients do not implement elicitation and the tool must work there too.
  */
-export type ElicitFn = (message: string, fields: Record<string, { title?: string; description?: string }>) => Promise<Record<string, unknown> | null>;
+export type ElicitFn = (
+  message: string,
+  fields: Record<string, { title?: string; description?: string }>,
+) => Promise<Record<string, unknown> | null>;
 
 export class ServerContext {
   readonly workspace: Workspace;
@@ -31,7 +45,9 @@ export class ServerContext {
     this.storage = new Storage(openDatabase(this.workspace.dbPath));
     const latest = this.storage.latestWorld();
     this.activeWorldId = latest?.id ?? null;
-    log.info(`workspace: ${this.workspace.root} (active world: ${this.activeWorldId ?? "none"})`);
+    log.info(
+      `workspace: ${this.workspace.root} (active world: ${this.activeWorldId ?? "none"})`,
+    );
   }
 
   close(): void {
@@ -48,7 +64,7 @@ export class ServerContext {
 
   /** Resolve the target world: explicit id/slug → active world → latest world. */
   resolveWorld(idOrSlug?: string): World {
-    if (idOrSlug && idOrSlug.trim()) {
+    if (idOrSlug?.trim()) {
       const w = this.storage.getWorld(idOrSlug.trim());
       if (!w) throw new Error(`world not found: ${idOrSlug} (see world_list)`);
       this.activeWorldId = w.id;
@@ -68,7 +84,11 @@ export class ServerContext {
 
   audit(world: World, entry: Record<string, unknown>): void {
     try {
-      this.workspace.appendJsonl(this.workspace.auditPath(world.slug), { ts: nowIso(), world: world.id, ...entry });
+      this.workspace.appendJsonl(this.workspace.auditPath(world.slug), {
+        ts: nowIso(),
+        world: world.id,
+        ...entry,
+      });
     } catch (e) {
       log.warn(`audit write failed: ${String(e)}`);
     }
@@ -90,15 +110,20 @@ export class ServerContext {
   reply(
     data: unknown,
     world?: World | null,
-    output?: ZodTypeAny
-  ): { content: { type: "text"; text: string }[]; structuredContent?: Record<string, unknown> } {
+    output?: ZodTypeAny,
+  ): {
+    content: { type: "text"; text: string }[];
+    structuredContent?: Record<string, unknown>;
+  } {
     const maxTokens = world?.config.context.maxResponseTokens ?? 12000;
     const body = JSON.stringify(data);
     const structured = output ? asRecord(data) : null;
     if (output && !structured) {
       // A declared outputSchema with a non-object payload is a programming
       // error: the schema (and the SDK's validation of it) assume an object.
-      throw new Error(`reply() given a non-object payload for a tool that declares an outputSchema: ${typeof data}`);
+      throw new Error(
+        `reply() given a non-object payload for a tool that declares an outputSchema: ${typeof data}`,
+      );
     }
     if (estTokens(body) <= maxTokens) {
       return {
@@ -136,16 +161,26 @@ export class ServerContext {
     };
   }
 
-  fail(error: unknown): { content: { type: "text"; text: string }[]; isError: boolean; structuredContent: Record<string, unknown> } {
+  fail(error: unknown): {
+    content: { type: "text"; text: string }[];
+    isError: boolean;
+    structuredContent: Record<string, unknown>;
+  } {
     const message = error instanceof Error ? error.message : String(error);
     log.warn(`tool error: ${message}`);
     const payload = { ok: false, error: message };
-    return { content: [{ type: "text", text: JSON.stringify(payload) }], isError: true, structuredContent: payload };
+    return {
+      content: [{ type: "text", text: JSON.stringify(payload) }],
+      isError: true,
+      structuredContent: payload,
+    };
   }
 }
 
 function asRecord(v: unknown): Record<string, unknown> | null {
-  return v !== null && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+  return v !== null && typeof v === "object" && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : null;
 }
 
 /** Coerce a tool argument that may arrive as a JSON string or an object. */

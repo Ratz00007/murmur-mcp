@@ -4,7 +4,7 @@
  */
 import Database from "better-sqlite3";
 import { MIGRATIONS, SCHEMA_VERSION } from "./schema.js";
-import { clamp, nowIso, stableStringify } from "../util/text.js";
+import { clamp, FETCH_ALL, nowIso, stableStringify } from "../util/text.js";
 import { hashHex } from "../util/rng.js";
 import {
   DEFAULT_CONFIG,
@@ -50,22 +50,35 @@ function migrate(db: Database.Database): void {
   // reference, and PRAGMA foreign_keys is a no-op inside a transaction —
   // so it is set here, outside the per-migration transactions.
   db.pragma("foreign_keys = OFF");
-  db.exec("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)");
+  db.exec(
+    "CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)",
+  );
   const applied = new Set(
-    (db.prepare("SELECT version FROM schema_migrations").all() as { version: number }[]).map((r) => r.version)
+    (
+      db.prepare("SELECT version FROM schema_migrations").all() as {
+        version: number;
+      }[]
+    ).map((r) => r.version),
   );
   for (const m of MIGRATIONS) {
     if (applied.has(m.version)) continue;
     const tx = db.transaction(() => {
       db.exec(m.sql);
-      db.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)").run(m.version, nowIso());
+      db.prepare(
+        "INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)",
+      ).run(m.version, nowIso());
     });
     tx();
   }
   const v = (
-    db.prepare("SELECT MAX(version) AS v FROM schema_migrations").get() as { v: number | null }
+    db.prepare("SELECT MAX(version) AS v FROM schema_migrations").get() as {
+      v: number | null;
+    }
   ).v;
-  if (v !== SCHEMA_VERSION) throw new Error(`schema version mismatch: expected ${SCHEMA_VERSION}, found ${v}`);
+  if (v !== SCHEMA_VERSION)
+    throw new Error(
+      `schema version mismatch: expected ${SCHEMA_VERSION}, found ${v}`,
+    );
   db.pragma("foreign_keys = ON");
 }
 
@@ -190,7 +203,13 @@ function postFromRow(r: Row): Post {
     communityId: r.community_id == null ? null : S(r.community_id),
     title: r.title == null ? null : S(r.title),
     body: S(r.body),
-    metrics: J<PostMetrics>(r.metrics, { likes: 0, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 }),
+    metrics: J<PostMetrics>(r.metrics, {
+      likes: 0,
+      reposts: 0,
+      upvotes: 0,
+      downvotes: 0,
+      impressions: 0,
+    }),
     mentions: J<Post["mentions"]>(r.mentions, []),
     origin: S(r.origin) as Post["origin"],
   };
@@ -214,7 +233,15 @@ function reportFromRow(r: Row): ReportRecord {
     worldId: S(r.world_id),
     version: N(r.version),
     focus: S(r.focus),
-    narrative: J<ReportDraft>(r.narrative, { executiveSummary: "", trajectory: "", risks: [], confidence: { strongSignals: [], contested: [] }, recommendations: [], keyFindings: [], limitations: [] }),
+    narrative: J<ReportDraft>(r.narrative, {
+      executiveSummary: "",
+      trajectory: "",
+      risks: [],
+      confidence: { strongSignals: [], contested: [] },
+      recommendations: [],
+      keyFindings: [],
+      limitations: [],
+    }),
     path: S(r.path),
     createdAt: S(r.created_at),
   };
@@ -251,7 +278,9 @@ export class Storage {
    */
   private mintId(prefix: string, table: string, worldId: string): string {
     const row = this.db
-      .prepare(`SELECT MAX(CAST(substr(id, ${prefix.length + 2}) AS INTEGER)) AS m FROM ${table} WHERE world_id = ?`)
+      .prepare(
+        `SELECT MAX(CAST(substr(id, ${prefix.length + 2}) AS INTEGER)) AS m FROM ${table} WHERE world_id = ?`,
+      )
       .get(worldId) as { m: number | null } | undefined;
     const n = row?.m ?? 0;
     return `${prefix}_${n + 1}`;
@@ -264,73 +293,158 @@ export class Storage {
 
   // ----- worlds -----------------------------------------------------------
 
-  createWorld(input: { name: string; description?: string; seed?: string; slugHint?: string }): World {
+  createWorld(input: {
+    name: string;
+    description?: string;
+    seed?: string;
+    slugHint?: string;
+  }): World {
     const now = nowIso();
     const seed = input.seed?.trim() || null;
     // Deterministic world id when a seed is supplied (golden-run replay),
     // random otherwise (crypto quality not required — uniqueness is).
-    const id = seed ? `w_${hashHex(seed).slice(0, 10)}` : `w_${hashHex(`${now}:${Math.random()}`).slice(0, 10)}`;
-    let slug = (input.slugHint ?? input.name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48) || "world";
-    const taken = new Set((this.db.prepare("SELECT slug FROM worlds").all() as Row[]).map((r) => S(r.slug)));
+    const id = seed
+      ? `w_${hashHex(seed).slice(0, 10)}`
+      : `w_${hashHex(`${now}:${Math.random()}`).slice(0, 10)}`;
+    let slug =
+      (input.slugHint ?? input.name)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 48) || "world";
+    const taken = new Set(
+      (this.db.prepare("SELECT slug FROM worlds").all() as Row[]).map((r) =>
+        S(r.slug),
+      ),
+    );
     let candidate = slug;
     for (let i = 2; taken.has(candidate); i++) candidate = `${slug}-${i}`;
     slug = candidate;
     this.db
       .prepare(
-        "INSERT INTO worlds (id, name, slug, description, stage, round, seed, config, created_at, updated_at) VALUES (?,?,?,?, 'created', 0, ?,?,?,?)"
+        "INSERT INTO worlds (id, name, slug, description, stage, round, seed, config, created_at, updated_at) VALUES (?,?,?,?, 'created', 0, ?,?,?,?)",
       )
-      .run(id, input.name, slug, input.description ?? "", seed ?? `auto-${id}`, JSON.stringify(DEFAULT_CONFIG), now, now);
-    return this.getWorld(id)!;
+      .run(
+        id,
+        input.name,
+        slug,
+        input.description ?? "",
+        seed ?? `auto-${id}`,
+        JSON.stringify(DEFAULT_CONFIG),
+        now,
+        now,
+      );
+    const created = this.getWorld(id);
+    if (created === null)
+      throw new Error(`world ${id} vanished right after insert`);
+    return created;
   }
 
   getWorld(idOrSlug: string): World | null {
-    const r = this.db.prepare("SELECT * FROM worlds WHERE id = ? OR slug = ?").get(idOrSlug, idOrSlug) as Row | undefined;
+    const r = this.db
+      .prepare("SELECT * FROM worlds WHERE id = ? OR slug = ?")
+      .get(idOrSlug, idOrSlug) as Row | undefined;
     return r ? worldFromRow(r) : null;
   }
 
   listWorlds(): World[] {
-    return (this.db.prepare("SELECT * FROM worlds ORDER BY created_at DESC").all() as Row[]).map(worldFromRow);
+    return (
+      this.db
+        .prepare("SELECT * FROM worlds ORDER BY created_at DESC")
+        .all() as Row[]
+    ).map(worldFromRow);
   }
 
   latestWorld(): World | null {
-    const r = this.db.prepare("SELECT * FROM worlds ORDER BY created_at DESC LIMIT 1").get() as Row | undefined;
+    const r = this.db
+      .prepare("SELECT * FROM worlds ORDER BY created_at DESC LIMIT 1")
+      .get() as Row | undefined;
     return r ? worldFromRow(r) : null;
   }
 
   private touch(id: string): void {
-    this.db.prepare("UPDATE worlds SET updated_at = ? WHERE id = ?").run(nowIso(), id);
+    this.db
+      .prepare("UPDATE worlds SET updated_at = ? WHERE id = ?")
+      .run(nowIso(), id);
   }
 
-  updateWorld(id: string, patch: Partial<Pick<World, "name" | "description" | "round" | "config">>): void {
+  updateWorld(
+    id: string,
+    patch: Partial<Pick<World, "name" | "description" | "round" | "config">>,
+  ): void {
     const w = this.getWorld(id);
     if (!w) return;
     this.db
-      .prepare("UPDATE worlds SET name=?, description=?, round=?, config=?, updated_at=? WHERE id=?")
-      .run(patch.name ?? w.name, patch.description ?? w.description, patch.round ?? w.round, JSON.stringify(patch.config ?? w.config), nowIso(), id);
+      .prepare(
+        "UPDATE worlds SET name=?, description=?, round=?, config=?, updated_at=? WHERE id=?",
+      )
+      .run(
+        patch.name ?? w.name,
+        patch.description ?? w.description,
+        patch.round ?? w.round,
+        JSON.stringify(patch.config ?? w.config),
+        nowIso(),
+        id,
+      );
   }
 
   /** Forward-only stage transition. */
   setStage(id: string, stage: Stage): void {
     const w = this.getWorld(id);
     if (!w) return;
-    const order = ["created", "seeded", "ontologized", "graphed", "populated", "configured", "running", "completed", "reported"];
+    const order = [
+      "created",
+      "seeded",
+      "ontologized",
+      "graphed",
+      "populated",
+      "configured",
+      "running",
+      "completed",
+      "reported",
+    ];
     if (order.indexOf(stage) > order.indexOf(w.stage)) {
-      this.db.prepare("UPDATE worlds SET stage=?, updated_at=? WHERE id=?").run(stage, nowIso(), id);
+      this.db
+        .prepare("UPDATE worlds SET stage=?, updated_at=? WHERE id=?")
+        .run(stage, nowIso(), id);
       this.addEvent(id, w.round, "stage", { stage }, "world");
     }
   }
 
   // ----- seeds ------------------------------------------------------------
 
-  addSeed(worldId: string, input: { kind: SeedKind; title: string; ref: string; text: string; digest: string }): { seed: Seed; duplicate: boolean } {
+  addSeed(
+    worldId: string,
+    input: {
+      kind: SeedKind;
+      title: string;
+      ref: string;
+      text: string;
+      digest: string;
+    },
+  ): { seed: Seed; duplicate: boolean } {
     const hash = hashHex(input.text);
-    const existing = this.db.prepare("SELECT * FROM seeds WHERE world_id=? AND hash=?").get(worldId, hash) as Row | undefined;
+    const existing = this.db
+      .prepare("SELECT * FROM seeds WHERE world_id=? AND hash=?")
+      .get(worldId, hash) as Row | undefined;
     if (existing) return { seed: seedFromRow(existing), duplicate: true };
     const tx = this.db.transaction(() => {
       const id = this.mintId("sd", "seeds", worldId);
       this.db
-        .prepare("INSERT INTO seeds (id, world_id, kind, title, ref, hash, bytes, digest, added_at) VALUES (?,?,?,?,?,?,?,?,?)")
-        .run(id, worldId, input.kind, input.title, input.ref, hash, Buffer.byteLength(input.text, "utf8"), input.digest, nowIso());
+        .prepare(
+          "INSERT INTO seeds (id, world_id, kind, title, ref, hash, bytes, digest, added_at) VALUES (?,?,?,?,?,?,?,?,?)",
+        )
+        .run(
+          id,
+          worldId,
+          input.kind,
+          input.title,
+          input.ref,
+          hash,
+          Buffer.byteLength(input.text, "utf8"),
+          input.digest,
+          nowIso(),
+        );
     });
     tx();
     this.touch(worldId);
@@ -341,14 +455,23 @@ export class Storage {
   }
 
   listSeeds(worldId: string): Seed[] {
-    return (this.db.prepare("SELECT * FROM seeds WHERE world_id=? ORDER BY added_at, id").all(worldId) as Row[]).map(seedFromRow);
+    return (
+      this.db
+        .prepare("SELECT * FROM seeds WHERE world_id=? ORDER BY added_at, id")
+        .all(worldId) as Row[]
+    ).map(seedFromRow);
   }
 
   // ----- entities ---------------------------------------------------------
 
   /** Insert entities, skipping names already present (idempotent surgical retry). */
-  insertEntities(worldId: string, entities: Omit<Entity, "id" | "worldId">[]): { inserted: Entity[]; skipped: string[] } {
-    const existing = new Set(this.listEntities(worldId).map((e) => e.name.toLowerCase()));
+  insertEntities(
+    worldId: string,
+    entities: Omit<Entity, "id" | "worldId">[],
+  ): { inserted: Entity[]; skipped: string[] } {
+    const existing = new Set(
+      this.listEntities(worldId).map((e) => e.name.toLowerCase()),
+    );
     const inserted: Entity[] = [];
     const skipped: string[] = [];
     const tx = this.db.transaction(() => {
@@ -359,8 +482,19 @@ export class Storage {
         }
         const id = this.mintId("e", "entities", worldId);
         this.db
-          .prepare("INSERT INTO entities (id, world_id, name, type, description, salience, anchors, motives) VALUES (?,?,?,?,?,?,?,?)")
-          .run(id, worldId, e.name, e.type, e.description, clamp(e.salience, 0, 1), JSON.stringify(e.anchors), JSON.stringify(e.motives));
+          .prepare(
+            "INSERT INTO entities (id, world_id, name, type, description, salience, anchors, motives) VALUES (?,?,?,?,?,?,?,?)",
+          )
+          .run(
+            id,
+            worldId,
+            e.name,
+            e.type,
+            e.description,
+            clamp(e.salience, 0, 1),
+            JSON.stringify(e.anchors),
+            JSON.stringify(e.motives),
+          );
         inserted.push({ ...e, id, worldId });
         existing.add(e.name.toLowerCase());
       }
@@ -371,18 +505,29 @@ export class Storage {
   }
 
   listEntities(worldId: string): Entity[] {
-    return (this.db.prepare("SELECT * FROM entities WHERE world_id=? ORDER BY salience DESC, name").all(worldId) as Row[]).map(entityFromRow);
+    return (
+      this.db
+        .prepare(
+          "SELECT * FROM entities WHERE world_id=? ORDER BY salience DESC, name",
+        )
+        .all(worldId) as Row[]
+    ).map(entityFromRow);
   }
 
   // ----- relations --------------------------------------------------------
 
-  replaceRelations(worldId: string, relations: Omit<Relation, "id" | "worldId">[]): number {
+  replaceRelations(
+    worldId: string,
+    relations: Omit<Relation, "id" | "worldId">[],
+  ): number {
     const tx = this.db.transaction(() => {
       this.db.prepare("DELETE FROM relations WHERE world_id=?").run(worldId);
       for (const r of relations) {
         const id = this.mintId("rel", "relations", worldId);
         this.db
-          .prepare("INSERT INTO relations (id, world_id, src_id, dst_id, type, weight, tension) VALUES (?,?,?,?,?,?,?)")
+          .prepare(
+            "INSERT INTO relations (id, world_id, src_id, dst_id, type, weight, tension) VALUES (?,?,?,?,?,?,?)",
+          )
           .run(id, worldId, r.srcId, r.dstId, r.type, r.weight, r.tension);
       }
     });
@@ -392,21 +537,44 @@ export class Storage {
   }
 
   listRelations(worldId: string): Relation[] {
-    return (this.db.prepare("SELECT * FROM relations WHERE world_id=? ORDER BY tension DESC, weight DESC").all(worldId) as Row[]).map(relationFromRow);
+    return (
+      this.db
+        .prepare(
+          "SELECT * FROM relations WHERE world_id=? ORDER BY tension DESC, weight DESC",
+        )
+        .all(worldId) as Row[]
+    ).map(relationFromRow);
   }
 
   // ----- personas ---------------------------------------------------------
 
-  insertPersonas(worldId: string, personas: Omit<Persona, "id" | "worldId" | "createdAt">[]): Persona[] {
+  insertPersonas(
+    worldId: string,
+    personas: Omit<Persona, "id" | "worldId" | "createdAt">[],
+  ): Persona[] {
     const out: Persona[] = [];
     const tx = this.db.transaction(() => {
       for (const p of personas) {
         const id = this.mintId("p", "personas", worldId);
         this.db
           .prepare(
-            "INSERT INTO personas (id, world_id, name, handle, archetype, bio, traits, stances, platform, activity, community_ids, follows, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
+            "INSERT INTO personas (id, world_id, name, handle, archetype, bio, traits, stances, platform, activity, community_ids, follows, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
           )
-          .run(id, worldId, p.name, p.handle, p.archetype, p.bio, JSON.stringify(p.traits), JSON.stringify(p.stances), p.platform, p.activity, JSON.stringify(p.communityIds), JSON.stringify(p.follows), nowIso());
+          .run(
+            id,
+            worldId,
+            p.name,
+            p.handle,
+            p.archetype,
+            p.bio,
+            JSON.stringify(p.traits),
+            JSON.stringify(p.stances),
+            p.platform,
+            p.activity,
+            JSON.stringify(p.communityIds),
+            JSON.stringify(p.follows),
+            nowIso(),
+          );
         out.push({ ...p, id, worldId, createdAt: nowIso() });
       }
     });
@@ -416,15 +584,27 @@ export class Storage {
   }
 
   listPersonas(worldId: string): Persona[] {
-    return (this.db.prepare("SELECT * FROM personas WHERE world_id=? ORDER BY id").all(worldId) as Row[]).map(personaFromRow);
+    return (
+      this.db
+        .prepare("SELECT * FROM personas WHERE world_id=? ORDER BY id")
+        .all(worldId) as Row[]
+    ).map(personaFromRow);
   }
 
   countPersonas(worldId: string): number {
-    return (this.db.prepare("SELECT COUNT(*) AS c FROM personas WHERE world_id=?").get(worldId) as { c: number }).c;
+    return (
+      this.db
+        .prepare("SELECT COUNT(*) AS c FROM personas WHERE world_id=?")
+        .get(worldId) as { c: number }
+    ).c;
   }
 
   getPersona(worldId: string, idOrHandle: string): Persona | null {
-    const r = this.db.prepare("SELECT * FROM personas WHERE world_id=? AND (id=? OR lower(handle)=lower(?))").get(worldId, idOrHandle, idOrHandle) as Row | undefined;
+    const r = this.db
+      .prepare(
+        "SELECT * FROM personas WHERE world_id=? AND (id=? OR lower(handle)=lower(?))",
+      )
+      .get(worldId, idOrHandle, idOrHandle) as Row | undefined;
     return r ? personaFromRow(r) : null;
   }
 
@@ -434,12 +614,34 @@ export class Storage {
    * `WHERE id=?` read and update therefore matched — and overwrote — the same
    * persona in every world that happened to hold that id.
    */
-  patchPersona(worldId: string, id: string, patch: Partial<Pick<Persona, "name" | "handle" | "archetype" | "bio" | "traits" | "stances" | "platform" | "activity" | "communityIds" | "follows">>): void {
-    const r = this.db.prepare("SELECT * FROM personas WHERE world_id=? AND id=?").get(worldId, id) as Row | undefined;
+  patchPersona(
+    worldId: string,
+    id: string,
+    patch: Partial<
+      Pick<
+        Persona,
+        | "name"
+        | "handle"
+        | "archetype"
+        | "bio"
+        | "traits"
+        | "stances"
+        | "platform"
+        | "activity"
+        | "communityIds"
+        | "follows"
+      >
+    >,
+  ): void {
+    const r = this.db
+      .prepare("SELECT * FROM personas WHERE world_id=? AND id=?")
+      .get(worldId, id) as Row | undefined;
     if (!r) return;
     const cur = personaFromRow(r);
     this.db
-      .prepare("UPDATE personas SET name=?, handle=?, archetype=?, bio=?, traits=?, stances=?, platform=?, activity=?, community_ids=?, follows=? WHERE world_id=? AND id=?")
+      .prepare(
+        "UPDATE personas SET name=?, handle=?, archetype=?, bio=?, traits=?, stances=?, platform=?, activity=?, community_ids=?, follows=? WHERE world_id=? AND id=?",
+      )
       .run(
         patch.name ?? cur.name,
         patch.handle ?? cur.handle,
@@ -452,27 +654,58 @@ export class Storage {
         JSON.stringify(patch.communityIds ?? cur.communityIds),
         JSON.stringify(patch.follows ?? cur.follows),
         worldId,
-        id
+        id,
       );
   }
 
   // ----- memories ---------------------------------------------------------
 
-  appendMemory(worldId: string, personaId: string | null, tier: MemoryTier, kind: MemoryKind, content: string, salience: number, round: number): MemoryRecord {
+  appendMemory(
+    worldId: string,
+    personaId: string | null,
+    tier: MemoryTier,
+    kind: MemoryKind,
+    content: string,
+    salience: number,
+    round: number,
+  ): MemoryRecord {
     const tx = this.db.transaction(() => {
       const id = this.mintId("mem", "memories", worldId);
       this.db
-        .prepare("INSERT INTO memories (id, world_id, persona_id, tier, kind, content, salience, round, created_at) VALUES (?,?,?,?,?,?,?,?,?)")
-        .run(id, worldId, personaId, tier, kind, content, clamp(salience, 0, 1), round, nowIso());
+        .prepare(
+          "INSERT INTO memories (id, world_id, persona_id, tier, kind, content, salience, round, created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+        )
+        .run(
+          id,
+          worldId,
+          personaId,
+          tier,
+          kind,
+          content,
+          clamp(salience, 0, 1),
+          round,
+          nowIso(),
+        );
     });
     tx();
     const row = this.db
-      .prepare("SELECT * FROM memories WHERE world_id=? AND persona_id IS ? AND kind=? AND round=? ORDER BY id DESC LIMIT 1")
+      .prepare(
+        "SELECT * FROM memories WHERE world_id=? AND persona_id IS ? AND kind=? AND round=? ORDER BY id DESC LIMIT 1",
+      )
       .get(worldId, personaId, kind, round) as Row;
     return memoryFromRow(row);
   }
 
-  listMemories(worldId: string, opts: { personaId?: string | null; tier?: MemoryTier; kinds?: MemoryKind[]; limit?: number; upToRound?: number }): MemoryRecord[] {
+  listMemories(
+    worldId: string,
+    opts: {
+      personaId?: string | null;
+      tier?: MemoryTier;
+      kinds?: MemoryKind[];
+      limit?: number;
+      upToRound?: number;
+    },
+  ): MemoryRecord[] {
     const conds: string[] = ["world_id=?"];
     const args: unknown[] = [worldId];
     if (opts.personaId !== undefined) {
@@ -492,11 +725,23 @@ export class Storage {
       args.push(opts.upToRound);
     }
     const limit = opts.limit ?? 200;
-    return (this.db.prepare(`SELECT * FROM memories WHERE ${conds.join(" AND ")} ORDER BY round DESC, id DESC LIMIT ?`).all(...args, limit) as Row[]).map(memoryFromRow);
+    return (
+      this.db
+        .prepare(
+          `SELECT * FROM memories WHERE ${conds.join(" AND ")} ORDER BY round DESC, id DESC LIMIT ?`,
+        )
+        .all(...args, limit) as Row[]
+    ).map(memoryFromRow);
   }
 
   countMemories(worldId: string, personaId: string, tier: MemoryTier): number {
-    return (this.db.prepare("SELECT COUNT(*) AS c FROM memories WHERE world_id=? AND persona_id=? AND tier=?").get(worldId, personaId, tier) as { c: number }).c;
+    return (
+      this.db
+        .prepare(
+          "SELECT COUNT(*) AS c FROM memories WHERE world_id=? AND persona_id=? AND tier=?",
+        )
+        .get(worldId, personaId, tier) as { c: number }
+    ).c;
   }
 
   /**
@@ -507,7 +752,10 @@ export class Storage {
   deleteMemories(worldId: string, ids: string[]): void {
     if (!ids.length) return;
     const tx = this.db.transaction(() => {
-      for (const id of ids) this.db.prepare("DELETE FROM memories WHERE world_id=? AND id=?").run(worldId, id);
+      for (const id of ids)
+        this.db
+          .prepare("DELETE FROM memories WHERE world_id=? AND id=?")
+          .run(worldId, id);
     });
     tx();
   }
@@ -521,54 +769,124 @@ export class Storage {
     const threadId = post.threadId || id; // root posts are their own thread
     this.db
       .prepare(
-        "INSERT INTO posts (id, world_id, round, persona_id, platform, kind, parent_id, thread_id, community_id, title, body, metrics, mentions, origin) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+        "INSERT INTO posts (id, world_id, round, persona_id, platform, kind, parent_id, thread_id, community_id, title, body, metrics, mentions, origin) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       )
-      .run(id, post.worldId, post.round, post.personaId, post.platform, post.kind, post.parentId, threadId, post.communityId, post.title, post.body, JSON.stringify(post.metrics), JSON.stringify(post.mentions), post.origin);
+      .run(
+        id,
+        post.worldId,
+        post.round,
+        post.personaId,
+        post.platform,
+        post.kind,
+        post.parentId,
+        threadId,
+        post.communityId,
+        post.title,
+        post.body,
+        JSON.stringify(post.metrics),
+        JSON.stringify(post.mentions),
+        post.origin,
+      );
     return { ...post, id, threadId };
   }
 
   getPost(worldId: string, id: string): Post | null {
-    const r = this.db.prepare("SELECT * FROM posts WHERE world_id=? AND id=?").get(worldId, id) as Row | undefined;
+    const r = this.db
+      .prepare("SELECT * FROM posts WHERE world_id=? AND id=?")
+      .get(worldId, id) as Row | undefined;
     return r ? postFromRow(r) : null;
   }
 
-  listPosts(worldId: string, opts: { platform?: "twitter" | "reddit"; kinds?: PostKind[]; personaId?: string; minRound?: number; maxRound?: number; limit?: number } = {}): Post[] {
+  listPosts(
+    worldId: string,
+    opts: {
+      platform?: "twitter" | "reddit";
+      kinds?: PostKind[];
+      personaId?: string;
+      minRound?: number;
+      maxRound?: number;
+      limit?: number;
+    } = {},
+  ): Post[] {
     const conds: string[] = ["world_id=?"];
     const args: unknown[] = [worldId];
-    if (opts.platform) { conds.push("platform=?"); args.push(opts.platform); }
-    if (opts.kinds?.length) { conds.push(`kind IN (${opts.kinds.map(() => "?").join(",")})`); args.push(...opts.kinds); }
-    if (opts.personaId) { conds.push("persona_id=?"); args.push(opts.personaId); }
-    if (opts.minRound !== undefined) { conds.push("round>=?"); args.push(opts.minRound); }
-    if (opts.maxRound !== undefined) { conds.push("round<=?"); args.push(opts.maxRound); }
-    return (this.db.prepare(`SELECT * FROM posts WHERE ${conds.join(" AND ")} ORDER BY round DESC, id DESC ${opts.limit ? "LIMIT " + opts.limit : ""}`).all(...args) as Row[]).map(postFromRow);
+    if (opts.platform) {
+      conds.push("platform=?");
+      args.push(opts.platform);
+    }
+    if (opts.kinds?.length) {
+      conds.push(`kind IN (${opts.kinds.map(() => "?").join(",")})`);
+      args.push(...opts.kinds);
+    }
+    if (opts.personaId) {
+      conds.push("persona_id=?");
+      args.push(opts.personaId);
+    }
+    if (opts.minRound !== undefined) {
+      conds.push("round>=?");
+      args.push(opts.minRound);
+    }
+    if (opts.maxRound !== undefined) {
+      conds.push("round<=?");
+      args.push(opts.maxRound);
+    }
+    return (
+      this.db
+        .prepare(
+          `SELECT * FROM posts WHERE ${conds.join(" AND ")} ORDER BY round DESC, id DESC ${opts.limit ? `LIMIT ${opts.limit}` : ""}`,
+        )
+        .all(...args) as Row[]
+    ).map(postFromRow);
   }
 
   countPosts(worldId: string): number {
-    return (this.db.prepare("SELECT COUNT(*) AS c FROM posts WHERE world_id=?").get(worldId) as { c: number }).c;
+    return (
+      this.db
+        .prepare("SELECT COUNT(*) AS c FROM posts WHERE world_id=?")
+        .get(worldId) as { c: number }
+    ).c;
   }
 
   countAllPosts(): number {
     // Global count across worlds — kept for API compatibility. Prefer
     // countPosts(worldId) when minting or reasoning about per-world ids.
-    return (this.db.prepare("SELECT COUNT(*) AS c FROM posts").get() as { c: number }).c;
+    return (
+      this.db.prepare("SELECT COUNT(*) AS c FROM posts").get() as { c: number }
+    ).c;
   }
 
   childrenOf(worldId: string, parentId: string): Post[] {
-    return (this.db.prepare("SELECT * FROM posts WHERE world_id=? AND parent_id=? ORDER BY id").all(worldId, parentId) as Row[]).map(postFromRow);
+    return (
+      this.db
+        .prepare(
+          "SELECT * FROM posts WHERE world_id=? AND parent_id=? ORDER BY id",
+        )
+        .all(worldId, parentId) as Row[]
+    ).map(postFromRow);
   }
 
   threadPosts(worldId: string, threadId: string): Post[] {
-    return (this.db.prepare("SELECT * FROM posts WHERE world_id=? AND thread_id=? ORDER BY id").all(worldId, threadId) as Row[]).map(postFromRow);
+    return (
+      this.db
+        .prepare(
+          "SELECT * FROM posts WHERE world_id=? AND thread_id=? ORDER BY id",
+        )
+        .all(worldId, threadId) as Row[]
+    ).map(postFromRow);
   }
 
   updatePostMetrics(worldId: string, id: string, metrics: PostMetrics): void {
-    this.db.prepare("UPDATE posts SET metrics=? WHERE world_id=? AND id=?").run(JSON.stringify(metrics), worldId, id);
+    this.db
+      .prepare("UPDATE posts SET metrics=? WHERE world_id=? AND id=?")
+      .run(JSON.stringify(metrics), worldId, id);
   }
 
   addImpressions(worldId: string, ids: string[], by = 1): void {
     if (!ids.length) return;
     const tx = this.db.transaction(() => {
-      const stmt = this.db.prepare("UPDATE posts SET metrics = json_set(metrics, '$.impressions', json_extract(metrics,'$.impressions') + ?) WHERE world_id=? AND id=?");
+      const stmt = this.db.prepare(
+        "UPDATE posts SET metrics = json_set(metrics, '$.impressions', json_extract(metrics,'$.impressions') + ?) WHERE world_id=? AND id=?",
+      );
       for (const id of ids) stmt.run(by, worldId, id);
     });
     tx();
@@ -576,51 +894,118 @@ export class Storage {
 
   // ----- events -----------------------------------------------------------
 
-  addEvent(worldId: string, round: number, type: WorldEvent["type"], payload: Record<string, unknown>, scope = "all"): WorldEvent {
+  addEvent(
+    worldId: string,
+    round: number,
+    type: WorldEvent["type"],
+    payload: Record<string, unknown>,
+    scope = "all",
+  ): WorldEvent {
     const tx = this.db.transaction(() => {
       const id = this.mintId("ev", "events", worldId);
       this.db
-        .prepare("INSERT INTO events (id, world_id, round, type, payload, scope, created_at) VALUES (?,?,?,?,?,?,?)")
-        .run(id, worldId, round, type, JSON.stringify(payload), scope, nowIso());
+        .prepare(
+          "INSERT INTO events (id, world_id, round, type, payload, scope, created_at) VALUES (?,?,?,?,?,?,?)",
+        )
+        .run(
+          id,
+          worldId,
+          round,
+          type,
+          JSON.stringify(payload),
+          scope,
+          nowIso(),
+        );
     });
     tx();
     const row = this.db
-      .prepare("SELECT * FROM events WHERE world_id=? AND type=? ORDER BY id DESC LIMIT 1")
+      .prepare(
+        "SELECT * FROM events WHERE world_id=? AND type=? ORDER BY id DESC LIMIT 1",
+      )
       .get(worldId, type) as Row;
     return eventFromRow(row);
   }
 
-  listEvents(worldId: string, opts: { type?: WorldEvent["type"]; sinceRound?: number; upToRound?: number; limit?: number } = {}): WorldEvent[] {
+  listEvents(
+    worldId: string,
+    opts: {
+      type?: WorldEvent["type"];
+      sinceRound?: number;
+      upToRound?: number;
+      limit?: number;
+    } = {},
+  ): WorldEvent[] {
     const conds: string[] = ["world_id=?"];
     const args: unknown[] = [worldId];
-    if (opts.type) { conds.push("type=?"); args.push(opts.type); }
-    if (opts.sinceRound !== undefined) { conds.push("round>=?"); args.push(opts.sinceRound); }
-    if (opts.upToRound !== undefined) { conds.push("round<=?"); args.push(opts.upToRound); }
-    return (this.db.prepare(`SELECT * FROM events WHERE ${conds.join(" AND ")} ORDER BY round DESC, id DESC ${opts.limit ? "LIMIT " + opts.limit : ""}`).all(...args) as Row[]).map(eventFromRow);
+    if (opts.type) {
+      conds.push("type=?");
+      args.push(opts.type);
+    }
+    if (opts.sinceRound !== undefined) {
+      conds.push("round>=?");
+      args.push(opts.sinceRound);
+    }
+    if (opts.upToRound !== undefined) {
+      conds.push("round<=?");
+      args.push(opts.upToRound);
+    }
+    return (
+      this.db
+        .prepare(
+          `SELECT * FROM events WHERE ${conds.join(" AND ")} ORDER BY round DESC, id DESC ${opts.limit ? `LIMIT ${opts.limit}` : ""}`,
+        )
+        .all(...args) as Row[]
+    ).map(eventFromRow);
   }
 
   // ----- reports ----------------------------------------------------------
 
-  insertReport(worldId: string, input: { version: number; focus: string; narrative: ReportDraft; path: string }): ReportRecord {
+  insertReport(
+    worldId: string,
+    input: {
+      version: number;
+      focus: string;
+      narrative: ReportDraft;
+      path: string;
+    },
+  ): ReportRecord {
     const tx = this.db.transaction(() => {
       const id = this.mintId("rp", "reports", worldId);
       this.db
-        .prepare("INSERT INTO reports (id, world_id, version, focus, narrative, path, created_at) VALUES (?,?,?,?,?,?,?)")
-        .run(id, worldId, input.version, input.focus, JSON.stringify(input.narrative), input.path, nowIso());
+        .prepare(
+          "INSERT INTO reports (id, world_id, version, focus, narrative, path, created_at) VALUES (?,?,?,?,?,?,?)",
+        )
+        .run(
+          id,
+          worldId,
+          input.version,
+          input.focus,
+          JSON.stringify(input.narrative),
+          input.path,
+          nowIso(),
+        );
     });
     tx();
     this.touch(worldId);
-    const row = this.db.prepare("SELECT * FROM reports WHERE world_id=? AND version=?").get(worldId, input.version) as Row;
+    const row = this.db
+      .prepare("SELECT * FROM reports WHERE world_id=? AND version=?")
+      .get(worldId, input.version) as Row;
     return reportFromRow(row);
   }
 
   latestReport(worldId: string): ReportRecord | null {
-    const r = this.db.prepare("SELECT * FROM reports WHERE world_id=? ORDER BY version DESC LIMIT 1").get(worldId) as Row | undefined;
+    const r = this.db
+      .prepare(
+        "SELECT * FROM reports WHERE world_id=? ORDER BY version DESC LIMIT 1",
+      )
+      .get(worldId) as Row | undefined;
     return r ? reportFromRow(r) : null;
   }
 
   reportByVersion(worldId: string, version: number): ReportRecord | null {
-    const r = this.db.prepare("SELECT * FROM reports WHERE world_id=? AND version=?").get(worldId, version) as Row | undefined;
+    const r = this.db
+      .prepare("SELECT * FROM reports WHERE world_id=? AND version=?")
+      .get(worldId, version) as Row | undefined;
     return r ? reportFromRow(r) : null;
   }
 
@@ -628,33 +1013,72 @@ export class Storage {
 
   saveTask(task: GenerationTask): void {
     this.db
-      .prepare("INSERT OR REPLACE INTO generations (id, world_id, kind, round, task, status, created_at) VALUES (?,?,?,?,?,?,?)")
-      .run(task.id, task.worldId, task.kind, task.round, JSON.stringify(task), "pending", nowIso());
+      .prepare(
+        "INSERT OR REPLACE INTO generations (id, world_id, kind, round, task, status, created_at) VALUES (?,?,?,?,?,?,?)",
+      )
+      .run(
+        task.id,
+        task.worldId,
+        task.kind,
+        task.round,
+        JSON.stringify(task),
+        "pending",
+        nowIso(),
+      );
     this.touch(task.worldId);
   }
 
   /** Task ids are world-scoped (t_1 exists in every world), so lookups take the world. */
   getTask(worldId: string, id: string): GenerationTask | null {
-    const r = this.db.prepare("SELECT task FROM generations WHERE world_id=? AND id=?").get(worldId, id) as Row | undefined;
+    const r = this.db
+      .prepare("SELECT task FROM generations WHERE world_id=? AND id=?")
+      .get(worldId, id) as Row | undefined;
     return r ? (J<GenerationTask>(r.task, null as never) ?? null) : null;
   }
 
-  completeTask(worldId: string, id: string, submitted: unknown, verdicts: TaskVerdict, status: "submitted" | "partial" | "held"): void {
+  completeTask(
+    worldId: string,
+    id: string,
+    submitted: unknown,
+    verdicts: TaskVerdict,
+    status: "submitted" | "partial" | "held",
+  ): void {
     this.db
-      .prepare("UPDATE generations SET status=?, submitted=?, verdicts=?, submitted_at=? WHERE world_id=? AND id=?")
-      .run(status, JSON.stringify(submitted), JSON.stringify(verdicts), nowIso(), worldId, id);
+      .prepare(
+        "UPDATE generations SET status=?, submitted=?, verdicts=?, submitted_at=? WHERE world_id=? AND id=?",
+      )
+      .run(
+        status,
+        JSON.stringify(submitted),
+        JSON.stringify(verdicts),
+        nowIso(),
+        worldId,
+        id,
+      );
   }
 
   getTaskVerdicts(worldId: string, id: string): TaskVerdict | null {
-    const r = this.db.prepare("SELECT verdicts FROM generations WHERE world_id=? AND id=?").get(worldId, id) as Row | undefined;
-    return r && r.verdicts ? J<TaskVerdict>(r.verdicts, null as never) : null;
+    const r = this.db
+      .prepare("SELECT verdicts FROM generations WHERE world_id=? AND id=?")
+      .get(worldId, id) as Row | undefined;
+    return r?.verdicts ? J<TaskVerdict>(r.verdicts, null as never) : null;
   }
 
   listTasks(worldId: string, kind?: GenerationTask["kind"]): GenerationTask[] {
     const rows = kind
-      ? (this.db.prepare("SELECT task FROM generations WHERE world_id=? AND kind=? ORDER BY created_at, id").all(worldId, kind) as Row[])
-      : (this.db.prepare("SELECT task FROM generations WHERE world_id=? ORDER BY created_at, id").all(worldId) as Row[]);
-    return rows.map((r) => J<GenerationTask>(r.task, null as never)).filter(Boolean);
+      ? (this.db
+          .prepare(
+            "SELECT task FROM generations WHERE world_id=? AND kind=? ORDER BY created_at, id",
+          )
+          .all(worldId, kind) as Row[])
+      : (this.db
+          .prepare(
+            "SELECT task FROM generations WHERE world_id=? ORDER BY created_at, id",
+          )
+          .all(worldId) as Row[]);
+    return rows
+      .map((r) => J<GenerationTask>(r.task, null as never))
+      .filter(Boolean);
   }
 
   // ----- golden-run dump --------------------------------------------------
@@ -666,7 +1090,14 @@ export class Storage {
       if (v && typeof v === "object") {
         const o: Record<string, unknown> = {};
         for (const k of Object.keys(v as Record<string, unknown>).sort()) {
-          if (k === "created_at" || k === "updated_at" || k === "addedAt" || k === "createdAt" || k === "updatedAt") continue;
+          if (
+            k === "created_at" ||
+            k === "updated_at" ||
+            k === "addedAt" ||
+            k === "createdAt" ||
+            k === "updatedAt"
+          )
+            continue;
           o[k] = norm((v as Record<string, unknown>)[k]);
         }
         return o;
@@ -679,10 +1110,14 @@ export class Storage {
       entities: this.listEntities(worldId),
       relations: this.listRelations(worldId),
       personas: this.listPersonas(worldId),
-      memories: this.listMemories(worldId, { limit: 100000 }),
-      posts: this.listPosts(worldId, { limit: 100000 }),
-      events: this.listEvents(worldId, { limit: 100000 }),
-      reports: (this.db.prepare("SELECT * FROM reports WHERE world_id=? ORDER BY version").all(worldId) as Row[]).map(reportFromRow),
+      memories: this.listMemories(worldId, { limit: FETCH_ALL }),
+      posts: this.listPosts(worldId, { limit: FETCH_ALL }),
+      events: this.listEvents(worldId, { limit: FETCH_ALL }),
+      reports: (
+        this.db
+          .prepare("SELECT * FROM reports WHERE world_id=? ORDER BY version")
+          .all(worldId) as Row[]
+      ).map(reportFromRow),
     };
     return stableStringify(norm(dump));
   }

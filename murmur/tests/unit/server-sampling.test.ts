@@ -39,9 +39,14 @@ describe("sampling bridge", () => {
 
     // A client that declares sampling but has no transport throws "Not
     // connected" once the method is entered with a correct receiver.
-    expect(ctx.sampling, "sampling bridge should be installed when createMessage exists").toBeTypeOf("function");
+    expect(
+      ctx.sampling,
+      "sampling bridge should be installed when createMessage exists",
+    ).toBeTypeOf("function");
 
-    const output = await captureStderr(() => ctx.sampling!("prompt", "system", 64));
+    const output = await captureStderr(async () => {
+      await ctx.sampling?.("prompt", "system", 64);
+    });
     expect(output).toContain("sampling bridge declined by client");
     // The regression signature: the method was entered with `this === undefined`.
     expect(output).not.toMatch(/reading '_clientCapabilities'/i);
@@ -56,7 +61,7 @@ describe("sampling bridge", () => {
     if (!ctx.sampling) return; // no client sampling support in this environment
     let resolved: unknown;
     await captureStderr(async () => {
-      resolved = await ctx.sampling!("p", "s", 10);
+      resolved = await ctx.sampling?.("p", "s", 10);
     });
     expect(resolved).toBeNull();
   });

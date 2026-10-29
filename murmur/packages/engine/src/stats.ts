@@ -2,10 +2,27 @@
 import { NEXT_TOOL, type RoundStats, type Stage, type World } from "./types.js";
 import type { Storage } from "./store/storage.js";
 import { trendingEntities } from "./sim/feed.js";
+import { FETCH_ALL } from "./util/text.js";
 
 export interface WorldStatus {
-  world: { id: string; name: string; slug: string; stage: Stage; round: number; rounds: number; seed: string };
-  counts: { seeds: number; entities: number; personas: number; posts: number; memories: number; events: number; reports: number };
+  world: {
+    id: string;
+    name: string;
+    slug: string;
+    stage: Stage;
+    round: number;
+    rounds: number;
+    seed: string;
+  };
+  counts: {
+    seeds: number;
+    entities: number;
+    personas: number;
+    posts: number;
+    memories: number;
+    events: number;
+    reports: number;
+  };
   pendingTask: { id: string; kind: string } | null;
   trending: string[];
   next: string;
@@ -36,9 +53,9 @@ export function worldStatus(storage: Storage, world: World): WorldStatus {
       entities: entities.length,
       personas: personas.length,
       posts: storage.countPosts(world.id),
-      memories: storage.listMemories(world.id, { limit: 100000 }).length,
-      events: storage.listEvents(world.id, { limit: 100000 }).length,
-      reports: (storage.latestReport(world.id)?.version ?? 0),
+      memories: storage.listMemories(world.id, { limit: FETCH_ALL }).length,
+      events: storage.listEvents(world.id, { limit: FETCH_ALL }).length,
+      reports: storage.latestReport(world.id)?.version ?? 0,
     },
     pendingTask: pending ? { id: pending.id, kind: pending.kind } : null,
     trending: trendingEntities(storage, world, world.round + 1, entities, 4),
@@ -46,9 +63,15 @@ export function worldStatus(storage: Storage, world: World): WorldStatus {
   };
 }
 
-export function roundSummary(storage: Storage, world: World, round: number): RoundStats | null {
-  const ev = storage.listEvents(world.id, { type: "round_stats" }).find((e) => e.round === round);
-  return ((ev?.payload?.stats as RoundStats | undefined) ?? null);
+export function roundSummary(
+  storage: Storage,
+  world: World,
+  round: number,
+): RoundStats | null {
+  const ev = storage
+    .listEvents(world.id, { type: "round_stats" })
+    .find((e) => e.round === round);
+  return (ev?.payload?.stats as RoundStats | undefined) ?? null;
 }
 
 export function worldListRow(storage: Storage, world: World) {

@@ -113,21 +113,270 @@ function clampScore(v: number): number {
 export interface Mention {
   entityId: string;
   score: number;
+  aspect?: string;
+  confidence?: number;
 }
 
-/** Which entities does this text mention, and what sentiment does the text carry? */
-export function entityMentions(text: string, entities: Entity[]): Mention[] {
-  if (!text) return [];
+export type AspectSentimentEvaluator = (
+  text: string,
+  entity: Entity,
+  context: string
+) => number | { score: number; confidence?: number; aspect?: string } | null | undefined;
+
+export interface AspectSentimentOptions {
+  /** Optional custom or model-assisted evaluator */
+  evaluator?: AspectSentimentEvaluator;
+  /** Whether to fall back to global post score if the local context window has 0 sentiment hits (default: false) */
+  fallbackToGlobal?: boolean;
+}
+
+interface EntityMatch {
+  entity: Entity;
+  start: number;
+  end: number;
+}
+
+/** Find all entity matches in text with start and end positions */
+function findEntityMatches(text: string, entities: Entity[]): EntityMatch[] {
+  const matches: EntityMatch[] = [];
   const lower = text.toLowerCase();
-  const globalScore = scoreSentiment(text).score;
-  const out: Mention[] = [];
   for (const e of entities) {
     const name = e.name.trim();
     if (name.length < 3) continue;
-    const re = new RegExp(`(^|[^a-z0-9])${escapeRegExp(name.toLowerCase())}($|[^a-z0-9])`, "i");
-    if (re.test(lower)) {
-      out.push({ entityId: e.id, score: round2(globalScore) });
+    const re = new RegExp(`(^|[^a-z0-9])(${escapeRegExp(name.toLowerCase())})($|[^a-z0-9])`, "gi");
+    let m: RegExpExecArray | null = re.exec(lower);
+    while (m !== null) {
+      const leadingOffset = m[1].length;
+      const start = m.index + leadingOffset;
+      const end = start + m[2].length;
+      matches.push({ entity: e, start, end });
+      re.lastIndex = m.index + m[0].length - (m[3].length > 0 ? m[3].length : 0);
+      m = re.exec(lower);
     }
+  }
+  return matches.sort((a, b) => a.start - b.start);
+}
+
+/**
+ * Extract the local syntactic/context window for an entity occurrence.
+ * Bounded by neighbouring entity mentions and clause/sentence boundaries.
+ */
+function extractOccurrenceWindow(
+  text: string,
+  match: EntityMatch,
+  prevMatch: EntityMatch | null,
+  nextMatch: EntityMatch | null
+): string {
+  const prevLimit = prevMatch ? prevMatch.end : 0;
+  const nextLimit = nextMatch ? nextMatch.start : text.length;
+
+  // Between prevMatch and match, look for clause/contrastive boundaries or sentence breaks
+  let left = match.start;
+  const beforeText = text.slice(prevLimit, match.start);
+  const clauseSplitRegex = /(?:[;—]|\s*,\s*|\s+(?:but|however|whereas|while|although|though|except|yet|instead of|rather than|on the other hand)\s+)/gi;
+  let lastClauseBreak = -1;
+  let cm: RegExpExecArray | null = clauseSplitRegex.exec(beforeText);
+  while (cm !== null) {
+    lastClauseBreak = cm.index + cm[0].length;
+    cm = clauseSplitRegex.exec(beforeText);
+  }
+
+  const lastSentenceBreak = Math.max(
+    beforeText.lastIndexOf("."),
+    beforeText.lastIndexOf("!"),
+    beforeText.lastIndexOf("?"),
+    beforeText.lastIndexOf("\n")
+  );
+
+  if (prevMatch) {
+    if (lastClauseBreak >= 0 && lastClauseBreak > lastSentenceBreak) {
+      left = prevLimit + lastClauseBreak;
+    } else if (lastSentenceBreak >= 0) {
+      left = prevLimit + lastSentenceBreak + 1;
+    } else {
+      left = prevLimit;
+    }
+  } else {
+    if (lastSentenceBreak >= 0) {
+      left = prevLimit + lastSentenceBreak + 1;
+    } else {
+      left = 0;
+    }
+  }
+
+  // Look forward from match.end to nextLimit
+  let right = match.end;
+  const afterText = text.slice(match.end, nextLimit);
+  clauseSplitRegex.lastIndex = 0;
+  const firstClauseBreakMatch = clauseSplitRegex.exec(afterText);
+  const firstClauseBreak = firstClauseBreakMatch ? firstClauseBreakMatch.index : -1;
+
+  const sentenceBreakMatch = /[.!?…\n]/g.exec(afterText);
+  const firstSentenceBreak = sentenceBreakMatch ? sentenceBreakMatch.index + 1 : -1;
+
+  if (nextMatch) {
+    if (firstClauseBreak >= 0 && (firstSentenceBreak < 0 || firstClauseBreak < firstSentenceBreak)) {
+      right = match.end + firstClauseBreak;
+    } else if (firstSentenceBreak >= 0) {
+      right = match.end + firstSentenceBreak;
+      const currentCandidate = text.slice(left, right);
+      if (scoreSentiment(currentCandidate).hits === 0) {
+        const remainingAfter = text.slice(right, nextLimit);
+        const secondSentenceBreakMatch = /[.!?…\n]/g.exec(remainingAfter);
+        if (secondSentenceBreakMatch) {
+          right += secondSentenceBreakMatch.index + 1;
+        } else {
+          right = nextLimit;
+        }
+      }
+    } else {
+      right = nextLimit;
+    }
+  } else {
+    if (firstSentenceBreak >= 0) {
+      right = match.end + firstSentenceBreak;
+      const currentCandidate = text.slice(left, right);
+      if (scoreSentiment(currentCandidate).hits === 0) {
+        const remainingAfter = text.slice(right);
+        const secondSentenceBreakMatch = /[.!?…\n]/g.exec(remainingAfter);
+        if (secondSentenceBreakMatch) {
+          right += secondSentenceBreakMatch.index + 1;
+        } else {
+          right = text.length;
+        }
+      }
+    } else {
+      right = text.length;
+    }
+  }
+
+  return text.slice(left, right).trim();
+}
+
+/** Extract local syntactic context windows surrounding an entity in text */
+export function extractAspectContext(text: string, entityName: string, allEntities?: Entity[]): string[] {
+  if (!text || !entityName) return [];
+  const dummyEntity: Entity = {
+    id: "target",
+    worldId: "",
+    name: entityName,
+    type: "org",
+    description: "",
+    salience: 1,
+    anchors: [],
+    motives: [],
+  };
+  const entitiesToMatch = allEntities && allEntities.length > 0 ? allEntities : [dummyEntity];
+  const allMatches = findEntityMatches(text, entitiesToMatch);
+  const targetMatches = allMatches.filter((m) => m.entity.name.toLowerCase() === entityName.trim().toLowerCase());
+  if (targetMatches.length === 0) return [];
+
+  const contexts: string[] = [];
+  for (const m of targetMatches) {
+    const idx = allMatches.indexOf(m);
+    const prev = idx > 0 ? allMatches[idx - 1] : null;
+    const next = idx < allMatches.length - 1 ? allMatches[idx + 1] : null;
+    const w = extractOccurrenceWindow(text, m, prev, next);
+    if (w) contexts.push(w);
+  }
+  return contexts;
+}
+
+/** Compute aspect-based sentiment targeting the local context window surrounding an entity */
+export function scoreAspectSentiment(
+  text: string,
+  entity: Entity,
+  options?: AspectSentimentOptions,
+  allEntities?: Entity[]
+): { score: number; hits: number; context: string } {
+  const name = entity.name.trim();
+  if (!text || name.length < 3) return { score: 0, hits: 0, context: "" };
+
+  const entitiesList = allEntities && allEntities.length > 0 ? allEntities : [entity];
+  const allMatches = findEntityMatches(text, entitiesList);
+  const myMatches = allMatches.filter((m) => m.entity.id === entity.id || m.entity.name.toLowerCase() === name.toLowerCase());
+
+  if (myMatches.length === 0) return { score: 0, hits: 0, context: "" };
+
+  const windows: string[] = [];
+  const scores: number[] = [];
+  let totalHits = 0;
+
+  for (const m of myMatches) {
+    const idx = allMatches.indexOf(m);
+    const prev = idx > 0 ? allMatches[idx - 1] : null;
+    const next = idx < allMatches.length - 1 ? allMatches[idx + 1] : null;
+    const w = extractOccurrenceWindow(text, m, prev, next);
+    if (!w) continue;
+    windows.push(w);
+    const res = scoreSentiment(w);
+    if (res.hits > 0) {
+      scores.push(res.score);
+      totalHits += res.hits;
+    }
+  }
+
+  const primaryContext = windows.join("; ") || text;
+
+  // Check if model-assisted evaluator is provided
+  if (typeof options?.evaluator === "function") {
+    try {
+      const evalRes = options.evaluator(text, entity, primaryContext);
+      if (evalRes != null) {
+        if (typeof evalRes === "number") {
+          return { score: clampScore(evalRes), hits: totalHits, context: primaryContext };
+        } else if (typeof evalRes === "object" && typeof evalRes.score === "number") {
+          return { score: clampScore(evalRes.score), hits: totalHits, context: evalRes.aspect ?? primaryContext };
+        }
+      }
+    } catch {
+      // Seamlessly fall back to deterministic lexical score
+    }
+  }
+
+  if (scores.length > 0) {
+    const avg = scores.reduce((sum, s) => sum + s, 0) / scores.length;
+    return { score: clampScore(avg), hits: totalHits, context: primaryContext };
+  }
+
+  if (options?.fallbackToGlobal) {
+    const globalRes = scoreSentiment(text);
+    return { score: globalRes.score, hits: globalRes.hits, context: primaryContext };
+  }
+
+  return { score: 0, hits: 0, context: primaryContext };
+}
+
+/**
+ * Aspect-based entity mentions extraction.
+ * Attributes sentiment specifically to mentioned entities using their local syntactic context
+ * rather than indiscriminately assigning whole-post global sentiment.
+ * Supports model-assisted evaluation while strictly preserving deterministic lexical scoring fallback.
+ */
+export function entityMentions(
+  text: string,
+  entities: Entity[],
+  options?: AspectSentimentOptions
+): Mention[] {
+  if (!text || !entities.length) return [];
+  const allMatches = findEntityMatches(text, entities);
+  if (allMatches.length === 0) return [];
+
+  const matchedEntities = new Map<string, Entity>();
+  for (const m of allMatches) {
+    if (!matchedEntities.has(m.entity.id)) {
+      matchedEntities.set(m.entity.id, m.entity);
+    }
+  }
+
+  const out: Mention[] = [];
+  for (const e of matchedEntities.values()) {
+    const aspectResult = scoreAspectSentiment(text, e, options, entities);
+    out.push({
+      entityId: e.id,
+      score: round2(aspectResult.score),
+      aspect: aspectResult.context,
+    });
   }
   return out;
 }

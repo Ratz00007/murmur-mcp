@@ -1,8 +1,9 @@
 /**
- * F7 — Deep interaction. interview_agent assembles a grounded pack for one
- * persona (its posts, episodic memory, traits, stances) so the host LLM can
- * answer in character and cite its own posts — and decline what it never
- * saw. report_agent_ask runs the same pattern over the whole corpus.
+ * F7 — Deep interaction. interact({target:"persona"}) assembles a grounded
+ * pack for one persona (its posts, episodic memory, traits, stances) so the
+ * host LLM can answer in character and cite its own posts — and decline what
+ * it never saw. interact({target:"run"}) runs the same pattern over the whole
+ * corpus.
  */
 import type { Entity, Persona, World } from "./types.js";
 import type { Storage } from "./store/storage.js";
@@ -10,7 +11,13 @@ import { personaCard } from "./personas.js";
 import { memoryTimeline } from "./memory.js";
 import { postSentiment, timeline, topPostsByEngagement } from "./aggregate.js";
 import { engagementScore } from "./util/engagement.js";
-import { nowIso, round2Safe, truncate, tokens } from "./util/text.js";
+import {
+  FETCH_ALL,
+  nowIso,
+  round2Safe,
+  truncate,
+  tokens,
+} from "./util/text.js";
 
 export const INTERVIEW_INSTRUCTIONS = `Answer the user's question AS this persona, in first person, in their voice.
 Grounding rules:
@@ -27,12 +34,23 @@ Rules:
 export interface InterviewPack {
   question: string;
   persona: Record<string, unknown>;
-  posts: { id: string; round: number; platform: string; body: string; sentiment: number }[];
+  posts: {
+    id: string;
+    round: number;
+    platform: string;
+    body: string;
+    sentiment: number;
+  }[];
   memory: { round: number; kind: string; content: string }[];
   instructions: string;
 }
 
-export function buildInterviewPack(storage: Storage, world: World, personaId: string, question: string): { persona: Persona; pack: InterviewPack } {
+export function buildInterviewPack(
+  storage: Storage,
+  world: World,
+  personaId: string,
+  question: string,
+): { persona: Persona; pack: InterviewPack } {
   const persona = storage.getPersona(world.id, personaId);
   if (!persona) throw new Error(`persona not found: ${personaId}`);
   const entities = storage.listEntities(world.id);
@@ -45,8 +63,18 @@ export function buildInterviewPack(storage: Storage, world: World, personaId: st
       return eb - ea || a.id.localeCompare(b.id);
     })
     .slice(0, 10)
-    .map((p) => ({ id: p.id, round: p.round, platform: p.platform, body: truncate(p.body, 200), sentiment: round2Safe(postSentiment(p)) }));
-  const memory = memoryTimeline(storage, world, persona.id, 12).map((m) => ({ round: m.round, kind: m.kind, content: truncate(m.content, 200) }));
+    .map((p) => ({
+      id: p.id,
+      round: p.round,
+      platform: p.platform,
+      body: truncate(p.body, 200),
+      sentiment: round2Safe(postSentiment(p)),
+    }));
+  const memory = memoryTimeline(storage, world, persona.id, 12).map((m) => ({
+    round: m.round,
+    kind: m.kind,
+    content: truncate(m.content, 200),
+  }));
   const fullStances = Object.entries(persona.stances).map(([id, v]) => {
     const e = entities.find((x) => x.id === id);
     return `${e?.name ?? id}: ${round2Safe(v)}`;
@@ -55,7 +83,11 @@ export function buildInterviewPack(storage: Storage, world: World, personaId: st
     persona,
     pack: {
       question,
-      persona: { ...card, stancesFull: fullStances, traitsFull: persona.traits },
+      persona: {
+        ...card,
+        stancesFull: fullStances,
+        traitsFull: persona.traits,
+      },
       posts,
       memory,
       instructions: INTERVIEW_INSTRUCTIONS,
@@ -67,12 +99,27 @@ export interface AskPack {
   question: string;
   matchedEntities: string[];
   matchedPersonas: string[];
-  evidence: { id: string; by: string; plat: string; round: number; body: string; sentiment: number }[];
-  stats: { rounds: number; population: number; sentimentByEntity: Record<string, number> };
+  evidence: {
+    id: string;
+    by: string;
+    plat: string;
+    round: number;
+    body: string;
+    sentiment: number;
+  }[];
+  stats: {
+    rounds: number;
+    population: number;
+    sentimentByEntity: Record<string, number>;
+  };
   instructions: string;
 }
 
-export function buildAskPack(storage: Storage, world: World, question: string): AskPack {
+export function buildAskPack(
+  storage: Storage,
+  world: World,
+  question: string,
+): AskPack {
   const entities = storage.listEntities(world.id);
   const personas = storage.listPersonas(world.id);
   const q = question.toLowerCase();
@@ -83,18 +130,27 @@ export function buildAskPack(storage: Storage, world: World, question: string): 
     .slice(0, 5)
     .map((e) => e.name);
   const matchedPersonas = personas
-    .filter((p) => q.includes(p.name.toLowerCase()) || q.includes(p.handle.toLowerCase()))
+    .filter(
+      (p) =>
+        q.includes(p.name.toLowerCase()) || q.includes(p.handle.toLowerCase()),
+    )
     .slice(0, 5)
     .map((p) => `${p.name} (${p.handle})`);
 
   const qTokens = new Set(tokens(question));
-  const entityIds = new Set(entities.filter((e) => q.includes(e.name.toLowerCase())).map((e) => e.id));
-  const posts = storage.listPosts(world.id, { limit: 100000 });
+  const entityIds = new Set(
+    entities.filter((e) => q.includes(e.name.toLowerCase())).map((e) => e.id),
+  );
+  const posts = storage.listPosts(world.id, { limit: FETCH_ALL });
   const handles = new Map(personas.map((p) => [p.id, p.handle]));
   const scoredEvidence = posts
     .map((p) => {
       let score = 0;
-      if (entityIds.size > 0 && p.mentions.some((m) => entityIds.has(m.entityId))) score += 3;
+      if (
+        entityIds.size > 0 &&
+        p.mentions.some((m) => entityIds.has(m.entityId))
+      )
+        score += 3;
       const words = new Set(tokens(`${p.title ?? ""} ${p.body}`));
       for (const t of qTokens) if (words.has(t)) score++;
       const engagement = engagementScore(p.metrics);
@@ -113,14 +169,20 @@ export function buildAskPack(storage: Storage, world: World, question: string): 
     }));
   // fallback: a question the corpus doesn't keyword-match still gets the run's
   // strongest posts — the ReportAgent always grounds in real evidence
-  const evidence = scoredEvidence.length > 0 ? scoredEvidence : topPostsByEngagement(storage, world, 6).map(({ post, sentiment }) => ({
-    id: post.id,
-    by: handles.get(post.personaId) ?? post.personaId,
-    plat: post.platform === "twitter" ? "tw" : "rd",
-    round: post.round,
-    body: truncate(post.title ? `${post.title} — ${post.body}` : post.body, 220),
-    sentiment,
-  }));
+  const evidence =
+    scoredEvidence.length > 0
+      ? scoredEvidence
+      : topPostsByEngagement(storage, world, 6).map(({ post, sentiment }) => ({
+          id: post.id,
+          by: handles.get(post.personaId) ?? post.personaId,
+          plat: post.platform === "twitter" ? "tw" : "rd",
+          round: post.round,
+          body: truncate(
+            post.title ? `${post.title} — ${post.body}` : post.body,
+            220,
+          ),
+          sentiment,
+        }));
 
   const rows = timeline(storage, world);
   const latest = rows[rows.length - 1];
@@ -129,7 +191,11 @@ export function buildAskPack(storage: Storage, world: World, question: string): 
     matchedEntities,
     matchedPersonas,
     evidence,
-    stats: { rounds: world.round, population: personas.length, sentimentByEntity: latest?.sentimentByEntity ?? {} },
+    stats: {
+      rounds: world.round,
+      population: personas.length,
+      sentimentByEntity: latest?.sentimentByEntity ?? {},
+    },
     instructions: ASK_INSTRUCTIONS,
   };
 }
@@ -141,7 +207,11 @@ export interface QaEntry {
   matched?: unknown;
 }
 
-export function qaEntry(question: string, answer: string, matched?: unknown): QaEntry {
+export function qaEntry(
+  question: string,
+  answer: string,
+  matched?: unknown,
+): QaEntry {
   return { ts: nowIso(), question, answer, matched };
 }
 

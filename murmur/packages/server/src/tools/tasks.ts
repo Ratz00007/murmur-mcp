@@ -54,7 +54,11 @@ export interface TaskToolSpec<A extends z.ZodRawShape> {
  * Register a task-capable tool, falling back to plain registration when the
  * installed SDK has no tasks support.
  */
-export function registerTaskTool<A extends z.ZodRawShape>(server: McpServer, name: string, spec: TaskToolSpec<A>): void {
+export function registerTaskTool<A extends z.ZodRawShape>(
+  server: McpServer,
+  name: string,
+  spec: TaskToolSpec<A>,
+): void {
   // A ZodObject (rather than a bare raw shape) so the SDK's `ToolCallback`
   // infers exactly ToolArgs<A> for a generic A; a raw shape widens to
   // `Record<string, any>` and the handler would have to be cast.
@@ -64,44 +68,75 @@ export function registerTaskTool<A extends z.ZodRawShape>(server: McpServer, nam
     description: spec.description,
     inputSchema,
     outputSchema: spec.outputSchema,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
   };
 
-  const tasks = (server as { experimental?: { tasks?: { registerToolTask?: unknown } } }).experimental?.tasks;
+  const tasks = (
+    server as { experimental?: { tasks?: { registerToolTask?: unknown } } }
+  ).experimental?.tasks;
   if (typeof tasks?.registerToolTask === "function") {
     (
-      tasks.registerToolTask as (n: string, c: Record<string, unknown>, h: Record<string, unknown>) => unknown
+      tasks.registerToolTask as (
+        n: string,
+        c: Record<string, unknown>,
+        h: Record<string, unknown>,
+      ) => unknown
     )(
       name,
       { ...config, execution: { taskSupport: "optional" } },
       {
         createTask: async (args: ToolArgs<A>, extra: TaskExtra) => {
-          const task = await extra.taskStore.createTask({ ttl: TASK_TTL_MS, pollInterval: TASK_POLL_INTERVAL_MS });
+          const task = await extra.taskStore.createTask({
+            ttl: TASK_TTL_MS,
+            pollInterval: TASK_POLL_INTERVAL_MS,
+          });
           // Tool bodies are total — they turn thrown errors into isError
           // replies — so the task always reaches a terminal state here.
           const result = await spec.run(args);
-          await extra.taskStore.storeTaskResult(task.taskId, result.isError ? "failed" : "completed", result);
+          await extra.taskStore.storeTaskResult(
+            task.taskId,
+            result.isError ? "failed" : "completed",
+            result,
+          );
           return { task: (await extra.taskStore.getTask(task.taskId)) ?? task };
         },
-        getTask: async (_args: ToolArgs<A>, extra: TaskExtra) => extra.taskStore.getTask(extra.taskId),
-        getTaskResult: async (_args: ToolArgs<A>, extra: TaskExtra) => extra.taskStore.getTaskResult(extra.taskId),
-      }
+        getTask: async (_args: ToolArgs<A>, extra: TaskExtra) =>
+          extra.taskStore.getTask(extra.taskId),
+        getTaskResult: async (_args: ToolArgs<A>, extra: TaskExtra) =>
+          extra.taskStore.getTaskResult(extra.taskId),
+      },
     );
     log.info(`tool ${name}: task-capable (taskSupport: optional)`);
     return;
   }
 
-  log.warn(`tool ${name}: SDK has no experimental.tasks — registered without task support`);
-  server.registerTool(name, config, async (args: ToolArgs<A>) => spec.run(args));
+  log.warn(
+    `tool ${name}: SDK has no experimental.tasks — registered without task support`,
+  );
+  server.registerTool(name, config, async (args: ToolArgs<A>) =>
+    spec.run(args),
+  );
 }
 
 /** The slice of the SDK's task-augmented handler extra this module needs. */
 interface TaskExtra {
   taskId: string;
   taskStore: {
-    createTask(params: { ttl: number; pollInterval: number }): Promise<{ taskId: string }>;
+    createTask(params: {
+      ttl: number;
+      pollInterval: number;
+    }): Promise<{ taskId: string }>;
     getTask(taskId: string): Promise<{ status: string } | null>;
-    storeTaskResult(taskId: string, status: "completed" | "failed", result: CallToolResult): Promise<void>;
+    storeTaskResult(
+      taskId: string,
+      status: "completed" | "failed",
+      result: CallToolResult,
+    ): Promise<void>;
     getTaskResult(taskId: string): Promise<CallToolResult>;
   };
 }

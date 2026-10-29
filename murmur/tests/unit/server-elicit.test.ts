@@ -17,15 +17,22 @@ describe("elicitation fallback", () => {
   it("returns the plain missing-persona error when elicitation is unavailable", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-elicit-"));
     const ctx = new ServerContext(cwd);
-    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
     const client = new Client({ name: "elicit-test", version: "0.0.0" });
     try {
       await buildServer(ctx).connect(serverTransport);
       await client.connect(clientTransport);
-      await client.callTool({ name: "world_init", arguments: { name: "e", seed: "e" } });
+      await client.callTool({
+        name: "world_init",
+        arguments: { name: "e", seed: "e" },
+      });
       // No persona, no elicitation support from this client: the tool must
       // answer with the plain error text, not an MCP protocol failure.
-      const res = await client.callTool({ name: "interact", arguments: { target: "persona", question: "Why do you feel this way?" } });
+      const res = await client.callTool({
+        name: "interact",
+        arguments: { target: "persona", question: "Why do you feel this way?" },
+      });
       expect(res.isError).toBeTruthy();
       const text = (res.content as { text: string }[])[0]?.text ?? "";
       expect(text).toContain("needs persona");

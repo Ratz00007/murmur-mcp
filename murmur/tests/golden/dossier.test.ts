@@ -19,7 +19,6 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as engine from "@murmur/engine";
 import { runPipeline } from "../helpers/pipeline.mjs";
-import { completeReportTask } from "../helpers/mock-brain.mjs";
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "murmur-dossier-"));
 
@@ -53,21 +52,27 @@ function goodDossier(postIds: string[]) {
         label: "Support load spike",
         steelman: `The run shows confusion clustering in the first two rounds with no official voice present. Unanswered confusion in week one becomes tickets in week two and cancellations in week three.`,
         blastRadius: "low",
-        threatenedDecision: "Staffing support at current levels through launch.",
+        threatenedDecision:
+          "Staffing support at current levels through launch.",
         postIds: [a, b],
       },
     ],
-    strongestCritic: { handle: "@critic", sentence: "They are charging us for the privilege of being confused." },
+    strongestCritic: {
+      handle: "@critic",
+      sentence: "They are charging us for the privilege of being confused.",
+    },
     counterCase: `The change funds the capacity the free tier is consuming, and the run shows a committed supporter bloc that cites reliability rather than price. Grandfathering the loudest critics while holding the line converts the most dangerous objection into a non-event.`,
     weakestClaim: {
       claim: "The opposition will dissipate once the FAQ is published.",
-      breakingQuestion: "What would you need to see in the FAQ to change your mind?",
+      breakingQuestion:
+        "What would you need to see in the FAQ to change your mind?",
     },
     testPlan: [
       {
         question: "What would make this price acceptable to you?",
         discriminates: "Whether the objection is the number or the surprise.",
-        wouldNotShipIf: "Most respondents name a lower number, not better communication.",
+        wouldNotShipIf:
+          "Most respondents name a lower number, not better communication.",
       },
     ],
   };
@@ -76,7 +81,12 @@ function goodDossier(postIds: string[]) {
 describe("objection dossier", () => {
   it("mints exactly one task and stores nothing else", async () => {
     const dir = tmp();
-    const run = await runPipeline(engine, { cwd: dir, seed: "dossier-task", rounds: 3, population: 10 });
+    const run = await runPipeline(engine, {
+      cwd: dir,
+      seed: "dossier-task",
+      rounds: 3,
+      population: 10,
+    });
     const before = run.storage.listTasks(run.worldId).length;
     const task = engine.buildDossierTask(run.storage, run.world, "pricing");
     const after = run.storage.listTasks(run.worldId).length;
@@ -91,11 +101,25 @@ describe("objection dossier", () => {
 
   it("rejects fabricated post ids, naming the field", async () => {
     const dir = tmp();
-    const run = await runPipeline(engine, { cwd: dir, seed: "dossier-neg-id", rounds: 3, population: 10 });
-    const posts = run.storage.listPosts(run.worldId, { limit: 100000 }).filter((p) => p.kind !== "repost");
+    const run = await runPipeline(engine, {
+      cwd: dir,
+      seed: "dossier-neg-id",
+      rounds: 3,
+      population: 10,
+    });
+    const posts = run.storage
+      .listPosts(run.worldId, { limit: 100000 })
+      .filter((p) => p.kind !== "repost");
     const draft = goodDossier(posts.slice(0, 3).map((p) => p.id));
-    (draft.objections[0] as { postIds: string[] }).postIds = [posts[0].id, "po_invented"];
-    const { rejected } = engine.validateDossierDraft(run.storage, run.world, draft);
+    (draft.objections[0] as { postIds: string[] }).postIds = [
+      posts[0].id,
+      "po_invented",
+    ];
+    const { rejected } = engine.validateDossierDraft(
+      run.storage,
+      run.world,
+      draft,
+    );
     const idErrs = rejected.filter((r) => /unknown post id/i.test(r.message));
     expect(idErrs.length).toBeGreaterThan(0);
     expect(idErrs[0].ref).toBe("objections[0].postIds");
@@ -106,12 +130,25 @@ describe("objection dossier", () => {
 
   it("rejects a fabricated number, naming the value", async () => {
     const dir = tmp();
-    const run = await runPipeline(engine, { cwd: dir, seed: "dossier-neg-num", rounds: 3, population: 10 });
-    const posts = run.storage.listPosts(run.worldId, { limit: 100000 }).filter((p) => p.kind !== "repost");
+    const run = await runPipeline(engine, {
+      cwd: dir,
+      seed: "dossier-neg-num",
+      rounds: 3,
+      population: 10,
+    });
+    const posts = run.storage
+      .listPosts(run.worldId, { limit: 100000 })
+      .filter((p) => p.kind !== "repost");
     const draft = goodDossier(posts.slice(0, 3).map((p) => p.id));
     draft.counterCase += " A full 888888 users already agreed in the run.";
-    const { rejected } = engine.validateDossierDraft(run.storage, run.world, draft);
-    const numErrs = rejected.filter((r) => /unverified number/i.test(r.message));
+    const { rejected } = engine.validateDossierDraft(
+      run.storage,
+      run.world,
+      draft,
+    );
+    const numErrs = rejected.filter((r) =>
+      /unverified number/i.test(r.message),
+    );
     expect(numErrs.length).toBeGreaterThan(0);
     expect(numErrs[0].message).toContain("888888");
     run.close?.();
@@ -120,10 +157,21 @@ describe("objection dossier", () => {
 
   it("accepts a run-grounded draft and renders it", async () => {
     const dir = tmp();
-    const run = await runPipeline(engine, { cwd: dir, seed: "dossier-pos", rounds: 3, population: 10 });
-    const posts = run.storage.listPosts(run.worldId, { limit: 100000 }).filter((p) => p.kind !== "repost");
+    const run = await runPipeline(engine, {
+      cwd: dir,
+      seed: "dossier-pos",
+      rounds: 3,
+      population: 10,
+    });
+    const posts = run.storage
+      .listPosts(run.worldId, { limit: 100000 })
+      .filter((p) => p.kind !== "repost");
     const draft = goodDossier(posts.slice(0, 3).map((p) => p.id));
-    const { draft: clean, rejected } = engine.validateDossierDraft(run.storage, run.world, draft);
+    const { draft: clean, rejected } = engine.validateDossierDraft(
+      run.storage,
+      run.world,
+      draft,
+    );
     expect(rejected.map((r) => `${r.ref}: ${r.message}`)).toEqual([]);
     const md = engine.renderDossierMarkdown(run.world, clean, 1);
     expect(md).toContain("# Objection Dossier");
@@ -136,11 +184,22 @@ describe("objection dossier", () => {
 
   it("rejects a missing counter-case: adversary-only dossiers talk readers out of good ideas", async () => {
     const dir = tmp();
-    const run = await runPipeline(engine, { cwd: dir, seed: "dossier-neg-cc", rounds: 3, population: 10 });
-    const posts = run.storage.listPosts(run.worldId, { limit: 100000 }).filter((p) => p.kind !== "repost");
+    const run = await runPipeline(engine, {
+      cwd: dir,
+      seed: "dossier-neg-cc",
+      rounds: 3,
+      population: 10,
+    });
+    const posts = run.storage
+      .listPosts(run.worldId, { limit: 100000 })
+      .filter((p) => p.kind !== "repost");
     const draft = goodDossier(posts.slice(0, 3).map((p) => p.id));
     draft.counterCase = "Seems fine.";
-    const { rejected } = engine.validateDossierDraft(run.storage, run.world, draft);
+    const { rejected } = engine.validateDossierDraft(
+      run.storage,
+      run.world,
+      draft,
+    );
     expect(rejected.some((r) => r.ref === "counterCase")).toBe(true);
     run.close?.();
     fs.rmSync(dir, { recursive: true, force: true });

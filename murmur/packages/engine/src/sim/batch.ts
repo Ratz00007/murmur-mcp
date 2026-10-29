@@ -3,10 +3,17 @@
  * generation task for one round: activated personas, personalized digests,
  * allowed actions and limits — all budgeted under the response cap.
  */
-import type { Entity, GenerationTask, Persona, PersonaDigest, SimGeneration, World } from "../types.js";
+import type {
+  Entity,
+  GenerationTask,
+  Persona,
+  PersonaDigest,
+  SimGeneration,
+  World,
+} from "../types.js";
 import { DATA_NOTICE } from "../types.js";
 import type { Storage } from "../store/storage.js";
-import { estTokens, nowIso } from "../util/text.js";
+import { estTokens, FETCH_ALL, nowIso } from "../util/text.js";
 import { activatePersonas } from "./activation.js";
 import { buildFeed, trendingEntities } from "./feed.js";
 import { collectiveView, workingMemory } from "../memory.js";
@@ -37,17 +44,31 @@ export interface BatchBuildResult {
   activated: string[];
 }
 
-export function buildSimBatch(storage: Storage, world: World): BatchBuildResult {
+export function buildSimBatch(
+  storage: Storage,
+  world: World,
+): BatchBuildResult {
   if (world.round >= world.config.rounds) {
-    throw new Error(`all ${world.config.rounds} rounds complete — call report_plan, or sim_configure({rounds: N}) to extend`);
+    throw new Error(
+      `all ${world.config.rounds} rounds complete — call report({action:"plan"}), or world_config({rounds: N}) to extend`,
+    );
   }
   const personas = storage.listPersonas(world.id);
-  if (personas.length === 0) throw new Error("no personas: run personas_plan / personas_submit first");
+  if (personas.length === 0)
+    throw new Error(
+      'no personas: run personas({action:"plan"}) then personas({action:"submit"}) first',
+    );
   const entities = storage.listEntities(world.id);
   const targetRound = world.round + 1;
   const config = world.config;
 
-  const activated = activatePersonas(world, personas, storage.listPosts(world.id, { limit: 100000 }), targetRound, config.batch.maxPersonas);
+  const activated = activatePersonas(
+    world,
+    personas,
+    storage.listPosts(world.id, { limit: FETCH_ALL }),
+    targetRound,
+    config.batch.maxPersonas,
+  );
   const byId = new Map(personas.map((p) => [p.id, p]));
   const handles = new Map(personas.map((p) => [p.id, p.handle]));
   const entityNames = new Map(entities.map((e) => [e.id, e.name]));
@@ -55,8 +76,22 @@ export function buildSimBatch(storage: Storage, world: World): BatchBuildResult 
 
   const digests: { persona: Persona; digest: PersonaDigest }[] = [];
   for (const id of activated) {
-    const persona = byId.get(id)!;
-    digests.push({ persona, digest: buildPersonaDigest(storage, world, persona, targetRound, config, entities, handles, entityNames, trending) });
+    const persona = byId.get(id);
+    if (persona === undefined) continue;
+    digests.push({
+      persona,
+      digest: buildPersonaDigest(
+        storage,
+        world,
+        persona,
+        targetRound,
+        config,
+        entities,
+        handles,
+        entityNames,
+        trending,
+      ),
+    });
   }
 
   // ---- Context-budget enforcement: trim feeds round-robin, then drop personas.
@@ -109,9 +144,17 @@ export function buildSimBatch(storage: Storage, world: World): BatchBuildResult 
   };
   storage.saveTask(task);
   storage.setStage(world.id, "running");
-  const dropped = activated.filter((id) => !digests.some((d) => d.persona.id === id));
+  const dropped = activated.filter(
+    (id) => !digests.some((d) => d.persona.id === id),
+  );
   if (dropped.length > 0) {
-    storage.addEvent(world.id, targetRound, "stage", { note: "batch trimmed for context budget", dropped }, "world");
+    storage.addEvent(
+      world.id,
+      targetRound,
+      "stage",
+      { note: "batch trimmed for context budget", dropped },
+      "world",
+    );
   }
   return { task, targetRound, activated };
 }
@@ -125,38 +168,80 @@ export function buildPersonaDigest(
   entities: Entity[],
   handles: Map<string, string>,
   entityNames: Map<string, string>,
-  trending: string[]
+  trending: string[],
 ): PersonaDigest {
   const card = personaCard(persona, entities, config).card;
   const mem = workingMemory(storage, world, persona, targetRound, config);
-  const feed = buildFeed(storage, world, persona, targetRound, config, entities, handles);
-  const collective = collectiveView(storage, world, entityNames, targetRound, config, trending);
+  const feed = buildFeed(
+    storage,
+    world,
+    persona,
+    targetRound,
+    config,
+    entities,
+    handles,
+  );
+  const collective = collectiveView(
+    storage,
+    world,
+    entityNames,
+    targetRound,
+    config,
+    trending,
+  );
   const tw = config.platforms.twitter;
   const rd = config.platforms.reddit;
   const allowed =
     persona.platform === "twitter"
-      ? [`post ≤${tw.postCharLimit}c`, `reply ≤${tw.replyCharLimit}c`, "repost", `quote ≤${tw.quoteCharLimit}c`, "like"]
+      ? [
+          `post ≤${tw.postCharLimit}c`,
+          `reply ≤${tw.replyCharLimit}c`,
+          "repost",
+          `quote ≤${tw.quoteCharLimit}c`,
+          "like",
+        ]
       : persona.platform === "reddit"
-        ? [`post title≤${rd.titleCharLimit}c body≤${rd.bodyCharLimit}c`, `comment ≤${rd.commentCharLimit}c`, "upvote", "downvote"]
-        : ["twitter: post/reply/repost/quote/like", "reddit: post(title+body)/comment/upvote/downvote"];
+        ? [
+            `post title≤${rd.titleCharLimit}c body≤${rd.bodyCharLimit}c`,
+            `comment ≤${rd.commentCharLimit}c`,
+            "upvote",
+            "downvote",
+          ]
+        : [
+            "twitter: post/reply/repost/quote/like",
+            "reddit: post(title+body)/comment/upvote/downvote",
+          ];
   return {
     persona: card as PersonaDigest["persona"],
     memory: { summary: mem.summary, recent: mem.recent },
     feed,
     collective,
     allowedActions: allowed,
-    rules: { maxActions: 3, charLimits: { twitter: tw.postCharLimit, reddit: rd.bodyCharLimit, comment: rd.commentCharLimit } },
+    rules: {
+      maxActions: 3,
+      charLimits: {
+        twitter: tw.postCharLimit,
+        reddit: rd.bodyCharLimit,
+        comment: rd.commentCharLimit,
+      },
+    },
   };
 }
 
 /** Compact, human-readable brief of a sim task for receipts. */
-export function batchBrief(task: GenerationTask, targetRound: number): Record<string, unknown> {
+export function batchBrief(
+  task: GenerationTask,
+  targetRound: number,
+): Record<string, unknown> {
   return {
     taskId: task.id,
     round: targetRound,
     personas: task.items.length,
     totalTokens: task.items.reduce((a, i) => a + i.tokens, 0),
-    feedItemsTotal: task.items.reduce((a, i) => a + (((i.payload as { feed?: unknown[] }).feed?.length ?? 0)), 0),
+    feedItemsTotal: task.items.reduce(
+      (a, i) => a + ((i.payload as { feed?: unknown[] }).feed?.length ?? 0),
+      0,
+    ),
   };
 }
 

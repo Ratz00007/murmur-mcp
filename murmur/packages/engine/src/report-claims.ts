@@ -29,8 +29,13 @@ import { engagementScore } from "./util/engagement.js";
  * legitimately hardcoded in prose and are not claims about the run.
  */
 const STRUCTURAL = new Set([
-  1, 2, 3, 4, 5, // exactly 3 risks, up to 4 recommendations, etc.
-  10, 100, // percentages and per-100 normalisations
+  1,
+  2,
+  3,
+  4,
+  5, // exactly 3 risks, up to 4 recommendations, etc.
+  10,
+  100, // percentages and per-100 normalisations
 ]);
 
 export interface NumericClaim {
@@ -50,8 +55,7 @@ export interface NumericClaim {
  * called `@grace6` produced the token "6" and the verifier rejected a
  * perfectly correct draft. Post authors appear as `u/ines8` and `@elena4`.
  */
-const ID_TOKEN =
-  /\b(?:po|ev|p|e|rel|mem|rp|t|sd|w|cm|r)_?\d+\b/gi; // po_12, p3, r1
+const ID_TOKEN = /\b(?:po|ev|p|e|rel|mem|rp|t|sd|w|cm|r)_?\d+\b/gi; // po_12, p3, r1
 // `@handle` or `/u/handle` or `u/handle`. The alternatives are listed
 // separately rather than as `[@/u]` — inside a character class `u` is a
 // LITERAL, so `[@\/u]` matches any word containing the letter u and shredded
@@ -61,7 +65,9 @@ const ROUND_REF = /\br(?:ound)?\s*[-_]?\d+\b/gi; // r3, round 3, r-3
 const BAND_LABEL = /\bP(?:10|50|90)\b/gi;
 
 /** Extract numeric tokens, ignoring ids, handles, round refs, and versions. */
-export function extractNumbers(text: string): { token: string; value: number }[] {
+export function extractNumbers(
+  text: string,
+): { token: string; value: number }[] {
   if (!text) return [];
   const cleaned = text
     // Usernames first: `u/ines8` contains a slash-handle, and `@grace6` a
@@ -86,7 +92,11 @@ export function extractNumbers(text: string): { token: string; value: number }[]
  * The set of facts the report is allowed to assert, gathered from the same
  * data the renderers use.
  */
-export function allowedNumbers(d: ReportData, rounds: number, population: number): number[] {
+export function allowedNumbers(
+  d: ReportData,
+  rounds: number,
+  population: number,
+): number[] {
   const vals = new Set<number>([rounds, population, 0, 1, 2, 3]);
   const push = (v: number | undefined | null) => {
     if (typeof v === "number" && Number.isFinite(v)) vals.add(v);
@@ -190,7 +200,11 @@ export function allowedNumbers(d: ReportData, rounds: number, population: number
     for (const m of p.mentions ?? []) push(m.score);
     push(engagementScore(p.metrics));
   }
-  for (const q of [...d.quotes.positive, ...d.quotes.negative, ...d.quotes.mixed]) {
+  for (const q of [
+    ...d.quotes.positive,
+    ...d.quotes.negative,
+    ...d.quotes.mixed,
+  ]) {
     push(q.sentiment);
     push(q.engagement);
   }
@@ -253,7 +267,10 @@ export function verifyNumericClaims(
     fields.push({ ref: `risks[${i}].title`, text: r?.title ?? "" });
   }
   for (const [i, s] of (draft.confidence?.strongSignals ?? []).entries()) {
-    fields.push({ ref: `confidence.strongSignals[${i}]`, text: String(s ?? "") });
+    fields.push({
+      ref: `confidence.strongSignals[${i}]`,
+      text: String(s ?? ""),
+    });
   }
   for (const [i, s] of (draft.confidence?.contested ?? []).entries()) {
     fields.push({ ref: `confidence.contested[${i}]`, text: String(s ?? "") });
@@ -272,7 +289,8 @@ export function verifyNumericClaims(
         candidates.some((c) => near(c, allowed, tolerance)) ||
         near(value, allowed, tolerance) ||
         // A percentage is legitimate if the underlying ratio is real.
-        (Math.abs(value) <= 100 && allowed.some((a) => Math.abs(a - value / 100) <= tolerance));
+        (Math.abs(value) <= 100 &&
+          allowed.some((a) => Math.abs(a - value / 100) <= tolerance));
       if (!ok) unverified.push(claim);
     }
   }
@@ -290,6 +308,3 @@ export function verifyNumericClaims(
 
   return { ok: unverified.length === 0, claims, unverified, available };
 }
-
-
-

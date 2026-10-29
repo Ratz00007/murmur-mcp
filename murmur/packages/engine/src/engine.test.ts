@@ -5,7 +5,14 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Rng, hashString, hashHex, streamRng } from "./util/rng.js";
-import { estTokens, truncate, slugify, stanceBar, splitSentences, topKeywords } from "./util/text.js";
+import {
+  estTokens,
+  truncate,
+  slugify,
+  stanceBar,
+  splitSentences,
+  topKeywords,
+} from "./util/text.js";
 import { scoreSentiment, entityMentions } from "./sentiment.js";
 import { extractPdfText } from "./ingest/pdf.js";
 import { coverageStats, makeDigest } from "./ingest/digest.js";
@@ -61,13 +68,19 @@ describe("rng determinism", () => {
       if (exclusions.has(rel)) continue;
       scanned.push(rel);
       const src = fs.readFileSync(abs, "utf8");
-      expect(src.includes(needle), `${rel} must not use unseeded randomness`).toBe(false);
+      expect(
+        src.includes(needle),
+        `${rel} must not use unseeded randomness`,
+      ).toBe(false);
     }
     // every *.ts under packages/engine/src is covered — no hardcoded subset
     expect(scanned.length).toBeGreaterThan(15);
     // the allowlist stays honest: each entry exists and is the only omission
     for (const rel of exclusions) {
-      expect(fs.existsSync(path.join(here, rel)), `${rel} exclusion must reference a real file`).toBe(true);
+      expect(
+        fs.existsSync(path.join(here, rel)),
+        `${rel} exclusion must reference a real file`,
+      ).toBe(true);
     }
   });
 });
@@ -101,8 +114,12 @@ describe("text + tokens", () => {
 
 describe("sentiment", () => {
   it("scores positive and negative", () => {
-    expect(scoreSentiment("I love this, it is great and amazing").score).toBeGreaterThan(0.3);
-    expect(scoreSentiment("I hate this, terrible ripoff").score).toBeLessThan(-0.3);
+    expect(
+      scoreSentiment("I love this, it is great and amazing").score,
+    ).toBeGreaterThan(0.3);
+    expect(scoreSentiment("I hate this, terrible ripoff").score).toBeLessThan(
+      -0.3,
+    );
   });
   it("negation flips", () => {
     const plain = scoreSentiment("this is good").score;
@@ -111,35 +128,70 @@ describe("sentiment", () => {
     expect(negated).toBeLessThan(0);
   });
   it("intensifiers amplify", () => {
-    expect(Math.abs(scoreSentiment("very bad").score)).toBeGreaterThan(Math.abs(scoreSentiment("bad").score));
+    expect(Math.abs(scoreSentiment("very bad").score)).toBeGreaterThan(
+      Math.abs(scoreSentiment("bad").score),
+    );
   });
   it("neutral text ~ 0", () => {
-    expect(Math.abs(scoreSentiment("the meeting is on tuesday at the office").score)).toBeLessThan(0.1);
+    expect(
+      Math.abs(scoreSentiment("the meeting is on tuesday at the office").score),
+    ).toBeLessThan(0.1);
   });
   it("negation does not leak across a sentence boundary", () => {
     // "not existential. Genuinely good move." — the second sentence is positive
-    const s = scoreSentiment("Manageable, not existential. Genuinely good move in my book.").score;
+    const s = scoreSentiment(
+      "Manageable, not existential. Genuinely good move in my book.",
+    ).score;
     expect(s).toBeGreaterThan(0);
   });
   it("affirmative slang stays positive", () => {
     // "no notes" is praise; the stray 'no' must not flip the following 'Solid'
-    const s = scoreSentiment("genuinely loving the update, it fixed the one thing I complained about, no notes Solid decision, no notes.").score;
+    const s = scoreSentiment(
+      "genuinely loving the update, it fixed the one thing I complained about, no notes Solid decision, no notes.",
+    ).score;
     expect(s).toBeGreaterThan(0.3);
   });
   it("negated negatives read positive", () => {
-    expect(scoreSentiment("Acme Cloud literally never crashes for me").score).toBeGreaterThan(0.2);
+    expect(
+      scoreSentiment("Acme Cloud literally never crashes for me").score,
+    ).toBeGreaterThan(0.2);
     expect(scoreSentiment("it feels like a ripoff").score).toBeLessThan(-0.3);
   });
   it("community doom phrases are negative", () => {
-    expect(scoreSentiment("this pricing is a straight cash grab").score).toBeLessThan(-0.3);
-    expect(scoreSentiment("classic rug pull, glad I exported").score).toBeLessThan(-0.3);
+    expect(
+      scoreSentiment("this pricing is a straight cash grab").score,
+    ).toBeLessThan(-0.3);
+    expect(
+      scoreSentiment("classic rug pull, glad I exported").score,
+    ).toBeLessThan(-0.3);
   });
   it("attributes mentions to entities", () => {
     const entities: Entity[] = [
-      { id: "e_1", worldId: "w", name: "Acme Cloud", type: "org", description: "", salience: 0.9, anchors: [], motives: [] },
-      { id: "e_2", worldId: "w", name: "Nimbus Labs", type: "org", description: "", salience: 0.7, anchors: [], motives: [] },
+      {
+        id: "e_1",
+        worldId: "w",
+        name: "Acme Cloud",
+        type: "org",
+        description: "",
+        salience: 0.9,
+        anchors: [],
+        motives: [],
+      },
+      {
+        id: "e_2",
+        worldId: "w",
+        name: "Nimbus Labs",
+        type: "org",
+        description: "",
+        salience: 0.7,
+        anchors: [],
+        motives: [],
+      },
     ];
-    const m = entityMentions("Acme Cloud is great but Nimbus Labs is a terrible ripoff", entities);
+    const m = entityMentions(
+      "Acme Cloud is great but Nimbus Labs is a terrible ripoff",
+      entities,
+    );
     const ids = m.map((x) => x.entityId);
     expect(ids).toContain("e_1");
     expect(ids).toContain("e_2");
@@ -148,7 +200,8 @@ describe("sentiment", () => {
 
 describe("pdf extraction", () => {
   it("extracts text from an uncompressed content stream", () => {
-    const content = "BT (Pricing changes coming soon. Acme Cloud raises the Pro plan.) Tj ET\nBT (Second line here.) Tj ET";
+    const content =
+      "BT (Pricing changes coming soon. Acme Cloud raises the Pro plan.) Tj ET\nBT (Second line here.) Tj ET";
     const pdf = `%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n4 0 obj\n<< /Length ${content.length} >>\nstream\n${content}\nendstream\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF`;
     const out = extractPdfText(Buffer.from(pdf, "latin1"));
     expect(out.ok).toBe(true);
@@ -188,27 +241,77 @@ describe("report html dashboard", () => {
   const build = () => {
     const dir = tmp();
     const db = new Storage(openDatabase(path.join(dir, "murmur.db")));
-    const world = db.createWorld({ name: "Pricing Reaction", seed: "html-test" });
-    const mk = (name: string, type: Entity["type"], salience: number): Entity => ({
-      id: "", worldId: world.id, name, type, description: "d", salience, anchors: ["a"], motives: ["m"],
+    const world = db.createWorld({
+      name: "Pricing Reaction",
+      seed: "html-test",
     });
-    db.insertEntities(world.id, [mk("Acme Cloud", "org", 0.9), mk("Nimbus Labs", "org", 0.7), mk("Pricing", "topic", 0.6)]);
+    const mk = (
+      name: string,
+      type: Entity["type"],
+      salience: number,
+    ): Entity => ({
+      id: "",
+      worldId: world.id,
+      name,
+      type,
+      description: "d",
+      salience,
+      anchors: ["a"],
+      motives: ["m"],
+    });
+    db.insertEntities(world.id, [
+      mk("Acme Cloud", "org", 0.9),
+      mk("Nimbus Labs", "org", 0.7),
+      mk("Pricing", "topic", 0.6),
+    ]);
     const ents = db.listEntities(world.id);
-    const personas = db.insertPersonas(world.id, [0, 1, 2, 3, 4].map((i) => ({
-      name: `P${i}`, handle: `@p${i}`, archetype: i % 2 ? "critic" : "power user", bio: `bio ${i}`,
-      traits: { openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, emotionalStability: 0.5 },
-      stances: { [ents[0].id]: i % 2 ? -0.6 : 0.6 }, platform: "both", activity: 0.8, communityIds: [], follows: [],
-    })));
+    const personas = db.insertPersonas(
+      world.id,
+      [0, 1, 2, 3, 4].map((i) => ({
+        name: `P${i}`,
+        handle: `@p${i}`,
+        archetype: i % 2 ? "critic" : "power user",
+        bio: `bio ${i}`,
+        traits: {
+          openness: 0.5,
+          conscientiousness: 0.5,
+          extraversion: 0.5,
+          agreeableness: 0.5,
+          emotionalStability: 0.5,
+        },
+        stances: { [ents[0].id]: i % 2 ? -0.6 : 0.6 },
+        platform: "both",
+        activity: 0.8,
+        communityIds: [],
+        follows: [],
+      })),
+    );
     for (let r = 1; r <= 3; r++) {
       personas.forEach((p, i) => {
         const e = ents[Math.floor(i / 3)]; // 0,0,0,1,1 — most posts about the focus
         const positive = i % 2 === 1;
         db.insertPost({
-          worldId: world.id, round: r, personaId: p.id, platform: i % 2 ? "reddit" : "twitter", kind: "post", parentId: null,
-          threadId: "", communityId: null, title: null,
-          body: positive ? `${e.name} honestly great update, fixed the thing <>&" it just works` : `${e.name} feels like a ripoff and a cash grab`,
-          metrics: { likes: r, reposts: 0, upvotes: 1, downvotes: 0, impressions: 10 },
-          mentions: [{ entityId: e.id, score: positive ? 0.4 : -0.5 }], origin: "generated",
+          worldId: world.id,
+          round: r,
+          personaId: p.id,
+          platform: i % 2 ? "reddit" : "twitter",
+          kind: "post",
+          parentId: null,
+          threadId: "",
+          communityId: null,
+          title: null,
+          body: positive
+            ? `${e.name} honestly great update, fixed the thing <>&" it just works`
+            : `${e.name} feels like a ripoff and a cash grab`,
+          metrics: {
+            likes: r,
+            reposts: 0,
+            upvotes: 1,
+            downvotes: 0,
+            impressions: 10,
+          },
+          mentions: [{ entityId: e.id, score: positive ? 0.4 : -0.5 }],
+          origin: "generated",
         });
       });
     }
@@ -217,12 +320,36 @@ describe("report html dashboard", () => {
       focus: "reaction to Acme Cloud pricing",
       path: "",
       narrative: {
-        executiveSummary: "The crowd split over the pricing change with strong language on both sides.",
-        keyFindings: ["Polarization hardened early", "Critics dominated Reddit"],
-        trajectory: "Sentiment drifts down absent a response; the projection slopes negative.",
-        risks: [{ title: "Backlash hardening", rationale: "Critical posts keep resurfacing across rounds.", severity: "high", likelihood: "medium", mitigation: "Publish the migration guide", trigger: "Same complaint in 2+ threads", postIds: ["po_1", "po_3"] }],
-        recommendations: [{ title: "Arm champions", action: "Ship a proof-point brief", expectedImpact: "Higher positive share" }],
-        confidence: { strongSignals: ["Split camps"], contested: ["Free tier reading"] },
+        executiveSummary:
+          "The crowd split over the pricing change with strong language on both sides.",
+        keyFindings: [
+          "Polarization hardened early",
+          "Critics dominated Reddit",
+        ],
+        trajectory:
+          "Sentiment drifts down absent a response; the projection slopes negative.",
+        risks: [
+          {
+            title: "Backlash hardening",
+            rationale: "Critical posts keep resurfacing across rounds.",
+            severity: "high",
+            likelihood: "medium",
+            mitigation: "Publish the migration guide",
+            trigger: "Same complaint in 2+ threads",
+            postIds: ["po_1", "po_3"],
+          },
+        ],
+        recommendations: [
+          {
+            title: "Arm champions",
+            action: "Ship a proof-point brief",
+            expectedImpact: "Higher positive share",
+          },
+        ],
+        confidence: {
+          strongSignals: ["Split camps"],
+          contested: ["Free tier reading"],
+        },
         limitations: ["Small population"],
       },
     });
@@ -233,7 +360,26 @@ describe("report html dashboard", () => {
     const { db, world, record } = build();
     const html = renderReportHtml(db, world, record);
     // structure: every section present
-    for (const needle of ["<!doctype html>", "MURMUR", "Executive Summary", "Market Reaction", "Faction Map", "Platform Divergence", "Persona Spotlight", "Trajectory Simulated Projection", "Risk Register", "Recommendations", "Confidence", "Appendix A", "Appendix B", "Appendix C", "Appendix D", "Appendix E", "<svg", "personas"]) {
+    for (const needle of [
+      "<!doctype html>",
+      "MURMUR",
+      "Executive Summary",
+      "Market Reaction",
+      "Faction Map",
+      "Platform Divergence",
+      "Persona Spotlight",
+      "Trajectory Simulated Projection",
+      "Risk Register",
+      "Recommendations",
+      "Confidence",
+      "Appendix A",
+      "Appendix B",
+      "Appendix C",
+      "Appendix D",
+      "Appendix E",
+      "<svg",
+      "personas",
+    ]) {
       expect(html).toContain(needle);
     }
     // charts and cards
@@ -268,42 +414,108 @@ describe("storage", () => {
     const dir = tmp();
     const db = new Storage(openDatabase(path.join(dir, "murmur.db")));
     const world = db.createWorld({ name: "Test World", seed: "seed-1" });
-    expect(world.id).toBe("w_" + hashHex("seed-1").slice(0, 10));
+    expect(world.id).toBe(`w_${hashHex("seed-1").slice(0, 10)}`);
     expect(db.getWorld(world.slug)?.id).toBe(world.id);
 
-    const s1 = db.addSeed(world.id, { kind: "text", title: "t", ref: "t", text: "hello world", digest: "hello world" });
-    const s2 = db.addSeed(world.id, { kind: "text", title: "t", ref: "t", text: "hello world", digest: "hello world" });
+    const s1 = db.addSeed(world.id, {
+      kind: "text",
+      title: "t",
+      ref: "t",
+      text: "hello world",
+      digest: "hello world",
+    });
+    const s2 = db.addSeed(world.id, {
+      kind: "text",
+      title: "t",
+      ref: "t",
+      text: "hello world",
+      digest: "hello world",
+    });
     expect(s1.seed.id).toBe(s2.seed.id);
     expect(s2.duplicate).toBe(true);
 
-    const mk = (name: string, type: Entity["type"], salience: number): Entity => ({
-      id: "", worldId: world.id, name, type, description: "d", salience, anchors: ["a"], motives: ["m"],
+    const mk = (
+      name: string,
+      type: Entity["type"],
+      salience: number,
+    ): Entity => ({
+      id: "",
+      worldId: world.id,
+      name,
+      type,
+      description: "d",
+      salience,
+      anchors: ["a"],
+      motives: ["m"],
     });
-    const { inserted, skipped } = db.insertEntities(world.id, [mk("Acme Cloud", "org", 0.9), mk("Pricing", "topic", 0.7)]);
+    const { inserted, skipped } = db.insertEntities(world.id, [
+      mk("Acme Cloud", "org", 0.9),
+      mk("Pricing", "topic", 0.7),
+    ]);
     expect(inserted.length).toBe(2);
     expect(skipped).toEqual([]);
     expect(db.listEntities(world.id).length).toBe(2);
-    const again = db.insertEntities(world.id, [mk("Acme Cloud", "org", 0.9), mk("API", "topic", 0.5)]);
+    const again = db.insertEntities(world.id, [
+      mk("Acme Cloud", "org", 0.9),
+      mk("API", "topic", 0.5),
+    ]);
     expect(again.inserted.length).toBe(1);
     expect(again.skipped).toEqual(["Acme Cloud"]);
 
-    db.replaceRelations(world.id, [{ srcId: "e_1", dstId: "e_2", type: "opposition", weight: 0.8, tension: 0.7 }]);
+    db.replaceRelations(world.id, [
+      {
+        srcId: "e_1",
+        dstId: "e_2",
+        type: "opposition",
+        weight: 0.8,
+        tension: 0.7,
+      },
+    ]);
     expect(db.listRelations(world.id).length).toBe(1);
 
     const personas = db.insertPersonas(world.id, [
       {
-        name: "Ada", handle: "@ada", archetype: "power user", bio: "b",
-        traits: { openness: 0.8, conscientiousness: 0.5, extraversion: 0.6, agreeableness: 0.4, emotionalStability: 0.7 },
-        stances: { e_1: 0.6 }, platform: "both", activity: 0.7, communityIds: [], follows: [],
+        name: "Ada",
+        handle: "@ada",
+        archetype: "power user",
+        bio: "b",
+        traits: {
+          openness: 0.8,
+          conscientiousness: 0.5,
+          extraversion: 0.6,
+          agreeableness: 0.4,
+          emotionalStability: 0.7,
+        },
+        stances: { e_1: 0.6 },
+        platform: "both",
+        activity: 0.7,
+        communityIds: [],
+        follows: [],
       },
     ]);
     expect(personas[0].id).toBe("p_1");
     expect(db.getPersona(world.id, "@ada")?.id).toBe("p_1");
 
     const post = db.insertPost({
-      worldId: world.id, round: 1, personaId: "p_1", platform: "twitter", kind: "post", parentId: null,
-      threadId: "", communityId: null, title: null, body: "hello", metrics: { likes: 0, reposts: 0, upvotes: 0, downvotes: 0, impressions: 2 },
-      mentions: [], origin: "generated",
+      worldId: world.id,
+      round: 1,
+      personaId: "p_1",
+      platform: "twitter",
+      kind: "post",
+      parentId: null,
+      threadId: "",
+      communityId: null,
+      title: null,
+      body: "hello",
+      metrics: {
+        likes: 0,
+        reposts: 0,
+        upvotes: 0,
+        downvotes: 0,
+        impressions: 2,
+      },
+      mentions: [],
+      origin: "generated",
     });
     expect(post.id).toBe("po_1");
     expect(post.threadId).toBe("po_1");
@@ -311,19 +523,39 @@ describe("storage", () => {
     db.updatePostMetrics(world.id, post.id, post.metrics);
     expect(db.getPost(world.id, "po_1")?.metrics.likes).toBe(1);
 
-    db.appendMemory(world.id, "p_1", "episodic", "event", "Posted on twitter r1", 0.4, 1);
+    db.appendMemory(
+      world.id,
+      "p_1",
+      "episodic",
+      "event",
+      "Posted on twitter r1",
+      0.4,
+      1,
+    );
     expect(db.countMemories(world.id, "p_1", "episodic")).toBe(1);
 
     db.addEvent(world.id, 1, "injection", { text: "news" }, "all");
     expect(db.listEvents(world.id, { type: "injection" }).length).toBe(1);
 
     const task = {
-      id: "t_1", worldId: world.id, kind: "ontology" as const, round: null, instructions: "i",
-      outputSchema: {}, items: [], createdAt: new Date().toISOString(),
+      id: "t_1",
+      worldId: world.id,
+      kind: "ontology" as const,
+      round: null,
+      instructions: "i",
+      outputSchema: {},
+      items: [],
+      createdAt: new Date().toISOString(),
     };
     db.saveTask(task);
     expect(db.getTask(world.id, "t_1")?.id).toBe("t_1");
-    db.completeTask(world.id, "t_1", { x: 1 }, { taskId: "t_1", applied: ["p_1"], rejected: [] }, "submitted");
+    db.completeTask(
+      world.id,
+      "t_1",
+      { x: 1 },
+      { taskId: "t_1", applied: ["p_1"], rejected: [] },
+      "submitted",
+    );
     expect(db.getTaskVerdicts(world.id, "t_1")?.applied).toEqual(["p_1"]);
 
     // dump is stable across a reopen (timestamps normalized, content identical)

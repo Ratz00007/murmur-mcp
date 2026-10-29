@@ -2,7 +2,16 @@
  * Stage 2 — Ontology. ontology_plan composes the extraction task for the
  * host LLM; applyOntology validates and stores the result.
  */
-import { DATA_NOTICE, ENTITY_TYPES, type Entity, type EntityType, type GenerationTask, type ItemError, type Seed, type World } from "./types.js";
+import {
+  DATA_NOTICE,
+  ENTITY_TYPES,
+  type Entity,
+  type EntityType,
+  type GenerationTask,
+  type ItemError,
+  type Seed,
+  type World,
+} from "./types.js";
 import { estTokens, nowIso, truncate } from "./util/text.js";
 import type { Storage } from "./store/storage.js";
 
@@ -26,9 +35,15 @@ Rules:
 - Use stable canonical names; no duplicates.
 Return ONLY the JSON object.`;
 
-export function buildOntologyTask(storage: Storage, world: World): GenerationTask {
+export function buildOntologyTask(
+  storage: Storage,
+  world: World,
+): GenerationTask {
   const seeds: Seed[] = storage.listSeeds(world.id);
-  if (seeds.length === 0) throw new Error("no seeds: attach material with seed_add_files / seed_add_url / seed_add_text first");
+  if (seeds.length === 0)
+    throw new Error(
+      'no seeds: attach material with seed_add({source:"files"|"url"|"text"}) first',
+    );
   // Budget: cap the total digest payload so the task stays well under the
   // response limit, trimming the longest digests first.
   const budgetChars = 24000;
@@ -39,7 +54,13 @@ export function buildOntologyTask(storage: Storage, world: World): GenerationTas
     if (remaining <= 200) digest = truncate(digest, 200);
     else if (digest.length > remaining) digest = truncate(digest, remaining);
     used += digest.length;
-    return { title: s.title, kind: s.kind, ref: s.ref, bytes: s.bytes, text: `<seed>${digest}</seed>` };
+    return {
+      title: s.title,
+      kind: s.kind,
+      ref: s.ref,
+      bytes: s.bytes,
+      text: `<seed>${digest}</seed>`,
+    };
   });
   const task: GenerationTask = {
     id: storage.nextTaskId(world.id),
@@ -63,8 +84,16 @@ export function buildOntologyTask(storage: Storage, world: World): GenerationTas
               type: { enum: [...ENTITY_TYPES] },
               description: { type: "string", maxLength: 400 },
               salience: { type: "number", minimum: 0, maximum: 1 },
-              anchors: { type: "array", items: { type: "string", maxLength: 300 }, maxItems: 6 },
-              motives: { type: "array", items: { type: "string", maxLength: 200 }, maxItems: 6 },
+              anchors: {
+                type: "array",
+                items: { type: "string", maxLength: 300 },
+                maxItems: 6,
+              },
+              motives: {
+                type: "array",
+                items: { type: "string", maxLength: 200 },
+                maxItems: 6,
+              },
             },
           },
         },
@@ -92,11 +121,22 @@ export interface OntologySubmitResult {
   skippedExisting: string[];
 }
 
-export function applyOntology(storage: Storage, world: World, _taskId: string, submitted: unknown): OntologySubmitResult {
+export function applyOntology(
+  storage: Storage,
+  world: World,
+  _taskId: string,
+  submitted: unknown,
+): OntologySubmitResult {
   const payload = normalizeSubmission(submitted);
-  const rawEntities = Array.isArray(payload) ? payload : Array.isArray(payload?.entities) ? payload.entities : null;
+  const rawEntities = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.entities)
+      ? payload.entities
+      : null;
   if (!rawEntities) {
-    throw new Error('submission must be { "entities": [...] } (or a bare array of entities)');
+    throw new Error(
+      'submission must be { "entities": [...] } (or a bare array of entities)',
+    );
   }
   const rejected: ItemError[] = [];
   const valid: Entity[] = [];
@@ -109,24 +149,51 @@ export function applyOntology(storage: Storage, world: World, _taskId: string, s
       return;
     }
     if (seen.has(name.toLowerCase())) {
-      rejected.push({ ref, field: "name", message: `duplicate name in submission: ${name}` });
+      rejected.push({
+        ref,
+        field: "name",
+        message: `duplicate name in submission: ${name}`,
+      });
       return;
     }
-    const type = typeof e?.type === "string" ? e.type.trim().toLowerCase() : "topic";
+    const type =
+      typeof e?.type === "string" ? e.type.trim().toLowerCase() : "topic";
     if (!(ENTITY_TYPES as readonly string[]).includes(type)) {
-      rejected.push({ ref, field: "type", message: `unknown type "${e?.type}"`, hint: `use one of ${ENTITY_TYPES.join("|")} — defaulting would hide typos, so fix and retry` });
+      rejected.push({
+        ref,
+        field: "type",
+        message: `unknown type "${e?.type}"`,
+        hint: `use one of ${ENTITY_TYPES.join("|")} — defaulting would hide typos, so fix and retry`,
+      });
       return;
     }
-    const description = typeof e?.description === "string" ? e.description.trim().slice(0, 500) : "";
+    const description =
+      typeof e?.description === "string"
+        ? e.description.trim().slice(0, 500)
+        : "";
     const salience = clampNum(e?.salience, 0.5, 0, 1);
     const anchors = stringArray(e?.anchors, 6, 300);
     const motives = stringArray(e?.motives, 6, 240);
     seen.add(name.toLowerCase());
-    valid.push({ id: "", worldId: world.id, name: name.slice(0, 80), type: type as EntityType, description, salience, anchors, motives });
+    valid.push({
+      id: "",
+      worldId: world.id,
+      name: name.slice(0, 80),
+      type: type as EntityType,
+      description,
+      salience,
+      anchors,
+      motives,
+    });
   });
   const { inserted, skipped } = storage.insertEntities(world.id, valid);
   if (inserted.length > 0) storage.setStage(world.id, "ontologized");
-  return { entities: inserted, rejected, insertedCount: inserted.length, skippedExisting: skipped };
+  return {
+    entities: inserted,
+    rejected,
+    insertedCount: inserted.length,
+    skippedExisting: skipped,
+  };
 }
 
 function clampNum(v: unknown, dflt: number, lo: number, hi: number): number {
@@ -137,13 +204,19 @@ function clampNum(v: unknown, dflt: number, lo: number, hi: number): number {
 
 function stringArray(v: unknown, maxItems: number, maxLen: number): string[] {
   if (!Array.isArray(v)) return [];
-  return v.filter((x): x is string => typeof x === "string" && x.trim().length > 0).map((s) => s.trim().slice(0, maxLen)).slice(0, maxItems);
+  return v
+    .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+    .map((s) => s.trim().slice(0, maxLen))
+    .slice(0, maxItems);
 }
 
 /** Accepts { result: X }, { entities: X } or bare X for forgiving hosts. */
-export function normalizeSubmission(submitted: unknown): Record<string, unknown> {
+export function normalizeSubmission(
+  submitted: unknown,
+): Record<string, unknown> {
   if (submitted == null || typeof submitted !== "object") return {};
   const o = submitted as Record<string, unknown>;
-  if ("result" in o && o.result != null && typeof o.result === "object") return o.result as Record<string, unknown>;
+  if ("result" in o && o.result != null && typeof o.result === "object")
+    return o.result as Record<string, unknown>;
   return o;
 }

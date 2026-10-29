@@ -1,11 +1,29 @@
 /** Text + token-budget utilities. All deterministic. */
 
+/**
+ * Fetch-everything sentinel for storage list options that need the full
+ * result set. One named constant instead of a magic number at 24 call sites.
+ */
+export const FETCH_ALL = 100000;
+
 export function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
 }
 
 export function round2Safe(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+/** Escape a literal string for embedding inside a RegExp. */
+export function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Format a signed sentiment-style value, or an em dash when absent. */
+export function fmtSigned(v: number | null | undefined): string {
+  return v === null || v === undefined
+    ? "—"
+    : (v > 0 ? "+" : "") + v.toFixed(2);
 }
 
 /**
@@ -25,12 +43,14 @@ export function nowIso(): string {
 }
 
 const STOPWORDS = new Set(
-  ("a an the and or but if while of to in on for with without at by from as is are was were be been being this that " +
+  (
+    "a an the and or but if while of to in on for with without at by from as is are was were be been being this that " +
     "these those it its we you they he she i our your their his her them us not no nor so than then there here what " +
     "which who whom when where why how all any both each few more most other some such only own same too very can " +
     "will just don should now about into over after before under above out off again further once do does did doing " +
     "have has had having would could may might must shall also however therefore per via etc new get got make made " +
-    "use used using one two three new like due within across between because during through against among upon")
+    "use used using one two three new like due within across between because during through against among upon"
+  )
     .split(" ")
     .filter(Boolean),
 );
@@ -50,7 +70,9 @@ export function keywordFreq(text: string): Map<string, number> {
 }
 
 export function topKeywords(text: string, k: number): [string, number][] {
-  return [...keywordFreq(text).entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "en")).slice(0, k);
+  return [...keywordFreq(text).entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "en"))
+    .slice(0, k);
 }
 
 /** Approximate sentence split on terminal punctuation. */
@@ -67,7 +89,7 @@ export function truncate(s: string, maxChars: number): string {
   if (s.length <= maxChars) return s;
   const cut = s.slice(0, maxChars - 1);
   const lastSpace = cut.lastIndexOf(" ");
-  return (lastSpace > maxChars * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd() + "…";
+  return `${(lastSpace > maxChars * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
 }
 
 export function wordCount(s: string): number {
@@ -90,7 +112,13 @@ export function slugify(s: string): string {
 
 /** Escape a label for safe use inside a Mermaid node definition. */
 export function escapeMermaid(s: string): string {
-  return truncate(s.replace(/["\\<>{}\n\r]/g, " ").replace(/\s+/g, " ").trim(), 60);
+  return truncate(
+    s
+      .replace(/["\\<>{}\n\r]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim(),
+    60,
+  );
 }
 
 /** Format a sentiment value as a compact human string. */
@@ -108,7 +136,8 @@ export function stanceBar(v: number, width = 20): string {
   const mid = Math.floor(width / 2);
   const filled = Math.round(Math.abs(w) * mid);
   const empty = mid - filled;
-  if (w < 0) return `${"█".repeat(filled)}${"·".repeat(empty)}|${"·".repeat(mid)}`;
+  if (w < 0)
+    return `${"█".repeat(filled)}${"·".repeat(empty)}|${"·".repeat(mid)}`;
   return `${"·".repeat(mid)}|${"·".repeat(empty)}${"█".repeat(filled)}`;
 }
 

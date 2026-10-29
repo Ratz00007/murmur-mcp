@@ -27,7 +27,12 @@ describe("virality is reachable", () => {
     let rounds = 0;
     for (let i = 0; i < 12; i++) {
       const dir = tmp();
-      const run = await runPipeline(engine, { cwd: dir, seed: `vr-${i}`, rounds: 6, population: 16 });
+      const run = await runPipeline(engine, {
+        cwd: dir,
+        seed: `vr-${i}`,
+        rounds: 6,
+        population: 16,
+      });
       const d = engine.collectReportData(run.storage, run.world, {
         focus: "",
         createdAt: run.world.createdAt,
@@ -45,7 +50,9 @@ describe("virality is reachable", () => {
   }, 600000);
 
   it("keeps the default threshold inside the reachable engagement range", () => {
-    const { DEFAULT_CONFIG } = engine as unknown as { DEFAULT_CONFIG?: unknown };
+    const { DEFAULT_CONFIG } = engine as unknown as {
+      DEFAULT_CONFIG?: unknown;
+    };
     void DEFAULT_CONFIG;
     // The invariant is arithmetic, checked directly: the per-post engagement
     // ceiling is cap + 2×floor(cap×0.18) where cap = max(2, floor(eligible ×
@@ -62,8 +69,16 @@ describe("virality is reachable", () => {
 
   it("reports the organic share as null when too few organic reposts exist", async () => {
     const dir = tmp();
-    const run = await runPipeline(engine, { cwd: dir, seed: "org-share", rounds: 5, population: 12 });
-    const d = engine.collectReportData(run.storage, run.world, { focus: "", createdAt: run.world.createdAt } as never);
+    const run = await runPipeline(engine, {
+      cwd: dir,
+      seed: "org-share",
+      rounds: 5,
+      population: 12,
+    });
+    const d = engine.collectReportData(run.storage, run.world, {
+      focus: "",
+      createdAt: run.world.createdAt,
+    } as never);
     // Measured: 1-5 organic reposts per run, so the share must be suppressed.
     expect(d.amp.organicPostCount).toBeLessThan(10);
     expect(d.amp.organicEngagementShare).toBeNull();

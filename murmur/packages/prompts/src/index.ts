@@ -34,10 +34,21 @@ export const PROMPTS: MurmurPrompt[] = [
   {
     name: "murmur-predict",
     title: "Murmur: Predict",
-    description: "Full pipeline in one command: seeds → ontology → graph → personas → simulation → prediction report. Use this when you want the complete answer to a 'how will people react' question.",
+    description:
+      "Full pipeline in one command: seeds → ontology → graph → personas → simulation → prediction report. Use this when you want the complete answer to a 'how will people react' question.",
     args: [
-      { name: "question", required: true, description: "The prediction question, e.g. 'How will r/programming react to the new pricing page?'" },
-      { name: "sources", required: false, description: "Where the source material lives: repo files, URLs, or pasted text (if omitted, ask me)" },
+      {
+        name: "question",
+        required: true,
+        description:
+          "The prediction question, e.g. 'How will r/programming react to the new pricing page?'",
+      },
+      {
+        name: "sources",
+        required: false,
+        description:
+          "Where the source material lives: repo files, URLs, or pasted text (if omitted, ask me)",
+      },
     ],
     build: (a) =>
       `I want a social-simulation prediction. Question: ${a.question}\nSources: ${a.sources || "(ask me — I may point you at files in this repo, paste text, or give URLs; fetch URLs yourself and pass the extracted text to seed_add({source:'url'}))"}\n${PIPELINE_RULES}`,
@@ -45,11 +56,24 @@ export const PROMPTS: MurmurPrompt[] = [
   {
     name: "murmur-simulate",
     title: "Murmur: Simulate (mid-run inspection)",
-    description: "Run the pipeline but STOP after N rounds for inspection and god's-eye injection — then continue or report. Use this to experiment with events mid-run.",
+    description:
+      "Run the pipeline but STOP after N rounds for inspection and god's-eye injection — then continue or report. Use this to experiment with events mid-run.",
     args: [
-      { name: "question", required: true, description: "The scenario question" },
-      { name: "rounds", required: false, description: "Rounds to run before pausing (default 4)" },
-      { name: "sources", required: false, description: "Source material (files / URLs / text)" },
+      {
+        name: "question",
+        required: true,
+        description: "The scenario question",
+      },
+      {
+        name: "rounds",
+        required: false,
+        description: "Rounds to run before pausing (default 4)",
+      },
+      {
+        name: "sources",
+        required: false,
+        description: "Source material (files / URLs / text)",
+      },
     ],
     build: (a) =>
       `I want a mid-run social simulation. Question: ${a.question}\nSources: ${a.sources || "(ask me)"}\nRun the pipeline as usual (world_init → seeds → ontology → graph → personas → world_config with ${a.rounds || 4}+ total rounds), but PAUSE after round ${a.rounds || 4}:\n` +
@@ -58,10 +82,15 @@ export const PROMPTS: MurmurPrompt[] = [
   {
     name: "murmur-interview",
     title: "Murmur: Interview",
-    description: "Open a grounded dialogue with one simulated persona, or with the ReportAgent over the whole run. Use after a report exists.",
+    description:
+      "Open a grounded dialogue with one simulated persona, or with the ReportAgent over the whole run. Use after a report exists.",
     args: [
       { name: "question", required: true, description: "What to ask" },
-      { name: "persona", required: false, description: "Persona id/handle; omit to ask the ReportAgent instead" },
+      {
+        name: "persona",
+        required: false,
+        description: "Persona id/handle; omit to ask the ReportAgent instead",
+      },
     ],
     build: (a) =>
       a.persona
@@ -71,8 +100,15 @@ export const PROMPTS: MurmurPrompt[] = [
   {
     name: "murmur-resume",
     title: "Murmur: Resume",
-    description: "Reopen a saved world at its exact stage boundary and continue where it left off (crash-safe by construction).",
-    args: [{ name: "world", required: false, description: "World id/slug; omit to list worlds" }],
+    description:
+      "Reopen a saved world at its exact stage boundary and continue where it left off (crash-safe by construction).",
+    args: [
+      {
+        name: "world",
+        required: false,
+        description: "World id/slug; omit to list worlds",
+      },
+    ],
     build: (a) =>
       `Resume a Murmur world. ${a.world ? `World: ${a.world}.` : "First call world_list() to see the worlds, then ask which to open."}\nCall world_list({world: <id>, detail:"open"}) (or pick the world), then world_list({detail:"status"}) — it tells you the stage, counts and the exact next tool. Continue the pipeline from there: seeds → ontology → graph → personas → simulation loop → report → interact. Never redo completed stages; every receipt names the next step.`,
   },

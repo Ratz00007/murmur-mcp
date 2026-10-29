@@ -1,6 +1,6 @@
 /** SQLite schema — exactly the ten tables from the PRD data model, plus a migrations meta table. */
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export const MIGRATIONS: { version: number; sql: string }[] = [
   {
@@ -370,6 +370,49 @@ CREATE INDEX idx_generations_world ON generations(world_id, kind, status);
 INSERT INTO generations (id, world_id, kind, round, task, status, submitted, verdicts, created_at, submitted_at)
   SELECT id, world_id, kind, round, task, status, submitted, verdicts, created_at, submitted_at FROM generations_v2;
 DROP TABLE generations_v2;
+`,
+  },
+  {
+    // Migration 4: Macro graph population dynamics tables
+    version: 4,
+    sql: `
+CREATE TABLE macro_nodes (
+  world_id TEXT NOT NULL REFERENCES worlds(id),
+  node_index INTEGER NOT NULL,
+  cohort_id TEXT NOT NULL DEFAULT 'default',
+  arr REAL NOT NULL DEFAULT 0,
+  price_sensitivity REAL NOT NULL DEFAULT 0.5,
+  switching_friction REAL NOT NULL DEFAULT 0.5,
+  kol_weight REAL NOT NULL DEFAULT 1.0,
+  stance REAL NOT NULL DEFAULT 0.0,
+  outrage REAL NOT NULL DEFAULT 0.0,
+  susceptibility REAL NOT NULL DEFAULT 0.5,
+  state INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (world_id, node_index)
+);
+CREATE INDEX idx_macro_nodes_cohort ON macro_nodes(world_id, cohort_id);
+
+CREATE TABLE macro_edges (
+  world_id TEXT NOT NULL REFERENCES worlds(id),
+  src_index INTEGER NOT NULL,
+  dst_index INTEGER NOT NULL,
+  weight REAL NOT NULL DEFAULT 1.0,
+  PRIMARY KEY (world_id, src_index, dst_index)
+) WITHOUT ROWID;
+
+CREATE TABLE macro_snapshots (
+  world_id TEXT NOT NULL REFERENCES worlds(id),
+  round INTEGER NOT NULL,
+  node_count INTEGER NOT NULL,
+  edge_count INTEGER NOT NULL,
+  mean_stance REAL NOT NULL,
+  outrage_index REAL NOT NULL,
+  churn_count INTEGER NOT NULL,
+  state_distribution TEXT NOT NULL,
+  graph_blob BLOB,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (world_id, round)
+);
 `,
   },
 ];

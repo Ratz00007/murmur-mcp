@@ -4,7 +4,8 @@
  * Handles text-layer PDFs with FlateDecode/uncompressed content streams and
  * standard string-showing operators (Tj, TJ, ', "). Font-remapped or
  * scanned-image PDFs yield little text — callers detect that and fall back to
- * asking the host agent to read the PDF and pass text via seed_add_text
+ * asking the host agent to read the PDF and pass text via
+ * seed_add({source:"text"})
  * (the Host-Powered Inference pattern: the host has eyes, the engine has state).
  */
 import * as zlib from "node:zlib";
@@ -20,7 +21,11 @@ export function extractPdfText(buf: Buffer): { text: string; ok: boolean } {
     if (!looksLikeContentStream(s)) continue;
     parts.push(extractTextOps(s));
   }
-  let text = parts.join("\n").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+  let text = parts
+    .join("\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
   if (text.length > MAX_CHARS) text = text.slice(0, MAX_CHARS);
   return { text, ok: text.replace(/\s/g, "").length >= 40 };
 }
@@ -47,11 +52,15 @@ function decodeStreamSegments(buf: Buffer): string[] {
     const chunk = buf.subarray(start, e);
     let text: string;
     try {
-      text = zlib.inflateSync(chunk, { maxOutputLength: MAX_STREAM_BYTES }).toString("latin1");
+      text = zlib
+        .inflateSync(chunk, { maxOutputLength: MAX_STREAM_BYTES })
+        .toString("latin1");
     } catch (err) {
       if (isOutputTooLarge(err)) throw inflateCapError();
       try {
-        text = zlib.inflateRawSync(chunk, { maxOutputLength: MAX_STREAM_BYTES }).toString("latin1");
+        text = zlib
+          .inflateRawSync(chunk, { maxOutputLength: MAX_STREAM_BYTES })
+          .toString("latin1");
       } catch (err2) {
         if (isOutputTooLarge(err2)) throw inflateCapError();
         text = chunk.toString("latin1");
@@ -74,7 +83,11 @@ function decodeStreamSegments(buf: Buffer): string[] {
 
 /** Node reports ERR_BUFFER_TOO_LARGE when `maxOutputLength` is hit. */
 function isOutputTooLarge(err: unknown): boolean {
-  return typeof err === "object" && err !== null && (err as { code?: unknown }).code === "ERR_BUFFER_TOO_LARGE";
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    (err as { code?: unknown }).code === "ERR_BUFFER_TOO_LARGE"
+  );
 }
 
 function inflateCapError(): Error {
@@ -117,7 +130,9 @@ function parsePdfStrings(body: string): string[] {
   let m: RegExpExecArray | null;
   // biome-ignore lint/suspicious/noAssignInExpressions: same exec-advance idiom as above.
   while ((m = re.exec(body)) !== null) {
-    out.push(m[1] !== undefined ? unescapePdfString(m[1]) : decodeHexMaybeUtf16(m[2]));
+    out.push(
+      m[1] !== undefined ? unescapePdfString(m[1]) : decodeHexMaybeUtf16(m[2]),
+    );
   }
   return out;
 }
@@ -144,7 +159,8 @@ function unescapePdfString(s: string): string {
     else if (d === "\\") bytes.push(92);
     else if (d >= "0" && d <= "7") {
       let oct = d;
-      while (oct.length < 3 && s[i + 1] >= "0" && s[i + 1] <= "7") oct += s[++i];
+      while (oct.length < 3 && s[i + 1] >= "0" && s[i + 1] <= "7")
+        oct += s[++i];
       bytes.push(parseInt(oct, 8) & 0xff);
     } else if (d === "\n") {
       // line continuation — emit nothing
@@ -158,7 +174,8 @@ function unescapePdfString(s: string): string {
 function decodeHexMaybeUtf16(hex: string): string {
   const clean = hex.replace(/\s+/g, "");
   const bytes: number[] = [];
-  for (let i = 0; i + 1 < clean.length; i += 2) bytes.push(parseInt(clean.slice(i, i + 2), 16));
+  for (let i = 0; i + 1 < clean.length; i += 2)
+    bytes.push(parseInt(clean.slice(i, i + 2), 16));
   return bytesToText(bytes);
 }
 
@@ -166,7 +183,8 @@ function bytesToText(bytes: number[]): string {
   if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
     // UTF-16BE with BOM
     let s = "";
-    for (let i = 2; i + 1 < bytes.length; i += 2) s += String.fromCharCode((bytes[i] << 8) | bytes[i + 1]);
+    for (let i = 2; i + 1 < bytes.length; i += 2)
+      s += String.fromCharCode((bytes[i] << 8) | bytes[i + 1]);
     return s;
   }
   return bytes.map((b) => String.fromCharCode(b)).join("");

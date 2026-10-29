@@ -7,7 +7,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import { renderReportMarkdown, worldListRow, worldStatus } from "@murmur/engine";
+import {
+  renderReportMarkdown,
+  worldListRow,
+  worldStatus,
+} from "@murmur/engine";
 import { log } from "./logging.js";
 import type { ServerContext } from "./session.js";
 
@@ -33,10 +37,14 @@ export function registerResources(server: McpServer, ctx: ServerContext): void {
         {
           uri: uri.href,
           mimeType: "application/json",
-          text: JSON.stringify({ worlds: ctx.storage.listWorlds().map((w) => worldListRow(ctx.storage, w)) }),
+          text: JSON.stringify({
+            worlds: ctx.storage
+              .listWorlds()
+              .map((w) => worldListRow(ctx.storage, w)),
+          }),
         },
       ],
-    })
+    }),
   );
 
   server.registerResource(
@@ -63,12 +71,21 @@ export function registerResources(server: McpServer, ctx: ServerContext): void {
         },
       },
     }),
-    { description: "Live state of a world: stage, round, counts, sentiment snapshot" },
+    {
+      description:
+        "Live state of a world: stage, round, counts, sentiment snapshot",
+    },
     async (uri, { id }) => {
       try {
         const world = ctx.resolveWorld(String(id));
         return {
-          contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify(worldStatus(ctx.storage, world)) }],
+          contents: [
+            {
+              uri: uri.href,
+              mimeType: "application/json",
+              text: JSON.stringify(worldStatus(ctx.storage, world)),
+            },
+          ],
         };
       } catch (e) {
         // Error signaling, not data: a failed read surfaces as a JSON-RPC
@@ -77,7 +94,7 @@ export function registerResources(server: McpServer, ctx: ServerContext): void {
         log.warn(`resource read failed (world state): ${message}`);
         throw new McpError(NOT_FOUND, message);
       }
-    }
+    },
   );
 
   server.registerResource(
@@ -119,7 +136,10 @@ export function registerResources(server: McpServer, ctx: ServerContext): void {
           const prefix = value.trim();
           const versions: string[] = [];
           for (let v = latest.version; v >= 1; v--) {
-            if (ctx.storage.reportByVersion(world.id, v) && (!prefix || String(v).startsWith(prefix))) {
+            if (
+              ctx.storage.reportByVersion(world.id, v) &&
+              (!prefix || String(v).startsWith(prefix))
+            ) {
               versions.push(String(v));
             }
           }
@@ -132,16 +152,24 @@ export function registerResources(server: McpServer, ctx: ServerContext): void {
       try {
         const world = ctx.resolveWorld(String(id));
         const version = Number(rid) || undefined;
-        const record = version ? ctx.storage.reportByVersion(world.id, version) : ctx.storage.latestReport(world.id);
+        const record = version
+          ? ctx.storage.reportByVersion(world.id, version)
+          : ctx.storage.latestReport(world.id);
         if (!record) throw new Error("no report stored for this world");
         return {
-          contents: [{ uri: uri.href, mimeType: "text/markdown", text: renderReportMarkdown(ctx.storage, world, record) }],
+          contents: [
+            {
+              uri: uri.href,
+              mimeType: "text/markdown",
+              text: renderReportMarkdown(ctx.storage, world, record),
+            },
+          ],
         };
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         log.warn(`resource read failed (report): ${message}`);
         throw new McpError(NOT_FOUND, message);
       }
-    }
+    },
   );
 }

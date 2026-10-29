@@ -23,20 +23,46 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { buildServer, SERVER_INSTRUCTIONS } from "../../src/server.js";
 import { ServerContext } from "../../src/session.js";
-import { MIGRATED_TOOLS, MODULE_TOOL_NAMES, TOOL_COUNT, TOOL_NAMES, assertToolSurface } from "./index.js";
+import {
+  MIGRATED_TOOLS,
+  MODULE_TOOL_NAMES,
+  TOOL_COUNT,
+  TOOL_NAMES,
+  assertToolSurface,
+} from "./index.js";
 import { TOOL_OUTPUTS } from "./outputs.js";
 
 /** The 29 names the server exposed before the surface was consolidated. */
 const PRE_CONSOLIDATION_TOOLS = [
-  "world_init", "world_list", "world_open", "world_status", "world_config",
+  "world_init",
+  "world_list",
+  "world_open",
+  "world_status",
+  "world_config",
   "sim_configure",
-  "seed_add_files", "seed_add_url", "seed_add_text", "seeds_review",
-  "ontology_plan", "ontology_submit",
-  "graph_build", "graph_query", "graph_export_mermaid",
-  "personas_plan", "personas_submit", "persona_inspect", "persona_edit",
-  "sim_next_batch", "sim_submit_generations", "sim_inject_event", "sim_round_summary", "sim_timeline",
-  "report_plan", "report_submit", "report_export",
-  "interview_agent", "report_agent_ask",
+  "seed_add_files",
+  "seed_add_url",
+  "seed_add_text",
+  "seeds_review",
+  "ontology_plan",
+  "ontology_submit",
+  "graph_build",
+  "graph_query",
+  "graph_export_mermaid",
+  "personas_plan",
+  "personas_submit",
+  "persona_inspect",
+  "persona_edit",
+  "sim_next_batch",
+  "sim_submit_generations",
+  "sim_inject_event",
+  "sim_round_summary",
+  "sim_timeline",
+  "report_plan",
+  "report_submit",
+  "report_export",
+  "interview_agent",
+  "report_agent_ask",
 ];
 
 /** The oversize receipt `ServerContext.reply` substitutes for a big payload. */
@@ -64,10 +90,14 @@ describe("tool surface", () => {
   });
 
   it("fails the assertion when a module and the declared list disagree", () => {
-    const drifted = { ...MODULE_TOOL_NAMES, world: [...WORLD_TOOL_NAMES_FOR_TEST, "world_teleport"] };
+    const drifted = {
+      ...MODULE_TOOL_NAMES,
+      world: [...WORLD_TOOL_NAMES_FOR_TEST, "world_teleport"],
+    };
     const original = MODULE_TOOL_NAMES.world;
     try {
-      (MODULE_TOOL_NAMES as Record<string, readonly string[]>).world = drifted.world;
+      (MODULE_TOOL_NAMES as Record<string, readonly string[]>).world =
+        drifted.world;
       expect(() => assertToolSurface()).toThrow(/world_teleport/);
     } finally {
       (MODULE_TOOL_NAMES as Record<string, readonly string[]>).world = original;
@@ -77,13 +107,20 @@ describe("tool surface", () => {
   it("accounts for every pre-consolidation tool name in the migration map", () => {
     expect(PRE_CONSOLIDATION_TOOLS).toHaveLength(29);
     for (const oldName of PRE_CONSOLIDATION_TOOLS) {
-      expect(MIGRATED_TOOLS[oldName], `${oldName} has no migration entry`).toBeTruthy();
+      expect(
+        MIGRATED_TOOLS[oldName],
+        `${oldName} has no migration entry`,
+      ).toBeTruthy();
       // The mapped value must name a tool that actually exists.
       const target = MIGRATED_TOOLS[oldName].split(/[\s({]/)[0];
-      expect(TOOL_NAMES, `${oldName} maps to unknown tool ${target}`).toContain(target);
+      expect(TOOL_NAMES, `${oldName} maps to unknown tool ${target}`).toContain(
+        target,
+      );
     }
     // No orphan entries: the map is about the old surface, nothing more.
-    expect(Object.keys(MIGRATED_TOOLS).sort()).toEqual([...PRE_CONSOLIDATION_TOOLS].sort());
+    expect(Object.keys(MIGRATED_TOOLS).sort()).toEqual(
+      [...PRE_CONSOLIDATION_TOOLS].sort(),
+    );
   });
 
   it("never names a retired tool in the server instructions", () => {
@@ -98,10 +135,16 @@ describe("tool surface", () => {
     });
     expect(retired).toHaveLength(25);
     for (const oldName of retired) {
-      expect(SERVER_INSTRUCTIONS, `instructions still mention ${oldName}`).not.toContain(oldName);
+      expect(
+        SERVER_INSTRUCTIONS,
+        `instructions still mention ${oldName}`,
+      ).not.toContain(oldName);
     }
     for (const name of TOOL_NAMES) {
-      expect(SERVER_INSTRUCTIONS, `instructions never mention ${name}`).toContain(name);
+      expect(
+        SERVER_INSTRUCTIONS,
+        `instructions never mention ${name}`,
+      ).toContain(name);
     }
   });
 });
@@ -116,7 +159,10 @@ describe("output schemas", () => {
       const required = (schema as z.ZodObject<z.ZodRawShape>).shape;
       for (const field of ["ok", "next"] as const) {
         expect(required[field], `${name}.${field} must exist`).toBeDefined();
-        expect(required[field].isOptional(), `${name}.${field} must be required`).toBe(false);
+        expect(
+          required[field].isOptional(),
+          `${name}.${field} must be required`,
+        ).toBe(false);
       }
     }
   });
@@ -124,14 +170,21 @@ describe("output schemas", () => {
   it("accepts the oversize spill receipt on every tool", () => {
     for (const [name, schema] of Object.entries(TOOL_OUTPUTS)) {
       const parsed = (schema as z.ZodTypeAny).safeParse(SPILL_RECEIPT);
-      expect(parsed.success, `${name} rejects the spill receipt: ${parsed.success ? "" : parsed.error.message}`).toBe(true);
+      expect(
+        parsed.success,
+        `${name} rejects the spill receipt: ${parsed.success ? "" : parsed.error.message}`,
+      ).toBe(true);
     }
   });
 
   it("still rejects a payload that is missing the envelope", () => {
     for (const [name, schema] of Object.entries(TOOL_OUTPUTS)) {
-      const parsed = (schema as z.ZodTypeAny).safeParse({ somethingElse: true });
-      expect(parsed.success, `${name} accepts a payload with no ok/next`).toBe(false);
+      const parsed = (schema as z.ZodTypeAny).safeParse({
+        somethingElse: true,
+      });
+      expect(parsed.success, `${name} accepts a payload with no ok/next`).toBe(
+        false,
+      );
     }
   });
 });
@@ -140,7 +193,8 @@ describe("the live server", () => {
   it("registers exactly TOOL_COUNT tools, each with an outputSchema", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-surface-"));
     const ctx = new ServerContext(cwd);
-    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
     const client = new Client({ name: "surface-test", version: "0.0.0" });
     try {
       await buildServer(ctx).connect(serverTransport);
@@ -150,26 +204,50 @@ describe("the live server", () => {
       expect(tools.map((t) => t.name).sort()).toEqual([...TOOL_NAMES].sort());
       expect(tools).toHaveLength(TOOL_COUNT);
       for (const tool of tools) {
-        expect(tool.outputSchema, `${tool.name} declares no outputSchema`).toBeDefined();
-        expect(tool.inputSchema, `${tool.name} declares no inputSchema`).toBeDefined();
+        expect(
+          tool.outputSchema,
+          `${tool.name} declares no outputSchema`,
+        ).toBeDefined();
+        expect(
+          tool.inputSchema,
+          `${tool.name} declares no inputSchema`,
+        ).toBeDefined();
         // A schema that is not an object cannot describe structuredContent.
-        expect((tool.outputSchema as { type?: string }).type, `${tool.name} outputSchema is not an object schema`).toBe("object");
-        expect(tool.description, `${tool.name} has no description`).toBeTruthy();
+        expect(
+          (tool.outputSchema as { type?: string }).type,
+          `${tool.name} outputSchema is not an object schema`,
+        ).toBe("object");
+        expect(
+          tool.description,
+          `${tool.name} has no description`,
+        ).toBeTruthy();
       }
 
       // And the four generation stages advertise task support.
       for (const name of ["ontology", "personas", "sim", "report"]) {
         const tool = tools.find((t) => t.name === name)!;
-        expect(tool.execution?.taskSupport, `${name} is not task-capable`).toBe("optional");
+        expect(tool.execution?.taskSupport, `${name} is not task-capable`).toBe(
+          "optional",
+        );
       }
 
       // A real call must return structuredContent that validates.
-      const res = await client.callTool({ name: "world_init", arguments: { name: "surface-probe" } });
+      const res = await client.callTool({
+        name: "world_init",
+        arguments: { name: "surface-probe" },
+      });
       expect(res.isError).toBeFalsy();
-      expect(res.structuredContent, "world_init returned no structuredContent").toBeTruthy();
-      expect(TOOL_OUTPUTS.world_init.safeParse(res.structuredContent).success).toBe(true);
+      expect(
+        res.structuredContent,
+        "world_init returned no structuredContent",
+      ).toBeTruthy();
+      expect(
+        TOOL_OUTPUTS.world_init.safeParse(res.structuredContent).success,
+      ).toBe(true);
       // …and the same JSON as the text block, for clients without structured output.
-      expect(JSON.stringify(res.structuredContent)).toBe((res.content as { text: string }[])[0].text);
+      expect(JSON.stringify(res.structuredContent)).toBe(
+        (res.content as { text: string }[])[0].text,
+      );
     } finally {
       await client.close().catch(() => {});
       ctx.close();

@@ -24,7 +24,13 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { Storage, nowIso, openDatabase } from "@murmur/engine";
-import type { GenerationTask, Persona, SimAction, SimGeneration, World } from "@murmur/engine";
+import type {
+  GenerationTask,
+  Persona,
+  SimAction,
+  SimGeneration,
+  World,
+} from "@murmur/engine";
 import { submitGenerations } from "../../packages/engine/src/sim/ingest.js";
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "murmur-ingest-"));
@@ -56,16 +62,32 @@ function fixture(over: { rounds?: number; threadDepth?: number } = {}): Fx {
   const db = new Storage(openDatabase(path.join(dir, "murmur.db")));
   const world = db.createWorld({ name: "ingest world", seed: "ingest-1" });
   db.insertEntities(world.id, [
-    { name: "Acme Cloud", type: "org", description: "d", salience: 0.9, anchors: [], motives: [] },
+    {
+      name: "Acme Cloud",
+      type: "org",
+      description: "d",
+      salience: 0.9,
+      anchors: [],
+      motives: [],
+    },
   ]);
   const entities = db.listEntities(world.id);
   const acme = entities[0].id;
-  const mk = (i: number, platform: Persona["platform"]): Omit<Persona, "id" | "worldId" | "createdAt"> => ({
+  const mk = (
+    i: number,
+    platform: Persona["platform"],
+  ): Omit<Persona, "id" | "worldId" | "createdAt"> => ({
     name: `P${i}`,
     handle: `@p${i}`,
     archetype: "casual",
     bio: "bio",
-    traits: { openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, emotionalStability: 0.5 },
+    traits: {
+      openness: 0.5,
+      conscientiousness: 0.5,
+      extraversion: 0.5,
+      agreeableness: 0.5,
+      emotionalStability: 0.5,
+    },
     stances: { [acme]: 0.4 },
     platform,
     activity: 0.5,
@@ -89,7 +111,8 @@ function fixture(over: { rounds?: number; threadDepth?: number } = {}): Fx {
         ...current.config.platforms,
         reddit: {
           ...current.config.platforms.reddit,
-          threadDepth: over.threadDepth ?? current.config.platforms.reddit.threadDepth,
+          threadDepth:
+            over.threadDepth ?? current.config.platforms.reddit.threadDepth,
         },
       },
     },
@@ -124,8 +147,18 @@ function fixture(over: { rounds?: number; threadDepth?: number } = {}): Fx {
   };
 }
 
-function submit(fx: Fx, subs: SimGeneration[], opts: { finalize?: boolean } = {}) {
-  return submitGenerations(fx.db, fx.db.getWorld(fx.world.id)!, fx.taskId, subs, opts);
+function submit(
+  fx: Fx,
+  subs: SimGeneration[],
+  opts: { finalize?: boolean } = {},
+) {
+  return submitGenerations(
+    fx.db,
+    fx.db.getWorld(fx.world.id)!,
+    fx.taskId,
+    subs,
+    opts,
+  );
 }
 
 /** Mint a fresh round-1 task — the retry after a hold re-plans the batch. */
@@ -137,7 +170,12 @@ function newTask(fx: Fx, round: number): string {
     round,
     instructions: "test task",
     outputSchema: { type: "array" },
-    items: fx.activated.map((id) => ({ id: `persona-${id}`, label: id, tokens: 10, payload: { persona: { id } } })),
+    items: fx.activated.map((id) => ({
+      id: `persona-${id}`,
+      label: id,
+      tokens: 10,
+      payload: { persona: { id } },
+    })),
     createdAt: nowIso(),
   };
   fx.db.saveTask(task);
@@ -145,8 +183,14 @@ function newTask(fx: Fx, round: number): string {
 }
 
 /** Pick the first activated persona on the given platform. */
-function onPlatform(fx: Fx, platform: Persona["platform"], skip?: string): string {
-  const id = fx.activated.find((p) => fx.personas.get(p)!.platform === platform && p !== skip);
+function onPlatform(
+  fx: Fx,
+  platform: Persona["platform"],
+  skip?: string,
+): string {
+  const id = fx.activated.find(
+    (p) => fx.personas.get(p)?.platform === platform && p !== skip,
+  );
   if (!id) throw new Error(`no activated persona on ${platform}`);
   return id;
 }
@@ -157,7 +201,11 @@ function cleanup(fx: Fx) {
 }
 
 /** All personas present but silent, except the ones named. */
-function onlyAct(fx: Fx, actives: Record<string, SimAction[]>, extra: SimGeneration[] = []): SimGeneration[] {
+function onlyAct(
+  fx: Fx,
+  actives: Record<string, SimAction[]>,
+  extra: SimGeneration[] = [],
+): SimGeneration[] {
   return [
     ...fx.activated.map((id) => ({ persona: id, actions: actives[id] ?? [] })),
     ...extra,
@@ -169,7 +217,12 @@ describe("sim ingest — persona resolution", () => {
     const fx = fixture();
     const [id] = fx.activated;
     const handle = fx.personas.get(id)!.handle;
-    const r = submit(fx, [{ persona: handle, actions: [{ type: "post", body: "Acme Cloud is great" }] }]);
+    const r = submit(fx, [
+      {
+        persona: handle,
+        actions: [{ type: "post", body: "Acme Cloud is great" }],
+      },
+    ]);
     expect(r.rejected.filter((e) => e.field === "persona")).toEqual([]);
     expect(r.appliedPersonas).toContain(id);
     cleanup(fx);
@@ -177,7 +230,10 @@ describe("sim ingest — persona resolution", () => {
 
   it("rejects an unknown persona and names the field, the value and the remedy", () => {
     const fx = fixture();
-    const r = submit(fx, onlyAct(fx, {}).concat([{ persona: "p_999", actions: [] }]));
+    const r = submit(
+      fx,
+      onlyAct(fx, {}).concat([{ persona: "p_999", actions: [] }]),
+    );
     const err = r.rejected.find((e) => e.field === "persona")!;
     expect(err.ref).toContain("generations[6]");
     expect(err.message).toContain("unknown persona");
@@ -195,7 +251,13 @@ describe("sim ingest — persona resolution", () => {
         handle: "@outsider",
         archetype: "casual",
         bio: "b",
-        traits: { openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, emotionalStability: 0.5 },
+        traits: {
+          openness: 0.5,
+          conscientiousness: 0.5,
+          extraversion: 0.5,
+          agreeableness: 0.5,
+          emotionalStability: 0.5,
+        },
         stances: {},
         platform: "twitter",
         activity: 0.5,
@@ -203,7 +265,9 @@ describe("sim ingest — persona resolution", () => {
         follows: [],
       },
     ] as never);
-    const outsider = fx.db.listPersonas(fx.world.id).find((p) => p.handle === "@outsider")!.id;
+    const outsider = fx.db
+      .listPersonas(fx.world.id)
+      .find((p) => p.handle === "@outsider")!.id;
     const r = submit(fx, [{ persona: outsider, actions: [] }]);
     const err = r.rejected.find((e) => e.field === "persona")!;
     expect(err.message).toContain("not activated in this batch");
@@ -225,7 +289,9 @@ describe("sim ingest — persona resolution", () => {
 
   it("throws on a task that does not exist or does not belong to this world", () => {
     const fx = fixture();
-    expect(() => submitGenerations(fx.db, fx.world, "t_nope", [], {})).toThrow(/unknown sim task/);
+    expect(() => submitGenerations(fx.db, fx.world, "t_nope", [], {})).toThrow(
+      /unknown sim task/,
+    );
     cleanup(fx);
   });
 });
@@ -253,7 +319,9 @@ describe("sim ingest — action count and shape", () => {
   it("rejects a missing or non-string action type", () => {
     const fx = fixture();
     const [id] = fx.activated;
-    const r = submit(fx, [{ persona: id, actions: [{ body: "no type" } as unknown as SimAction] }]);
+    const r = submit(fx, [
+      { persona: id, actions: [{ body: "no type" } as unknown as SimAction] },
+    ]);
     const err = r.rejected.find((e) => e.field === "type")!;
     expect(err.message).toBe("missing action type");
     cleanup(fx);
@@ -262,8 +330,12 @@ describe("sim ingest — action count and shape", () => {
   it("rejects an unknown action type and echoes it back", () => {
     const fx = fixture();
     const [id] = fx.activated;
-    const r = submit(fx, [{ persona: id, actions: [{ type: "boost" } as unknown as SimAction] }]);
-    const err = r.rejected.find((e) => e.message.includes("unknown action type"))!;
+    const r = submit(fx, [
+      { persona: id, actions: [{ type: "boost" } as unknown as SimAction] },
+    ]);
+    const err = r.rejected.find((e) =>
+      e.message.includes("unknown action type"),
+    )!;
     expect(err.message).toContain('"boost"');
     cleanup(fx);
   });
@@ -273,7 +345,9 @@ describe("sim ingest — action count and shape", () => {
     // is treated as having chosen not to act, not as having failed.
     const fx = fixture();
     const [id] = fx.activated;
-    const r = submit(fx, [{ persona: id, actions: "nope" as unknown as SimAction[] }]);
+    const r = submit(fx, [
+      { persona: id, actions: "nope" as unknown as SimAction[] },
+    ]);
     expect(r.rejected).toEqual([]);
     expect(r.lurkers).toContain(id);
     cleanup(fx);
@@ -285,7 +359,10 @@ describe("sim ingest — platform conformance", () => {
     const fx = fixture();
     const tw = onPlatform(fx, "twitter");
     const r = submit(fx, [
-      { persona: tw, actions: [{ type: "post", platform: "reddit", title: "t", body: "b" }] },
+      {
+        persona: tw,
+        actions: [{ type: "post", platform: "reddit", title: "t", body: "b" }],
+      },
     ]);
     const err = r.rejected.find((e) => e.field === "platform")!;
     expect(err.message).toBe("persona is twitter-only");
@@ -296,7 +373,10 @@ describe("sim ingest — platform conformance", () => {
     const fx = fixture();
     const rd = onPlatform(fx, "reddit");
     const r = submit(fx, [
-      { persona: rd, actions: [{ type: "post", platform: "twitter", body: "b" }] },
+      {
+        persona: rd,
+        actions: [{ type: "post", platform: "twitter", body: "b" }],
+      },
     ]);
     const err = r.rejected.find((e) => e.field === "platform")!;
     expect(err.message).toBe("persona is reddit-only");
@@ -307,7 +387,12 @@ describe("sim ingest — platform conformance", () => {
     const fx = fixture();
     const rd = onPlatform(fx, "reddit");
     for (const type of ["reply", "quote", "like", "repost"] as const) {
-      const r = submit(fx, [{ persona: rd, actions: [{ type, parent: "po_x", body: "b" } as SimAction] }]);
+      const r = submit(fx, [
+        {
+          persona: rd,
+          actions: [{ type, parent: "po_x", body: "b" } as SimAction],
+        },
+      ]);
       const err = r.rejected.find((e) => e.field === "type")!;
       expect(err.message, `action ${type}`).toContain("is a twitter action");
     }
@@ -318,7 +403,12 @@ describe("sim ingest — platform conformance", () => {
     const fx = fixture();
     const tw = onPlatform(fx, "twitter");
     for (const type of ["comment", "upvote", "downvote"] as const) {
-      const r = submit(fx, [{ persona: tw, actions: [{ type, parent: "po_x", body: "b" } as SimAction] }]);
+      const r = submit(fx, [
+        {
+          persona: tw,
+          actions: [{ type, parent: "po_x", body: "b" } as SimAction],
+        },
+      ]);
       const err = r.rejected.find((e) => e.field === "type")!;
       expect(err.message, `action ${type}`).toContain("is a reddit action");
     }
@@ -345,8 +435,13 @@ describe("sim ingest — character limits", () => {
     const fx = fixture();
     const tw = onPlatform(fx, "twitter");
     for (const body of ["", "   "]) {
-      const r = submit(fx, [{ persona: tw, actions: [{ type: "post", body }] }]);
-      expect(r.rejected.some((e) => e.message === "post body required"), `body=${JSON.stringify(body)}`).toBe(true);
+      const r = submit(fx, [
+        { persona: tw, actions: [{ type: "post", body }] },
+      ]);
+      expect(
+        r.rejected.some((e) => e.message === "post body required"),
+        `body=${JSON.stringify(body)}`,
+      ).toBe(true);
     }
     cleanup(fx);
   });
@@ -356,7 +451,9 @@ describe("sim ingest — character limits", () => {
     const tw = onPlatform(fx, "twitter");
     const other = onPlatform(fx, "twitter", tw);
     const limit = fx.world.config.platforms.twitter.replyCharLimit;
-    const seeded = submit(fx, [{ persona: tw, actions: [{ type: "post", body: "seed" }] }]);
+    const seeded = submit(fx, [
+      { persona: tw, actions: [{ type: "post", body: "seed" }] },
+    ]);
     expect(seeded.postsCreated).toBe(1);
     const root = fx.db.listPosts(fx.world.id, { personaId: tw })[0];
 
@@ -366,8 +463,15 @@ describe("sim ingest — character limits", () => {
       fx.db,
       fx.db.getWorld(fx.world.id)!,
       taskId,
-      [{ persona: other, actions: [{ type: "reply", parent: root.id, body: "y".repeat(limit + 5) }] }],
-      { finalize: true }
+      [
+        {
+          persona: other,
+          actions: [
+            { type: "reply", parent: root.id, body: "y".repeat(limit + 5) },
+          ],
+        },
+      ],
+      { finalize: true },
     );
     const err = r.rejected.find((e) => e.field === "body")!;
     expect(err.message).toContain(`max ${limit} chars`);
@@ -379,23 +483,69 @@ describe("sim ingest — character limits", () => {
     const rd = onPlatform(fx, "reddit");
     const cfg = fx.world.config.platforms.reddit;
 
-    const noTitle = submit(fx, [{ persona: rd, actions: [{ type: "post", platform: "reddit", body: "b" }] }]);
-    expect(noTitle.rejected.some((e) => e.message === "reddit post requires a title")).toBe(true);
+    const noTitle = submit(fx, [
+      {
+        persona: rd,
+        actions: [{ type: "post", platform: "reddit", body: "b" }],
+      },
+    ]);
+    expect(
+      noTitle.rejected.some(
+        (e) => e.message === "reddit post requires a title",
+      ),
+    ).toBe(true);
 
     // Deliberately invalid: the missing body is what is under test, so the
     // literal is cast at exactly this spot rather than loosening SimAction.
-    const noBody = submit(fx, [{ persona: rd, actions: [{ type: "post", platform: "reddit", title: "t" } as SimAction] }]);
-    expect(noBody.rejected.some((e) => e.message === "reddit post requires a body")).toBe(true);
+    const noBody = submit(fx, [
+      {
+        persona: rd,
+        actions: [
+          { type: "post", platform: "reddit", title: "t" } as SimAction,
+        ],
+      },
+    ]);
+    expect(
+      noBody.rejected.some((e) => e.message === "reddit post requires a body"),
+    ).toBe(true);
 
     const longTitle = submit(fx, [
-      { persona: rd, actions: [{ type: "post", platform: "reddit", title: "t".repeat(cfg.titleCharLimit + 1), body: "b" }] },
+      {
+        persona: rd,
+        actions: [
+          {
+            type: "post",
+            platform: "reddit",
+            title: "t".repeat(cfg.titleCharLimit + 1),
+            body: "b",
+          },
+        ],
+      },
     ]);
-    expect(longTitle.rejected.some((e) => e.message.includes(`max ${cfg.titleCharLimit}`))).toBe(true);
+    expect(
+      longTitle.rejected.some((e) =>
+        e.message.includes(`max ${cfg.titleCharLimit}`),
+      ),
+    ).toBe(true);
 
     const longBody = submit(fx, [
-      { persona: rd, actions: [{ type: "post", platform: "reddit", title: "t", body: "b".repeat(cfg.bodyCharLimit + 1) }] },
+      {
+        persona: rd,
+        actions: [
+          {
+            type: "post",
+            platform: "reddit",
+            title: "t",
+            body: "b".repeat(cfg.bodyCharLimit + 1),
+          },
+        ],
+      },
     ]);
-    expect(longBody.rejected.some((e) => e.message.includes(`max ${cfg.bodyCharLimit}`))).toBe(true);
+    expect(
+      longBody.rejected.some((e) =>
+        e.message.includes(`max ${cfg.bodyCharLimit}`),
+      ),
+    ).toBe(true);
     cleanup(fx);
   });
 
@@ -404,17 +554,33 @@ describe("sim ingest — character limits", () => {
     const rd = onPlatform(fx, "reddit");
     const other = onPlatform(fx, "reddit", rd);
     const limit = fx.world.config.platforms.reddit.commentCharLimit;
-    submit(fx, [{ persona: rd, actions: [{ type: "post", platform: "reddit", title: "t", body: "b" }] }]);
+    submit(fx, [
+      {
+        persona: rd,
+        actions: [{ type: "post", platform: "reddit", title: "t", body: "b" }],
+      },
+    ]);
     const root = fx.db.listPosts(fx.world.id, { personaId: rd })[0];
     const taskId = newTask(fx, 2);
     const r = submitGenerations(
       fx.db,
       fx.db.getWorld(fx.world.id)!,
       taskId,
-      [{ persona: other, actions: [{ type: "comment", parent: root.id, body: "z".repeat(limit + 1) }] }],
-      { finalize: true }
+      [
+        {
+          persona: other,
+          actions: [
+            { type: "comment", parent: root.id, body: "z".repeat(limit + 1) },
+          ],
+        },
+      ],
+      { finalize: true },
     );
-    expect(r.rejected.some((e) => e.field === "body" && e.message.includes(`max ${limit} chars`))).toBe(true);
+    expect(
+      r.rejected.some(
+        (e) => e.field === "body" && e.message.includes(`max ${limit} chars`),
+      ),
+    ).toBe(true);
     cleanup(fx);
   });
 });
@@ -423,11 +589,19 @@ describe("sim ingest — parent resolution", () => {
   it("rejects a missing, empty or unknown parent id with a distinguishable message", () => {
     const fx = fixture();
     const tw = onPlatform(fx, "twitter");
-    const missing = submit(fx, [{ persona: tw, actions: [{ type: "like", parent: "" }] }]);
-    expect(missing.rejected.some((e) => e.message === "parent post id required")).toBe(true);
+    const missing = submit(fx, [
+      { persona: tw, actions: [{ type: "like", parent: "" }] },
+    ]);
+    expect(
+      missing.rejected.some((e) => e.message === "parent post id required"),
+    ).toBe(true);
 
-    const unknown = submit(fx, [{ persona: tw, actions: [{ type: "like", parent: "po_nope" }] }]);
-    const err = unknown.rejected.find((e) => e.message.includes("parent post not found"))!;
+    const unknown = submit(fx, [
+      { persona: tw, actions: [{ type: "like", parent: "po_nope" }] },
+    ]);
+    const err = unknown.rejected.find((e) =>
+      e.message.includes("parent post not found"),
+    )!;
     expect(err.message).toContain("po_nope");
     cleanup(fx);
   });
@@ -436,16 +610,28 @@ describe("sim ingest — parent resolution", () => {
     const fx = fixture({ rounds: 2 });
     const rd = onPlatform(fx, "reddit");
     const other = onPlatform(fx, "twitter");
-    submit(fx, [{ persona: rd, actions: [{ type: "post", platform: "reddit", title: "t", body: "b" }] }]);
+    submit(fx, [
+      {
+        persona: rd,
+        actions: [{ type: "post", platform: "reddit", title: "t", body: "b" }],
+      },
+    ]);
     const redditPost = fx.db.listPosts(fx.world.id, { personaId: rd })[0];
     const r = submitGenerations(
       fx.db,
       fx.db.getWorld(fx.world.id)!,
       newTask(fx, 2),
-      [{ persona: other, actions: [{ type: "reply", parent: redditPost.id, body: "b" }] }],
-      { finalize: true }
+      [
+        {
+          persona: other,
+          actions: [{ type: "reply", parent: redditPost.id, body: "b" }],
+        },
+      ],
+      { finalize: true },
     );
-    expect(r.rejected.some((e) => e.message.includes("is not a twitter post"))).toBe(true);
+    expect(
+      r.rejected.some((e) => e.message.includes("is not a twitter post")),
+    ).toBe(true);
     cleanup(fx);
   });
 
@@ -459,10 +645,19 @@ describe("sim ingest — parent resolution", () => {
       fx.db,
       fx.db.getWorld(fx.world.id)!,
       newTask(fx, 2),
-      [{ persona: other, actions: [{ type: "comment", parent: twitterPost.id, body: "b" }] }],
-      { finalize: true }
+      [
+        {
+          persona: other,
+          actions: [{ type: "comment", parent: twitterPost.id, body: "b" }],
+        },
+      ],
+      { finalize: true },
     );
-    expect(r.rejected.some((e) => e.message.includes("is not a reddit post/comment"))).toBe(true);
+    expect(
+      r.rejected.some((e) =>
+        e.message.includes("is not a reddit post/comment"),
+      ),
+    ).toBe(true);
     cleanup(fx);
   });
 });
@@ -473,7 +668,11 @@ describe("sim ingest — reddit thread depth cap", () => {
    * round (the engine's own per-persona cap), advancing the world between
    * rounds. Returns the id of the deepest comment.
    */
-  function chain(fx: Fx, author: string, depth: number): { root: string; leaf: string } {
+  function chain(
+    fx: Fx,
+    author: string,
+    depth: number,
+  ): { root: string; leaf: string } {
     const rootId = fx.db.insertPost({
       id: "po_chain_root",
       worldId: fx.world.id,
@@ -486,7 +685,13 @@ describe("sim ingest — reddit thread depth cap", () => {
       communityId: "c_dev",
       title: "root",
       body: "root body",
-      metrics: { likes: 0, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 },
+      metrics: {
+        likes: 0,
+        reposts: 0,
+        upvotes: 0,
+        downvotes: 0,
+        impressions: 0,
+      },
       mentions: [],
       origin: "generated",
     }).id;
@@ -509,7 +714,13 @@ describe("sim ingest — reddit thread depth cap", () => {
         communityId: "c_dev",
         title: null,
         body: `depth ${i}`,
-        metrics: { likes: 0, reposts: 0, upvotes: 0, downvotes: 0, impressions: 0 },
+        metrics: {
+          likes: 0,
+          reposts: 0,
+          upvotes: 0,
+          downvotes: 0,
+          impressions: 0,
+        },
         mentions: [],
         origin: "generated",
       });
@@ -525,9 +736,16 @@ describe("sim ingest — reddit thread depth cap", () => {
     // root + cap comments: the leaf sits `cap` levels down, so a reply to it
     // would be level cap+1.
     const { leaf } = chain(fx, rd, cap);
-    const r = submit(fx, [{ persona: rd, actions: [{ type: "comment", parent: leaf, body: "too deep" }] }]);
+    const r = submit(fx, [
+      {
+        persona: rd,
+        actions: [{ type: "comment", parent: leaf, body: "too deep" }],
+      },
+    ]);
     const err = r.rejected.find((e) => e.field === "parent")!;
-    expect(err.message).toBe(`thread depth cap ${cap} reached — reply shallower`);
+    expect(err.message).toBe(
+      `thread depth cap ${cap} reached — reply shallower`,
+    );
     cleanup(fx);
   });
 
@@ -536,10 +754,25 @@ describe("sim ingest — reddit thread depth cap", () => {
     const fx = fixture({ threadDepth: cap, rounds: 2 });
     const rd = onPlatform(fx, "reddit");
     const { leaf } = chain(fx, rd, cap);
-    const parentOfLeaf = fx.db.getPost(fx.world.id, leaf)!.parentId!;
-    const r = submit(fx, [{ persona: rd, actions: [{ type: "comment", parent: parentOfLeaf, body: "deep but legal" }] }]);
-    expect(r.rejected, "the boundary is inclusive-below, not off by one").toEqual([]);
-    expect(fx.db.listPosts(fx.world.id, { kinds: ["comment"] }).length).toBe(cap + 1);
+    const leafPost = fx.db.getPost(fx.world.id, leaf);
+    expect(leafPost).not.toBeNull();
+    const parentOfLeaf = leafPost?.parentId ?? "";
+    expect(parentOfLeaf).not.toBe("");
+    const r = submit(fx, [
+      {
+        persona: rd,
+        actions: [
+          { type: "comment", parent: parentOfLeaf, body: "deep but legal" },
+        ],
+      },
+    ]);
+    expect(
+      r.rejected,
+      "the boundary is inclusive-below, not off by one",
+    ).toEqual([]);
+    expect(fx.db.listPosts(fx.world.id, { kinds: ["comment"] }).length).toBe(
+      cap + 1,
+    );
     cleanup(fx);
   });
 
@@ -551,8 +784,15 @@ describe("sim ingest — reddit thread depth cap", () => {
     const fx = fixture({ threadDepth: cap, rounds: 2 });
     const rd = onPlatform(fx, "reddit");
     const { leaf } = chain(fx, rd, 5);
-    const r = submit(fx, [{ persona: rd, actions: [{ type: "comment", parent: leaf, body: "deep" }] }]);
-    expect(r.rejected.some((e) => e.message.includes(`thread depth cap ${cap}`))).toBe(true);
+    const r = submit(fx, [
+      {
+        persona: rd,
+        actions: [{ type: "comment", parent: leaf, body: "deep" }],
+      },
+    ]);
+    expect(
+      r.rejected.some((e) => e.message.includes(`thread depth cap ${cap}`)),
+    ).toBe(true);
     cleanup(fx);
   });
 
@@ -560,7 +800,12 @@ describe("sim ingest — reddit thread depth cap", () => {
     const fx = fixture({ threadDepth: 1, rounds: 2 });
     const rd = onPlatform(fx, "reddit");
     const { root } = chain(fx, rd, 0);
-    const r = submit(fx, [{ persona: rd, actions: [{ type: "comment", parent: root, body: "first reply" }] }]);
+    const r = submit(fx, [
+      {
+        persona: rd,
+        actions: [{ type: "comment", parent: root, body: "first reply" }],
+      },
+    ]);
     expect(r.rejected).toEqual([]);
     cleanup(fx);
   });
@@ -570,12 +815,15 @@ describe("sim ingest — sticky hold", () => {
   it("holds the round when any item is rejected and does not advance", () => {
     const fx = fixture();
     const bad = fx.activated[0];
-    const r = submit(fx, onlyAct(fx, { [bad]: [{ type: "post", body: "x".repeat(400) }] }));
+    const r = submit(
+      fx,
+      onlyAct(fx, { [bad]: [{ type: "post", body: "x".repeat(400) }] }),
+    );
     expect(r.advanced).toBe(false);
     expect(r.round).toBeNull();
     expect(r.stats).toBeNull();
     expect(r.next).toContain("round held");
-    expect(fx.db.getWorld(fx.world.id)!.round).toBe(0);
+    expect(fx.db.getWorld(fx.world.id)?.round).toBe(0);
     cleanup(fx);
   });
 
@@ -583,9 +831,12 @@ describe("sim ingest — sticky hold", () => {
     const fx = fixture();
     const [a, b] = fx.activated;
     // Round 1 attempt: a is invalid, b is valid.
-    const first = submit(fx, onlyAct(fx, { [b]: [{ type: "post", body: "Acme Cloud is fine" }] }, [
-      { persona: a, actions: [{ type: "post", body: "x".repeat(400) }] },
-    ]));
+    const first = submit(
+      fx,
+      onlyAct(fx, { [b]: [{ type: "post", body: "Acme Cloud is fine" }] }, [
+        { persona: a, actions: [{ type: "post", body: "x".repeat(400) }] },
+      ]),
+    );
     expect(first.advanced).toBe(false);
     const priorRejects = first.rejected.length;
     expect(priorRejects).toBeGreaterThan(0);
@@ -595,7 +846,10 @@ describe("sim ingest — sticky hold", () => {
     // round must stay held — otherwise the host could skip a and advance.
     const second = submit(fx, onlyAct(fx, {}));
     expect(second.advanced).toBe(false);
-    expect(second.rejected.length, "the sticky rejection is carried forward").toBeGreaterThanOrEqual(priorRejects);
+    expect(
+      second.rejected.length,
+      "the sticky rejection is carried forward",
+    ).toBeGreaterThanOrEqual(priorRejects);
     expect(second.rejected.some((e) => e.ref.includes(a))).toBe(true);
     cleanup(fx);
   });
@@ -603,7 +857,12 @@ describe("sim ingest — sticky hold", () => {
   it("releases the hold once the previously-rejected persona is fixed", () => {
     const fx = fixture({ rounds: 1 });
     const [a] = fx.activated;
-    const first = submit(fx, onlyAct(fx, {}, [{ persona: a, actions: [{ type: "post", body: "x".repeat(400) }] }]));
+    const first = submit(
+      fx,
+      onlyAct(fx, {}, [
+        { persona: a, actions: [{ type: "post", body: "x".repeat(400) }] },
+      ]),
+    );
     expect(first.advanced).toBe(false);
 
     // The retry is a fresh round-1 task (the world never advanced), and a is
@@ -612,24 +871,34 @@ describe("sim ingest — sticky hold", () => {
       fx.db,
       fx.db.getWorld(fx.world.id)!,
       newTask(fx, 1),
-      fx.activated.map((id) => ({ persona: id, actions: id === a ? [{ type: "post", body: "Acme Cloud is fine" }] : [] })),
-      {}
+      fx.activated.map((id) => ({
+        persona: id,
+        actions: id === a ? [{ type: "post", body: "Acme Cloud is fine" }] : [],
+      })),
+      {},
     );
     expect(second.rejected).toEqual([]);
     expect(second.advanced).toBe(true);
     expect(second.round).toBe(1);
     expect(second.completed).toBe(true);
-    expect(fx.db.getWorld(fx.world.id)!.round).toBe(1);
+    expect(fx.db.getWorld(fx.world.id)?.round).toBe(1);
     cleanup(fx);
   });
 
   it("records the sticky hold on the task so a later reader can see why", () => {
     const fx = fixture();
     const [a] = fx.activated;
-    submit(fx, onlyAct(fx, {}, [{ persona: a, actions: [{ type: "post", body: "x".repeat(400) }] }]));
+    submit(
+      fx,
+      onlyAct(fx, {}, [
+        { persona: a, actions: [{ type: "post", body: "x".repeat(400) }] },
+      ]),
+    );
     const verdict = fx.db.getTaskVerdicts(fx.world.id, fx.taskId)!;
     expect(verdict.rejected.length).toBeGreaterThan(0);
-    const row = fx.db.db.prepare("SELECT status FROM generations WHERE world_id=? AND id=?").get(fx.world.id, fx.taskId) as { status: string };
+    const row = fx.db.db
+      .prepare("SELECT status FROM generations WHERE world_id=? AND id=?")
+      .get(fx.world.id, fx.taskId) as { status: string };
     expect(row.status).toBe("held");
     cleanup(fx);
   });
@@ -640,23 +909,36 @@ describe("sim ingest — finalize produces lurkers", () => {
     const fx = fixture();
     const [a, b] = fx.activated;
     // a acts, b never speaks, and two more personas are simply absent.
-    const r = submit(fx, [{ persona: a, actions: [{ type: "post", body: "Acme Cloud is fine" }] }], { finalize: true });
+    const r = submit(
+      fx,
+      [{ persona: a, actions: [{ type: "post", body: "Acme Cloud is fine" }] }],
+      { finalize: true },
+    );
     expect(r.advanced).toBe(true);
     expect(r.appliedPersonas).toEqual([a]);
     expect(r.lurkers).toContain(b);
     expect(r.lurkers.length).toBe(fx.activated.length - 1);
-    expect(fx.db.getWorld(fx.world.id)!.round).toBe(1);
+    expect(fx.db.getWorld(fx.world.id)?.round).toBe(1);
     cleanup(fx);
   });
 
   it("advances a round whose only rejection is unfixed, and keeps the rejection visible", () => {
     const fx = fixture();
     const [a] = fx.activated;
-    const r = submit(fx, onlyAct(fx, {}, [{ persona: a, actions: [{ type: "post", body: "x".repeat(400) }] }]), {
-      finalize: true,
-    });
+    const r = submit(
+      fx,
+      onlyAct(fx, {}, [
+        { persona: a, actions: [{ type: "post", body: "x".repeat(400) }] },
+      ]),
+      {
+        finalize: true,
+      },
+    );
     expect(r.advanced).toBe(true);
-    expect(r.rejected.length, "finalize advances, it does not launder the error").toBeGreaterThan(0);
+    expect(
+      r.rejected.length,
+      "finalize advances, it does not launder the error",
+    ).toBeGreaterThan(0);
     expect(r.lurkers).toContain(a);
     cleanup(fx);
   });
@@ -667,8 +949,8 @@ describe("sim ingest — finalize produces lurkers", () => {
     const r = submit(fx, [{ persona: a, actions: [] }], { finalize: true });
     expect(r.advanced).toBe(true);
     expect(r.completed).toBe(true);
-    expect(r.next).toContain("report_plan");
-    expect(fx.db.getWorld(fx.world.id)!.stage).toBe("completed");
+    expect(r.next).toContain('report({action:"plan"})');
+    expect(fx.db.getWorld(fx.world.id)?.stage).toBe("completed");
     cleanup(fx);
   });
 
@@ -686,7 +968,10 @@ describe("sim ingest — applied actions", () => {
   it("creates a post with mentions resolved and a deterministic world-scoped id", () => {
     const fx = fixture();
     const [a] = fx.activated;
-    const r = submit(fx, onlyAct(fx, { [a]: [{ type: "post", body: "Acme Cloud is great" }] }));
+    const r = submit(
+      fx,
+      onlyAct(fx, { [a]: [{ type: "post", body: "Acme Cloud is great" }] }),
+    );
     expect(r.postsCreated).toBe(1);
     const post = fx.db.listPosts(fx.world.id, { personaId: a })[0];
     expect(post.id).toBe("po_1");
@@ -705,7 +990,10 @@ describe("sim ingest — applied actions", () => {
     const rd2 = onPlatform(fx, "reddit", rd);
     const seeded = submit(fx, [
       { persona: tw, actions: [{ type: "post", body: "Acme Cloud is great" }] },
-      { persona: rd, actions: [{ type: "post", platform: "reddit", title: "t", body: "b" }] },
+      {
+        persona: rd,
+        actions: [{ type: "post", platform: "reddit", title: "t", body: "b" }],
+      },
     ]);
     expect(seeded.postsCreated).toBe(2);
     const twPost = fx.db.listPosts(fx.world.id, { personaId: tw })[0];
@@ -719,11 +1007,11 @@ describe("sim ingest — applied actions", () => {
         { persona: tw2, actions: [{ type: "like", parent: twPost.id }] },
         { persona: rd2, actions: [{ type: "upvote", parent: rdPost.id }] },
       ],
-      { finalize: true }
+      { finalize: true },
     );
     expect(r.rejected).toEqual([]);
-    expect(fx.db.getPost(fx.world.id, twPost.id)!.metrics.likes).toBe(1);
-    expect(fx.db.getPost(fx.world.id, rdPost.id)!.metrics.upvotes).toBe(1);
+    expect(fx.db.getPost(fx.world.id, twPost.id)?.metrics.likes).toBe(1);
+    expect(fx.db.getPost(fx.world.id, rdPost.id)?.metrics.upvotes).toBe(1);
     cleanup(fx);
   });
 
@@ -731,20 +1019,25 @@ describe("sim ingest — applied actions", () => {
     const fx = fixture({ rounds: 2 });
     const rd = onPlatform(fx, "reddit");
     const rd2 = onPlatform(fx, "reddit", rd);
-    submit(fx, [{ persona: rd, actions: [{ type: "post", platform: "reddit", title: "t", body: "b" }] }]);
+    submit(fx, [
+      {
+        persona: rd,
+        actions: [{ type: "post", platform: "reddit", title: "t", body: "b" }],
+      },
+    ]);
     const target = fx.db.listPosts(fx.world.id, { personaId: rd })[0];
     const r = submitGenerations(
       fx.db,
       fx.db.getWorld(fx.world.id)!,
       newTask(fx, 2),
       [{ persona: rd2, actions: [{ type: "downvote", parent: target.id }] }],
-      { finalize: true }
+      { finalize: true },
     );
     expect(r.rejected).toEqual([]);
     // downvotes is a SUBTRACTIVE term in engagementScore, so misfiling it as
     // an upvote would make a hostile post look popular.
-    expect(fx.db.getPost(fx.world.id, target.id)!.metrics.downvotes).toBe(1);
-    expect(fx.db.getPost(fx.world.id, target.id)!.metrics.upvotes).toBe(0);
+    expect(fx.db.getPost(fx.world.id, target.id)?.metrics.downvotes).toBe(1);
+    expect(fx.db.getPost(fx.world.id, target.id)?.metrics.upvotes).toBe(0);
     cleanup(fx);
   });
 
@@ -752,20 +1045,32 @@ describe("sim ingest — applied actions", () => {
     const fx = fixture({ rounds: 2 });
     const tw = onPlatform(fx, "twitter");
     const tw2 = onPlatform(fx, "twitter", tw);
-    submit(fx, [{ persona: tw, actions: [{ type: "post", body: "Acme Cloud is great" }] }]);
+    submit(fx, [
+      { persona: tw, actions: [{ type: "post", body: "Acme Cloud is great" }] },
+    ]);
     const target = fx.db.listPosts(fx.world.id, { personaId: tw })[0];
     submitGenerations(
       fx.db,
       fx.db.getWorld(fx.world.id)!,
       newTask(fx, 2),
-      [{ persona: tw2, actions: [{ type: "repost", parent: target.id, note: "worth reading" }] }],
-      { finalize: true }
+      [
+        {
+          persona: tw2,
+          actions: [
+            { type: "repost", parent: target.id, note: "worth reading" },
+          ],
+        },
+      ],
+      { finalize: true },
     );
     const quote = fx.db.listPosts(fx.world.id, { kinds: ["quote"] })[0];
-    expect(quote, "a repost carrying a note becomes a quote, not a repost").toBeTruthy();
+    expect(
+      quote,
+      "a repost carrying a note becomes a quote, not a repost",
+    ).toBeTruthy();
     expect(quote.body).toBe("worth reading");
     expect(quote.parentId).toBe(target.id);
-    expect(fx.db.getPost(fx.world.id, target.id)!.metrics.reposts).toBe(1);
+    expect(fx.db.getPost(fx.world.id, target.id)?.metrics.reposts).toBe(1);
     cleanup(fx);
   });
 
@@ -773,14 +1078,16 @@ describe("sim ingest — applied actions", () => {
     const fx = fixture({ rounds: 2 });
     const tw = onPlatform(fx, "twitter");
     const tw2 = onPlatform(fx, "twitter", tw);
-    submit(fx, [{ persona: tw, actions: [{ type: "post", body: "Acme Cloud is great" }] }]);
+    submit(fx, [
+      { persona: tw, actions: [{ type: "post", body: "Acme Cloud is great" }] },
+    ]);
     const target = fx.db.listPosts(fx.world.id, { personaId: tw })[0];
     submitGenerations(
       fx.db,
       fx.db.getWorld(fx.world.id)!,
       newTask(fx, 2),
       [{ persona: tw2, actions: [{ type: "repost", parent: target.id }] }],
-      { finalize: true }
+      { finalize: true },
     );
     const repost = fx.db.listPosts(fx.world.id, { kinds: ["repost"] })[0];
     expect(repost).toBeTruthy();
@@ -794,7 +1101,9 @@ describe("sim ingest — applied actions", () => {
     submit(fx, onlyAct(fx, { [a]: [{ type: "post", body: "x" }] }));
     // The world is now at round 1, so re-submitting the round-1 task must be
     // refused rather than silently re-running the round.
-    expect(() => submit(fx, onlyAct(fx, { [a]: [{ type: "post", body: "y" }] }))).toThrow(/does not match world state/);
+    expect(() =>
+      submit(fx, onlyAct(fx, { [a]: [{ type: "post", body: "y" }] })),
+    ).toThrow(/does not match world state/);
     cleanup(fx);
   });
 });

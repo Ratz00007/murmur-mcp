@@ -32,7 +32,12 @@ const CURVE: TrajectoryPoint[] = [
 
 describe("slope-jitter sensitivity", () => {
   it("agrees exactly on recorded rounds across every refit", () => {
-    const refits = projectionRefits("seed-a", 5, CURVE, { entity: "x", slope: 0, direction: "up", projected: [] } as never);
+    const refits = projectionRefits("seed-a", 5, CURVE, {
+      entity: "x",
+      slope: 0,
+      direction: "up",
+      projected: [],
+    } as never);
     expect(refits).toHaveLength(5);
     for (const refit of refits) {
       for (const p of refit.filter((x) => x.round <= 4)) {
@@ -44,7 +49,12 @@ describe("slope-jitter sensitivity", () => {
 
   it("produces a zero-width band on recorded rounds and a non-zero one on projected rounds", () => {
     const bands = sensitivityIntervals(
-      projectionRefits("seed-b", 5, CURVE, { entity: "x", slope: 0, direction: "up", projected: [] } as never),
+      projectionRefits("seed-b", 5, CURVE, {
+        entity: "x",
+        slope: 0,
+        direction: "up",
+        projected: [],
+      } as never),
     );
     const recorded = bands.filter((b) => b.round <= 4);
     const projected = bands.filter((b) => b.round > 4);
@@ -56,11 +66,26 @@ describe("slope-jitter sensitivity", () => {
   });
 
   it("is deterministic for a given seed and varies across seeds", () => {
-    const a = projectionRefits("same", 4, CURVE, { entity: "x", slope: 0, direction: "up", projected: [] } as never);
-    const b = projectionRefits("same", 4, CURVE, { entity: "x", slope: 0, direction: "up", projected: [] } as never);
+    const a = projectionRefits("same", 4, CURVE, {
+      entity: "x",
+      slope: 0,
+      direction: "up",
+      projected: [],
+    } as never);
+    const b = projectionRefits("same", 4, CURVE, {
+      entity: "x",
+      slope: 0,
+      direction: "up",
+      projected: [],
+    } as never);
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
 
-    const c = projectionRefits("different", 4, CURVE, { entity: "x", slope: 0, direction: "up", projected: [] } as never);
+    const c = projectionRefits("different", 4, CURVE, {
+      entity: "x",
+      slope: 0,
+      direction: "up",
+      projected: [],
+    } as never);
     expect(JSON.stringify(a)).not.toBe(JSON.stringify(c));
   });
 
@@ -74,22 +99,40 @@ describe("slope-jitter sensitivity", () => {
     const sxy = CURVE.reduce((a, p) => a + p.round * p.value, 0);
     const slope = (m * sxy - sx * sy) / (m * sxx - sx * sx);
 
-    const refits = projectionRefits("bound", 8, CURVE, { entity: "x", slope, direction: "up", projected: [] } as never, 2);
+    const refits = projectionRefits(
+      "bound",
+      8,
+      CURVE,
+      { entity: "x", slope, direction: "up", projected: [] } as never,
+      2,
+    );
     const last = CURVE[CURVE.length - 1].round;
     const xBar = sx / m;
     const yBar = sy / m;
     for (const refit of refits) {
       for (const p of refit.filter((x) => x.round > last)) {
         const implied = (p.value - yBar) / (p.round - xBar);
-        expect(Math.abs(implied - slope)).toBeLessThanOrEqual(SLOPE_JITTER + 1e-6);
+        expect(Math.abs(implied - slope)).toBeLessThanOrEqual(
+          SLOPE_JITTER + 1e-6,
+        );
       }
     }
   });
 
   it("clamps the refit count and returns nothing for a degenerate curve", () => {
-    const many = projectionRefits("c", 99, CURVE, { entity: "x", slope: 0, direction: "up", projected: [] } as never);
+    const many = projectionRefits("c", 99, CURVE, {
+      entity: "x",
+      slope: 0,
+      direction: "up",
+      projected: [],
+    } as never);
     expect(many.length).toBe(MAX_SENSITIVITY_REFITS);
-    const tooShort = projectionRefits("c", 5, [{ round: 1, value: 0.1 }], {} as never);
+    const tooShort = projectionRefits(
+      "c",
+      5,
+      [{ round: 1, value: 0.1 }],
+      {} as never,
+    );
     expect(tooShort).toEqual([]);
   });
 });

@@ -50,7 +50,11 @@ function clampStance(v: number): number {
  * and rounded to 2 decimals (matching the stance-migration update in
  * aggregate.ts so replays stay byte-stable).
  */
-export function deffuantUpdate(stanceA: number, stanceB: number, params: DeffuantParams): DeffuantResult {
+export function deffuantUpdate(
+  stanceA: number,
+  stanceB: number,
+  params: DeffuantParams,
+): DeffuantResult {
   const epsilon = params.epsilon ?? 0.4;
   const mu = params.mu ?? 0.2;
   const chance = params.abstentionChance ?? 0.1;
@@ -59,12 +63,20 @@ export function deffuantUpdate(stanceA: number, stanceB: number, params: Deffuan
   const gap = Math.abs(a - b);
   if (gap <= epsilon) {
     // Within bounded confidence: both pull toward each other simultaneously.
-    return { a: round2Safe(a + mu * (b - a)), b: round2Safe(b + mu * (a - b)), outcome: "converge" };
+    return {
+      a: round2Safe(a + mu * (b - a)),
+      b: round2Safe(b + mu * (a - b)),
+      outcome: "converge",
+    };
   }
   // Beyond confidence: abstention rule — documented slight disengagement,
   // each stance relaxes 5% toward neutral, drawn from the seeded stream.
-  if (params.rng && params.rng.bool(chance)) {
-    return { a: round2Safe(a * 0.95), b: round2Safe(b * 0.95), outcome: "disengage" };
+  if (params.rng?.bool(chance)) {
+    return {
+      a: round2Safe(a * 0.95),
+      b: round2Safe(b * 0.95),
+      outcome: "disengage",
+    };
   }
   return { a, b, outcome: "no-interaction" };
 }
@@ -107,15 +119,26 @@ export interface OpinionDynamicsResult {
  *   streamRng(world.seed, `dynamics:${round}:sample`)  — edge shuffle
  *   streamRng(world.seed, `dynamics:${round}:${i}`)    — pair i's abstention draws
  */
-export function applyOpinionDynamics(world: World, round: number, params: OpinionDynamicsParams): OpinionDynamicsResult {
+export function applyOpinionDynamics(
+  world: World,
+  round: number,
+  params: OpinionDynamicsParams,
+): OpinionDynamicsResult {
   const epsilon = params.epsilon ?? 0.4;
   const mu = params.mu ?? 0.2;
   const chance = params.abstentionChance ?? 0.1;
-  const result: OpinionDynamicsResult = { edges: 0, pairsSampled: 0, interactions: { converge: 0, disengage: 0, noInteraction: 0 }, changed: [] };
+  const result: OpinionDynamicsResult = {
+    edges: 0,
+    pairsSampled: 0,
+    interactions: { converge: 0, disengage: 0, noInteraction: 0 },
+    changed: [],
+  };
   if (params.personas.length < 2) return result;
 
   // Deterministic population order, then build the directed follow-graph edge list.
-  const ordered = [...params.personas].sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));
+  const ordered = [...params.personas].sort((a, b) =>
+    a.id.localeCompare(b.id, "en", { numeric: true }),
+  );
   const byId = new Map(ordered.map((p) => [p.id, p]));
   const seenEdge = new Set<string>();
   const edges: { srcId: string; dstId: string }[] = [];
@@ -134,13 +157,15 @@ export function applyOpinionDynamics(world: World, round: number, params: Opinio
   // Sample pairs for this round: seeded shuffle, half the edges by default.
   const sampleRng = streamRng(world.seed, `dynamics:${round}:sample`);
   const shuffled = sampleRng.shuffle(edges);
-  const want = params.pairsPerRound ?? Math.max(1, Math.floor(edges.length / 2));
+  const want =
+    params.pairsPerRound ?? Math.max(1, Math.floor(edges.length / 2));
   const pairs = shuffled.slice(0, Math.min(want, shuffled.length));
   result.pairsSampled = pairs.length;
 
   for (let i = 0; i < pairs.length; i++) {
-    const src = byId.get(pairs[i].srcId)!;
-    const dst = byId.get(pairs[i].dstId)!;
+    const src = byId.get(pairs[i].srcId);
+    const dst = byId.get(pairs[i].dstId);
+    if (!src || !dst) continue;
     const pairRng = streamRng(world.seed, `dynamics:${round}:${i}`);
     // Entities both personas hold an opinion on, sorted for stable draw order.
     const shared = Object.keys(src.stances)
@@ -148,19 +173,38 @@ export function applyOpinionDynamics(world: World, round: number, params: Opinio
       .sort();
     for (const entityId of shared) {
       const before = { a: src.stances[entityId], b: dst.stances[entityId] };
-      const out = deffuantUpdate(before.a, before.b, { epsilon, mu, abstentionChance: chance, rng: pairRng });
-      const bucket = out.outcome === "converge" ? "converge" : out.outcome === "disengage" ? "disengage" : "noInteraction";
+      const out = deffuantUpdate(before.a, before.b, {
+        epsilon,
+        mu,
+        abstentionChance: chance,
+        rng: pairRng,
+      });
+      const bucket =
+        out.outcome === "converge"
+          ? "converge"
+          : out.outcome === "disengage"
+            ? "disengage"
+            : "noInteraction";
       result.interactions[bucket]++;
       if (out.a !== before.a) {
         src.stances[entityId] = out.a;
-        result.changed.push({ personaId: src.id, entityId, from: before.a, to: out.a });
+        result.changed.push({
+          personaId: src.id,
+          entityId,
+          from: before.a,
+          to: out.a,
+        });
       }
       if (out.b !== before.b) {
         dst.stances[entityId] = out.b;
-        result.changed.push({ personaId: dst.id, entityId, from: before.b, to: out.b });
+        result.changed.push({
+          personaId: dst.id,
+          entityId,
+          from: before.b,
+          to: out.b,
+        });
       }
     }
   }
   return result;
 }
-

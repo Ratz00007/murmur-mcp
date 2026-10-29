@@ -38,7 +38,16 @@ function runRound(): RoundOutcome {
   const db = new Storage(openDatabase(path.join(tmp(), "murmur.db")));
   const world = db.createWorld({ name: "cascade world", seed: "cascade-42" });
   const inserted = db.insertEntities(world.id, [
-    { id: "", worldId: world.id, name: "Acme Cloud", type: "org", description: "d", salience: 0.9, anchors: [], motives: [] },
+    {
+      id: "",
+      worldId: world.id,
+      name: "Acme Cloud",
+      type: "org",
+      description: "d",
+      salience: 0.9,
+      anchors: [],
+      motives: [],
+    },
   ] as Entity[]);
   const acmeId = inserted.inserted[0].id;
 
@@ -49,7 +58,13 @@ function runRound(): RoundOutcome {
       handle: `@p${i}`,
       archetype: "casual scroller",
       bio: "bio",
-      traits: { openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, emotionalStability: 0.5 },
+      traits: {
+        openness: 0.5,
+        conscientiousness: 0.5,
+        extraversion: 0.5,
+        agreeableness: 0.5,
+        emotionalStability: 0.5,
+      },
       stances: { [acmeId]: 0.7 }, // all positive-aligned → cascade engages with likes
       platform: "both",
       activity: 0.5,
@@ -65,40 +80,61 @@ function runRound(): RoundOutcome {
       ...w.config,
       rounds: 1,
       engagement: { ...w.config.engagement, organicCapPerPost: 1 },
-      cascade: { maxHops: 2, base: 1, factor: 0, maxProb: 1, threshold: 12, attenuation: 1 },
+      cascade: {
+        maxHops: 2,
+        base: 1,
+        factor: 0,
+        maxProb: 1,
+        threshold: 12,
+        attenuation: 1,
+      },
     },
   });
   db.setStage(world.id, "configured");
   const world2 = db.getWorld(world.id)!;
 
   const { task } = buildSimBatch(db, world2);
-  const activated = task.items.map((i) => String((i.payload as { persona?: { id?: string } }).persona?.id ?? ""));
+  const activated = task.items.map((i) =>
+    String((i.payload as { persona?: { id?: string } }).persona?.id ?? ""),
+  );
   expect(activated.length).toBeGreaterThanOrEqual(1);
   const author = activated[0];
 
   // topology: author ← {B1,B2} ← {C1..C4} ← {D1,D2} — the C tier is only
   // reachable as followers-of-followers (hop ≥ 1 of the cascade)
-  const nonAuthor = db.listPersonas(world2.id).map((p) => p.id).filter((id) => id !== author);
+  const nonAuthor = db
+    .listPersonas(world2.id)
+    .map((p) => p.id)
+    .filter((id) => id !== author);
   const B = nonAuthor.slice(0, 2);
   const C = nonAuthor.slice(2, 6);
   const D = nonAuthor.slice(6, 8);
   for (const id of B) db.patchPersona(world2.id, id, { follows: [author] });
-  for (const [i, id] of C.entries()) db.patchPersona(world2.id, id, { follows: [B[i % 2]] });
-  for (const [i, id] of D.entries()) db.patchPersona(world2.id, id, { follows: [C[i]] });
+  for (const [i, id] of C.entries())
+    db.patchPersona(world2.id, id, { follows: [B[i % 2]] });
+  for (const [i, id] of D.entries())
+    db.patchPersona(world2.id, id, { follows: [C[i]] });
 
   const subs: SimGeneration[] = activated.map((id) =>
     id === author
-      ? { persona: id, actions: [{ type: "post", body: "Acme Cloud pricing is fair and square" }] }
-      : { persona: id, actions: [] }
+      ? {
+          persona: id,
+          actions: [
+            { type: "post", body: "Acme Cloud pricing is fair and square" },
+          ],
+        }
+      : { persona: id, actions: [] },
   );
   const result = submitGenerations(db, db.getWorld(world2.id)!, task.id, subs);
   expect(result.rejected).toEqual([]);
   expect(result.advanced).toBe(true);
 
   // organic event payload carries the cascade receipt
-  const ev = db.listEvents(world2.id, { type: "organic" }).find((e) => e.round === 1);
+  const ev = db
+    .listEvents(world2.id, { type: "organic" })
+    .find((e) => e.round === 1);
   expect(ev, "organic event must exist").toBeTruthy();
-  const payload = ev!.payload as {
+  const payload = ev?.payload as {
     cascaded?: number;
     audit?: { hop?: number }[];
   };
@@ -109,7 +145,12 @@ function runRound(): RoundOutcome {
   // replay the one-hop eligibility filter to recover the per-post cap
   // (uses the same filters the engine applies, but ONLY over generated posts:
   // organic reposts inserted mid-loop must be skipped — they are not newPosts)
-  const post = db.listPosts(world2.id, { personaId: author, minRound: 1, maxRound: 1, kinds: ["post"] })[0];
+  const post = db.listPosts(world2.id, {
+    personaId: author,
+    minRound: 1,
+    maxRound: 1,
+    kinds: ["post"],
+  })[0];
   expect(post).toBeTruthy();
   const eligibilityRng = streamRng(world2.seed, `organic:1`);
   let eligibleCount = 0;
@@ -147,8 +188,14 @@ function runRound(): RoundOutcome {
 describe("multi-hop cascade", () => {
   it("engages followers-of-followers beyond the one-hop pass, within the organic cap", () => {
     const r = runRound();
-    expect(r.cascaded, "cascade must engage at least one distance-≥2 viewer").toBeGreaterThanOrEqual(1);
-    expect(r.hopEntries, "audit must record cascade hops").toBeGreaterThanOrEqual(1);
+    expect(
+      r.cascaded,
+      "cascade must engage at least one distance-≥2 viewer",
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      r.hopEntries,
+      "audit must record cascade hops",
+    ).toBeGreaterThanOrEqual(1);
     expect(r.maxHop).toBeGreaterThanOrEqual(1);
     expect(r.maxHop).toBeLessThanOrEqual(2); // default maxHops in this fixture
     // organicCapPerPost still bounds engagement per post (direct + cascade share

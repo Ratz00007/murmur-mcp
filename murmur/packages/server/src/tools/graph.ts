@@ -14,7 +14,10 @@ import { GRAPH_OUTPUT } from "./outputs.js";
 
 export const GRAPH_TOOL_NAMES = ["graph"] as const;
 
-export function registerGraphTools(server: McpServer, ctx: ServerContext): void {
+export function registerGraphTools(
+  server: McpServer,
+  ctx: ServerContext,
+): void {
   server.registerTool(
     "graph",
     {
@@ -26,30 +29,83 @@ export function registerGraphTools(server: McpServer, ctx: ServerContext): void 
         "token-budgeted. action:'export' writes the graph (or its hottest sub-graph) as a Mermaid diagram into the world " +
         "directory, viewable on any git forge.",
       inputSchema: {
-        action: z.enum(["build", "query", "export"]).describe("Build the graph, traverse it, or write it to disk"),
-        world: z.string().optional().describe("World id/slug (default: active world)"),
-        anchor: z.string().optional().describe("Entity name or id to start from — action:'query'"),
-        relation: z.enum(["alliance", "opposition", "influence", "ownership"]).optional().describe("Edge type filter — action:'query'"),
-        min_tension: z.number().min(0).max(1).optional().describe("Only edges at/above this tension (0-1) — action:'query'/'export'"),
-        depth: z.number().int().min(1).max(3).optional().describe("Hops from the anchor (default 1) — action:'query'"),
-        token_budget: z.number().int().min(500).max(8000).optional().describe("Traversal budget in tokens (default 4000) — action:'query'"),
-        scope: z.enum(["all", "hot"]).optional().describe("'hot' = only high-tension relations — action:'export'"),
+        action: z
+          .enum(["build", "query", "export"])
+          .describe("Build the graph, traverse it, or write it to disk"),
+        world: z
+          .string()
+          .optional()
+          .describe("World id/slug (default: active world)"),
+        anchor: z
+          .string()
+          .optional()
+          .describe("Entity name or id to start from — action:'query'"),
+        relation: z
+          .enum(["alliance", "opposition", "influence", "ownership"])
+          .optional()
+          .describe("Edge type filter — action:'query'"),
+        min_tension: z
+          .number()
+          .min(0)
+          .max(1)
+          .optional()
+          .describe(
+            "Only edges at/above this tension (0-1) — action:'query'/'export'",
+          ),
+        depth: z
+          .number()
+          .int()
+          .min(1)
+          .max(3)
+          .optional()
+          .describe("Hops from the anchor (default 1) — action:'query'"),
+        token_budget: z
+          .number()
+          .int()
+          .min(500)
+          .max(8000)
+          .optional()
+          .describe(
+            "Traversal budget in tokens (default 4000) — action:'query'",
+          ),
+        scope: z
+          .enum(["all", "hot"])
+          .optional()
+          .describe("'hot' = only high-tension relations — action:'export'"),
       },
       outputSchema: GRAPH_OUTPUT,
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
-    async ({ action, world, anchor, relation, min_tension, depth, token_budget, scope }) => {
+    async ({
+      action,
+      world,
+      anchor,
+      relation,
+      min_tension,
+      depth,
+      token_budget,
+      scope,
+    }) => {
       try {
         const w = ctx.resolveWorld(world);
         if (action === "build") {
           const out = buildGraph(ctx.storage, w);
           const relations = ctx.storage.listRelations(w.id);
           const entities = ctx.storage.listEntities(w.id);
-          const name = (id: string) => entities.find((e) => e.id === id)?.name ?? id;
+          const name = (id: string) =>
+            entities.find((e) => e.id === id)?.name ?? id;
           const top = relations
             .filter((r) => r.tension > 0.5)
             .slice(0, 8)
-            .map((r) => `${name(r.srcId)} —${r.type}→ ${name(r.dstId)} (tension ${r.tension})`);
+            .map(
+              (r) =>
+                `${name(r.srcId)} —${r.type}→ ${name(r.dstId)} (tension ${r.tension})`,
+            );
           ctx.audit(w, { op: "graph_build", ...out });
           return ctx.reply(
             {
@@ -61,7 +117,7 @@ export function registerGraphTools(server: McpServer, ctx: ServerContext): void 
               next: 'personas({action:"plan"}) to draft the population',
             },
             w,
-            GRAPH_OUTPUT
+            GRAPH_OUTPUT,
           );
         }
         if (action === "export") {
@@ -84,7 +140,7 @@ export function registerGraphTools(server: McpServer, ctx: ServerContext): void 
               next: 'personas({action:"plan"}) to draft the population',
             },
             w,
-            GRAPH_OUTPUT
+            GRAPH_OUTPUT,
           );
         }
         const result = graphQuery(ctx.storage, w, {
@@ -104,11 +160,11 @@ export function registerGraphTools(server: McpServer, ctx: ServerContext): void 
             next: 'graph({action:"export"}) to save a viewable diagram, or personas({action:"plan"})',
           },
           w,
-          GRAPH_OUTPUT
+          GRAPH_OUTPUT,
         );
       } catch (e) {
         return ctx.fail(e);
       }
-    }
+    },
   );
 }

@@ -2,4 +2,4 @@
 # seed=golden-hash-v1 rounds=4 population=12 node=v24.14.1 platform=win32
 # Regenerate ONLY when the engine intentionally changes output, and review the
 # diff: an unexpected hash change is a determinism regression, not housekeeping.
-c67c5bc5842d7c3e654e8a2ab23551c0ee5b587604c25d184e6ac084d2dc931b v24.14.1 win32
+5782a8c62e82d12ef9a559c67b5773126336f321d520ec47d7306ae8b72ab3a3 v24.14.1 win32

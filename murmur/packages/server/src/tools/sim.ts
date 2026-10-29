@@ -9,7 +9,15 @@
  */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { batchBrief, buildSimBatch, roundSummary, submitGenerations, timeline, engagementPeaks, type SimGeneration } from "@murmur/engine";
+import {
+  batchBrief,
+  buildSimBatch,
+  roundSummary,
+  submitGenerations,
+  timeline,
+  engagementPeaks,
+  type SimGeneration,
+} from "@murmur/engine";
 import { coerceJson, type ServerContext } from "../session.js";
 import { SIM_OUTPUT } from "./outputs.js";
 import { registerTaskTool } from "./tasks.js";
@@ -18,11 +26,16 @@ export const SIM_TOOL_NAMES = ["sim"] as const;
 
 /** Mirrors the task.outputSchema the engine attaches to sim batches (sim/batch.ts). */
 const simGenerationItem = z.object({
-  persona: z.string().min(1).describe("Persona id from the batch task, e.g. 'p_3'"),
+  persona: z
+    .string()
+    .min(1)
+    .describe("Persona id from the batch task, e.g. 'p_3'"),
   actions: z
     .array(z.object({ type: z.string() }).passthrough())
     .max(3)
-    .describe("1-3 action objects (post/reply/like/comment/upvote/downvote/quote) — see the task instructions for exact fields"),
+    .describe(
+      "1-3 action objects (post/reply/like/comment/upvote/downvote/quote) — see the task instructions for exact fields",
+    ),
 });
 
 export function registerSimTools(server: McpServer, ctx: ServerContext): void {
@@ -40,22 +53,74 @@ export function registerSimTools(server: McpServer, ctx: ServerContext): void {
       "the trajectory. action:'summary' reads one round back, action:'timeline' reads the whole trajectory including " +
       "engagement peaks (mean + 2 sigma).",
     inputSchema: {
-      action: z.enum(["next_batch", "submit", "inject", "summary", "timeline"]).describe("Which half of the simulation to drive"),
-      world: z.string().optional().describe("World id/slug (default: active world)"),
-      task_id: z.string().optional().describe("Task id from action:'next_batch' — required for action:'submit'"),
+      action: z
+        .enum(["next_batch", "submit", "inject", "summary", "timeline"])
+        .describe("Which half of the simulation to drive"),
+      world: z
+        .string()
+        .optional()
+        .describe("World id/slug (default: active world)"),
+      task_id: z
+        .string()
+        .optional()
+        .describe(
+          "Task id from action:'next_batch' — required for action:'submit'",
+        ),
       generations: z
         .union([
-          z.array(simGenerationItem).describe("Array of { persona: id, actions: [...] } — mirrors the task.outputSchema the engine returned"),
-          z.string().describe("The same array as a JSON string (parsed server-side)"),
+          z
+            .array(simGenerationItem)
+            .describe(
+              "Array of { persona: id, actions: [...] } — mirrors the task.outputSchema the engine returned",
+            ),
+          z
+            .string()
+            .describe("The same array as a JSON string (parsed server-side)"),
         ])
         .optional()
-        .describe("Array of { persona: id, actions: [...] } — see the task instructions for action formats"),
-      finalize: z.boolean().optional().describe("Force the round to advance even with rejected items (missing personas become lurkers)"),
-      use_sampling: z.boolean().optional().describe("Opt-in accelerator: if the client supports MCP sampling, missing personas' actions are generated via sampling"),
-      text: z.string().min(4).max(600).optional().describe("The event, one sentence: 'Competitor undercuts price by 30%' — action:'inject'"),
-      round: z.number().int().min(1).max(40).optional().describe("Round the event lands in (default: next), or the round to summarise"),
-      type: z.enum(["news", "price", "leak", "opinion", "outage", "other"]).optional().describe("Event flavor (default news) — action:'inject'"),
-      scope: z.string().max(120).optional().describe("Who notices: 'all' (default), 'twitter', 'reddit', an entity or community name — action:'inject'"),
+        .describe(
+          "Array of { persona: id, actions: [...] } — see the task instructions for action formats",
+        ),
+      finalize: z
+        .boolean()
+        .optional()
+        .describe(
+          "Force the round to advance even with rejected items (missing personas become lurkers)",
+        ),
+      use_sampling: z
+        .boolean()
+        .optional()
+        .describe(
+          "Opt-in accelerator: if the client supports MCP sampling, missing personas' actions are generated via sampling",
+        ),
+      text: z
+        .string()
+        .min(4)
+        .max(600)
+        .optional()
+        .describe(
+          "The event, one sentence: 'Competitor undercuts price by 30%' — action:'inject'",
+        ),
+      round: z
+        .number()
+        .int()
+        .min(1)
+        .max(40)
+        .optional()
+        .describe(
+          "Round the event lands in (default: next), or the round to summarise",
+        ),
+      type: z
+        .enum(["news", "price", "leak", "opinion", "outage", "other"])
+        .optional()
+        .describe("Event flavor (default news) — action:'inject'"),
+      scope: z
+        .string()
+        .max(120)
+        .optional()
+        .describe(
+          "Who notices: 'all' (default), 'twitter', 'reddit', an entity or community name — action:'inject'",
+        ),
     },
     outputSchema: SIM_OUTPUT,
     run: async (args) => {
@@ -82,7 +147,12 @@ export function registerSimTools(server: McpServer, ctx: ServerContext): void {
 function nextBatch(ctx: ServerContext, world?: string) {
   const w = ctx.resolveWorld(world);
   const { task, targetRound, activated } = buildSimBatch(ctx.storage, w);
-  ctx.audit(w, { op: "sim_next_batch", taskId: task.id, round: targetRound, personas: activated.length });
+  ctx.audit(w, {
+    op: "sim_next_batch",
+    taskId: task.id,
+    round: targetRound,
+    personas: activated.length,
+  });
   return ctx.reply(
     {
       ok: true,
@@ -92,28 +162,45 @@ function nextBatch(ctx: ServerContext, world?: string) {
       next: 'sim({action:"submit", task_id, generations})',
     },
     w,
-    SIM_OUTPUT
+    SIM_OUTPUT,
   );
 }
 
 async function submitGenerations_(
   ctx: ServerContext,
-  args: { task_id?: string; generations?: unknown; finalize?: boolean; use_sampling?: boolean }
+  args: {
+    task_id?: string;
+    generations?: unknown;
+    finalize?: boolean;
+    use_sampling?: boolean;
+  },
 ) {
-  if (!args.task_id) throw new Error("action:'submit' needs task_id from the next_batch receipt");
+  if (!args.task_id)
+    throw new Error(
+      "action:'submit' needs task_id from the next_batch receipt",
+    );
   const wActive = ctx.resolveWorld(undefined);
   const task = ctx.storage.getTask(wActive.id, args.task_id);
-  if (!task) throw new Error(`unknown task id: ${args.task_id} (no such task in the active world ${wActive.id})`);
+  if (!task)
+    throw new Error(
+      `unknown task id: ${args.task_id} (no such task in the active world ${wActive.id})`,
+    );
   const w = ctx.storage.getWorld(task.worldId);
   if (!w) throw new Error("world for task not found");
-  let subs = (Array.isArray(coerceJson(args.generations)) ? coerceJson(args.generations) : []) as SimGeneration[];
+  let subs = (
+    Array.isArray(coerceJson(args.generations))
+      ? coerceJson(args.generations)
+      : []
+  ) as SimGeneration[];
   let samplingUsed = 0;
   if (args.use_sampling && ctx.sampling) {
     const patched = await fillViaSampling(ctx, w.id, task, subs);
     subs = patched.subs;
     samplingUsed = patched.added;
   }
-  const out = submitGenerations(ctx.storage, w, args.task_id, subs, { finalize: args.finalize });
+  const out = submitGenerations(ctx.storage, w, args.task_id, subs, {
+    finalize: args.finalize,
+  });
   ctx.audit(w, {
     op: "sim_submit_generations",
     taskId: args.task_id,
@@ -148,15 +235,27 @@ async function submitGenerations_(
       next: out.next,
     },
     w,
-    SIM_OUTPUT
+    SIM_OUTPUT,
   );
 }
 
-function inject(ctx: ServerContext, args: { world?: string; text?: string; round?: number; type?: string; scope?: string }) {
-  if (!args.text) throw new Error("action:'inject' needs text — the event, in one sentence");
+function inject(
+  ctx: ServerContext,
+  args: {
+    world?: string;
+    text?: string;
+    round?: number;
+    type?: string;
+    scope?: string;
+  },
+) {
+  if (!args.text)
+    throw new Error("action:'inject' needs text — the event, in one sentence");
   const w = ctx.resolveWorld(args.world);
   if (w.round >= w.config.rounds) {
-    throw new Error(`all ${w.config.rounds} rounds complete — extend with world_config({rounds: N}) before injecting`);
+    throw new Error(
+      `all ${w.config.rounds} rounds complete — extend with world_config({rounds: N}) before injecting`,
+    );
   }
   const targetRound = Math.max(args.round ?? w.round + 1, w.round + 1);
   const ev = ctx.storage.addEvent(
@@ -164,7 +263,7 @@ function inject(ctx: ServerContext, args: { world?: string; text?: string; round
     targetRound,
     "injection",
     { text: args.text, subtype: args.type ?? "news" },
-    args.scope ?? "all"
+    args.scope ?? "all",
   );
   ctx.audit(w, { op: "sim_inject_event", event: ev.id, round: targetRound });
   return ctx.reply(
@@ -173,10 +272,13 @@ function inject(ctx: ServerContext, args: { world?: string; text?: string; round
       eventId: ev.id,
       landsInRound: targetRound,
       note: "personas activated in this round will see the event in their digest and remember witnessing it",
-      next: w.round === 0 ? 'sim({action:"next_batch"}) to start round 1' : `sim({action:"next_batch"}) to continue (round ${w.round + 1})`,
+      next:
+        w.round === 0
+          ? 'sim({action:"next_batch"}) to start round 1'
+          : `sim({action:"next_batch"}) to continue (round ${w.round + 1})`,
     },
     w,
-    SIM_OUTPUT
+    SIM_OUTPUT,
   );
 }
 
@@ -184,11 +286,21 @@ function summary(ctx: ServerContext, world?: string, round?: number) {
   const w = ctx.resolveWorld(world);
   const r = round ?? w.round;
   const stats = roundSummary(ctx.storage, w, r);
-  if (!stats) throw new Error(`no round ${r} recorded yet (world is at round ${w.round})`);
+  if (!stats)
+    throw new Error(
+      `no round ${r} recorded yet (world is at round ${w.round})`,
+    );
   return ctx.reply(
-    { ok: true, stats, next: w.round >= w.config.rounds ? 'report({action:"plan"})' : 'sim({action:"next_batch"})' },
+    {
+      ok: true,
+      stats,
+      next:
+        w.round >= w.config.rounds
+          ? 'report({action:"plan"})'
+          : 'sim({action:"next_batch"})',
+    },
     w,
-    SIM_OUTPUT
+    SIM_OUTPUT,
   );
 }
 
@@ -202,10 +314,13 @@ function timeline_(ctx: ServerContext, world?: string) {
       of: w.config.rounds,
       timeline: rows,
       engagementPeaks: engagementPeaks(rows),
-      next: w.round >= w.config.rounds ? 'report({action:"plan"})' : 'sim({action:"next_batch"})',
+      next:
+        w.round >= w.config.rounds
+          ? 'report({action:"plan"})'
+          : 'sim({action:"next_batch"})',
     },
     w,
-    SIM_OUTPUT
+    SIM_OUTPUT,
   );
 }
 
@@ -218,8 +333,10 @@ function timeline_(ctx: ServerContext, world?: string) {
 async function fillViaSampling(
   ctx: ServerContext,
   _worldId: string,
-  task: { items: { id: string; payload: Record<string, unknown>; label: string }[] },
-  subs: SimGeneration[]
+  task: {
+    items: { id: string; payload: Record<string, unknown>; label: string }[];
+  },
+  subs: SimGeneration[],
 ): Promise<{ subs: SimGeneration[]; added: number }> {
   const covered = new Set(subs.map((s) => String(s.persona)));
   const out = [...subs];
@@ -234,10 +351,18 @@ async function fillViaSampling(
       `Collective: ${JSON.stringify(digest.collective)}\nAllowed actions: ${JSON.stringify(digest.allowedActions)}\n` +
       `Write 1-2 actions this persona takes now. Return ONLY a JSON array of action objects (types like post/reply/like/comment/upvote), max 3.`;
     try {
-      const text = await ctx.sampling?.(prompt, "You are a social-simulation engine. Output only JSON.", 700);
+      const text = await ctx.sampling?.(
+        prompt,
+        "You are a social-simulation engine. Output only JSON.",
+        700,
+      );
       if (!text) continue;
       const parsed = JSON.parse(text.trim().replace(/^```(json)?|```$/g, ""));
-      const actions = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.actions) ? parsed.actions : null;
+      const actions = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray(parsed?.actions)
+          ? parsed.actions
+          : null;
       if (!actions) continue;
       out.push({ persona: personaId, actions });
       added++;

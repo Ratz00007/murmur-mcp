@@ -11,22 +11,17 @@ export function registerPrompts(server: McpServer): void {
       if (!a.required) t = t.optional();
       shape[a.name] = t;
     }
-    server.prompt(
-      p.name,
-      p.description,
-      shape,
-      async (args) => {
-        const clean: Record<string, string> = {};
-        for (const [k, v] of Object.entries(args)) clean[k] = String(v ?? "");
-        return {
-          messages: [
-            {
-              role: "user",
-              content: { type: "text", text: p.build(clean) },
-            },
-          ],
-        };
-      }
-    );
+    server.prompt(p.name, p.description, shape, async (args) => {
+      const clean: Record<string, string> = {};
+      for (const [k, v] of Object.entries(args)) clean[k] = String(v ?? "");
+      return {
+        messages: [
+          {
+            role: "user",
+            content: { type: "text", text: p.build(clean) },
+          },
+        ],
+      };
+    });
   }
 }

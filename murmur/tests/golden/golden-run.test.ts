@@ -16,8 +16,18 @@ describe("golden run", () => {
   it("replays byte-identically (determinism contract)", async () => {
     const dirA = tmp();
     const dirB = tmp();
-    const runA = await runPipeline(engine, { cwd: dirA, seed: "golden-42", rounds: 4, population: 12 });
-    const runB = await runPipeline(engine, { cwd: dirB, seed: "golden-42", rounds: 4, population: 12 });
+    const runA = await runPipeline(engine, {
+      cwd: dirA,
+      seed: "golden-42",
+      rounds: 4,
+      population: 12,
+    });
+    const runB = await runPipeline(engine, {
+      cwd: dirB,
+      seed: "golden-42",
+      rounds: 4,
+      population: 12,
+    });
     expect(runA.dump()).toBe(runB.dump());
     expect(runA.world.round).toBe(4);
     runA.close();
@@ -28,7 +38,12 @@ describe("golden run", () => {
 
   it("meets the pipeline acceptance criteria (F1-F6)", async () => {
     const dir = tmp();
-    const run = await runPipeline(engine, { cwd: dir, seed: "golden-acc", rounds: 5, population: 12 });
+    const run = await runPipeline(engine, {
+      cwd: dir,
+      seed: "golden-acc",
+      rounds: 5,
+      population: 12,
+    });
     try {
       // F2: 10-30 entities extracted, zero rejects
       expect(run.entityCount).toBeGreaterThanOrEqual(10);
@@ -46,7 +61,9 @@ describe("golden run", () => {
       for (const t of run.batchTokens) expect(t).toBeLessThanOrEqual(12000);
       // F3: mermaid graph written
       const slug = run.world.slug;
-      expect(fs.existsSync(path.join(dir, ".murmur", slug, "graph.mmd"))).toBe(true);
+      expect(fs.existsSync(path.join(dir, ".murmur", slug, "graph.mmd"))).toBe(
+        true,
+      );
       // F6: report written, versioned, with required sections
       expect(fs.existsSync(run.reportPath)).toBe(true);
       expect(run.markdown).toContain("# Murmur Reaction Simulation Report");
@@ -55,7 +72,9 @@ describe("golden run", () => {
       expect(run.markdown).toContain("## 9. Risk Register");
       expect(run.markdown).toContain("## 5. Faction Map");
       expect(run.markdown).toContain("## 10. Recommendations");
-      expect(run.markdown).toContain("## Appendix A — Round-by-Round Statistics");
+      expect(run.markdown).toContain(
+        "## Appendix A — Round-by-Round Statistics",
+      );
       expect(run.markdown).toContain("## 11. Confidence & Limitations");
       expect(run.markdown).toContain("xychart-beta");
       expect(run.markdown).toContain("Mitigation —");
@@ -72,7 +91,12 @@ describe("golden run", () => {
   it("F5: an injected event measurably shifts the next sentiment reading", async () => {
     const dirBase = tmp();
     const dirInject = tmp();
-    const base = await runPipeline(engine, { cwd: dirBase, seed: "golden-inj", rounds: 4, population: 12 });
+    const base = await runPipeline(engine, {
+      cwd: dirBase,
+      seed: "golden-inj",
+      rounds: 4,
+      population: 12,
+    });
     const inj = await runPipeline(engine, {
       cwd: dirInject,
       seed: "golden-inj",
@@ -82,8 +106,16 @@ describe("golden run", () => {
       injectText: "Acme Cloud raises the Pro plan price by 40% overnight",
     });
     try {
-      const baseS = engine.roundSummary(base.storage, base.world, 3)!.sentimentByEntity;
-      const injS = engine.roundSummary(inj.storage, inj.world, 3)!.sentimentByEntity;
+      const baseS = engine.roundSummary(
+        base.storage,
+        base.world,
+        3,
+      )?.sentimentByEntity;
+      const injS = engine.roundSummary(
+        inj.storage,
+        inj.world,
+        3,
+      )?.sentimentByEntity;
       const key = "Acme Cloud";
       const delta = Math.abs((injS[key] ?? 0) - (baseS[key] ?? 0));
       expect(delta).toBeGreaterThanOrEqual(0.1);
@@ -102,7 +134,12 @@ describe("golden run", () => {
 
   it("resumes after a simulated crash (reopen the store at the stage boundary)", async () => {
     const dir = tmp();
-    const run = await runPipeline(engine, { cwd: dir, seed: "golden-resume", rounds: 3, population: 10 });
+    const run = await runPipeline(engine, {
+      cwd: dir,
+      seed: "golden-resume",
+      rounds: 3,
+      population: 10,
+    });
     const slug = run.world.slug;
     const roundBefore = run.world.round;
     run.close(); // "crash"

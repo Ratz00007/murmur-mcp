@@ -37,15 +37,28 @@ function personas(n: number): Persona[] {
   });
 }
 
-function summarize(list: { personaId: string; follows: string[] }[], n: number) {
-  const inDeg = new Map<string, number>(Array.from({ length: n }, (_, i) => [`p_${i + 1}`, 0]));
-  for (const e of list) for (const f of e.follows) inDeg.set(f, (inDeg.get(f) ?? 0) + 1);
+function summarize(
+  list: { personaId: string; follows: string[] }[],
+  n: number,
+) {
+  const inDeg = new Map<string, number>(
+    Array.from({ length: n }, (_, i) => [`p_${i + 1}`, 0]),
+  );
+  for (const e of list)
+    for (const f of e.follows) inDeg.set(f, (inDeg.get(f) ?? 0) + 1);
   const incoming = [...inDeg.values()];
   const total = incoming.reduce((a, b) => a + b, 0);
   const sorted = [...incoming].sort((a, b) => b - a);
   const topN = Math.ceil(0.2 * n);
-  const topShare = sorted.slice(0, topN).reduce((a, b) => a + b, 0) / Math.max(1, total);
-  return { ks: list.map((e) => e.follows.length), incoming, total, topShare, mean: total / n };
+  const topShare =
+    sorted.slice(0, topN).reduce((a, b) => a + b, 0) / Math.max(1, total);
+  return {
+    ks: list.map((e) => e.follows.length),
+    incoming,
+    total,
+    topShare,
+    mean: total / n,
+  };
 }
 
 describe("buildFollowGraph — degree heterogeneity", () => {
@@ -60,7 +73,9 @@ describe("buildFollowGraph — degree heterogeneity", () => {
       expect(e.follows.length).toBeGreaterThanOrEqual(3);
       expect(e.follows.length).toBeLessThanOrEqual(7);
       expect(e.follows.length).toBeLessThanOrEqual(n - 1);
-      expect(new Set(e.follows).size, "no duplicate follows").toBe(e.follows.length);
+      expect(new Set(e.follows).size, "no duplicate follows").toBe(
+        e.follows.length,
+      );
       expect(e.follows).not.toContain(e.personaId); // never follows self
     }
     // heterogeneous, not the old uniform 3..7 noise floor: several distinct counts
@@ -94,7 +109,10 @@ describe("buildFollowGraph — degree heterogeneity", () => {
   it("stays compatible with the old two-argument signature and opts overrides", () => {
     const legacy = buildFollowGraph(world("graph-hetero-1"), personas(n)); // no opts — additive compat
     expect(legacy).toEqual(graph);
-    const bounded = buildFollowGraph(w, personas(n), { minFollows: 2, maxFollows: 4 });
+    const bounded = buildFollowGraph(w, personas(n), {
+      minFollows: 2,
+      maxFollows: 4,
+    });
     for (const e of bounded) {
       expect(e.follows.length).toBeGreaterThanOrEqual(2);
       expect(e.follows.length).toBeLessThanOrEqual(4);

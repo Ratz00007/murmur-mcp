@@ -40,7 +40,9 @@ export class Rng {
   private next: () => number;
 
   constructor(seed: string | number) {
-    this.next = mulberry32(typeof seed === "number" ? seed : hashString(String(seed)));
+    this.next = mulberry32(
+      typeof seed === "number" ? seed : hashString(String(seed)),
+    );
   }
 
   float(): number {
@@ -75,7 +77,11 @@ export class Rng {
    * Iterates in the given order, so results are deterministic for a given
    * seed + item order.
    */
-  sampleWeighted<T>(items: readonly T[], weight: (t: T) => number, k: number): T[] {
+  sampleWeighted<T>(
+    items: readonly T[],
+    weight: (t: T) => number,
+    k: number,
+  ): T[] {
     const keyed = items.map((item, i) => {
       const w = Math.max(weight(item), 1e-9);
       const u = this.next() + 1e-12; // avoid log(0)

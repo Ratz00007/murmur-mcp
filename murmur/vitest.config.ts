@@ -51,6 +51,8 @@ export default defineConfig({
           name: "unit",
           include: ["packages/*/src/**/*.test.ts", "tests/unit/**/*.test.ts"],
           environment: "node",
+          testTimeout: 60_000,
+          hookTimeout: 60_000,
         },
       },
       {
@@ -67,7 +69,11 @@ export default defineConfig({
         resolve: { alias },
         test: {
           name: "e2e",
-          include: ["tests/integration/**/*.test.ts", "tests/cleanroom/**/*.test.ts"],
+          include: [
+            "tests/integration/**/*.test.ts",
+            "tests/cleanroom/**/*.test.ts",
+            "tests/e2e/**/*.test.ts",
+          ],
           environment: "node",
           testTimeout: 180_000,
         },

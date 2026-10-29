@@ -42,7 +42,13 @@ function post(over: Partial<Post> & { id: string; worldId: string }): Post {
     communityId: null,
     title: null,
     body: "Acme Cloud is great",
-    metrics: { likes: 3, reposts: 0, upvotes: 0, downvotes: 0, impressions: 10 },
+    metrics: {
+      likes: 3,
+      reposts: 0,
+      upvotes: 0,
+      downvotes: 0,
+      impressions: 10,
+    },
     mentions: [],
     origin: "generated",
     ...over,
@@ -50,12 +56,25 @@ function post(over: Partial<Post> & { id: string; worldId: string }): Post {
 }
 
 /** A world with four real posts, so post-id resolution has something to resolve. */
-function fixture(): { db: Storage; world: World; focus: Entity; postIds: string[]; dir: string } {
+function fixture(): {
+  db: Storage;
+  world: World;
+  focus: Entity;
+  postIds: string[];
+  dir: string;
+} {
   const dir = tmp();
   const db = new Storage(openDatabase(path.join(dir, "murmur.db")));
   const world = db.createWorld({ name: "draft world", seed: "draft-1" });
   const { inserted } = db.insertEntities(world.id, [
-    { name: "Acme Cloud", type: "org", description: "d", salience: 0.9, anchors: [], motives: [] },
+    {
+      name: "Acme Cloud",
+      type: "org",
+      description: "d",
+      salience: 0.9,
+      anchors: [],
+      motives: [],
+    },
   ]);
   const focus = inserted[0];
   // Posts carry a persona foreign key, so the population has to exist first.
@@ -65,7 +84,13 @@ function fixture(): { db: Storage; world: World; focus: Entity; postIds: string[
       handle: "@ada",
       archetype: "champion",
       bio: "b",
-      traits: { openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, emotionalStability: 0.5 },
+      traits: {
+        openness: 0.5,
+        conscientiousness: 0.5,
+        extraversion: 0.5,
+        agreeableness: 0.5,
+        emotionalStability: 0.5,
+      },
       stances: { [focus.id]: 0.5 },
       platform: "both",
       activity: 0.5,
@@ -86,26 +111,40 @@ function fixture(): { db: Storage; world: World; focus: Entity; postIds: string[
         worldId: world.id,
         personaId: `p_1`,
         body: i <= 2 ? "Acme Cloud is great" : "Acme Cloud is terrible",
-        metrics: { likes: i, reposts: 0, upvotes: 0, downvotes: 0, impressions: 10 },
+        metrics: {
+          likes: i,
+          reposts: 0,
+          upvotes: 0,
+          downvotes: 0,
+          impressions: 10,
+        },
         mentions: [{ entityId: focus.id, score: i <= 2 ? 0.5 : -0.5 }],
-      })
+      }),
     );
   }
   db.updateWorld(world.id, { round: 1 });
   return { db, world: db.getWorld(world.id)!, focus, postIds: ids, dir };
 }
 
-const WORDS = (n: number, word = "evidence") => Array.from({ length: n }, () => word).join(" ");
+const WORDS = (n: number, word = "evidence") =>
+  Array.from({ length: n }, () => word).join(" ");
 
 /**
  * A draft that passes every rule. Each field is a `partial` merge point so a
  * test can break exactly one rule and see exactly one rejection.
  */
-function goodDraft(postIds: string[], over: Record<string, unknown> = {}): Record<string, unknown> {
+function goodDraft(
+  postIds: string[],
+  over: Record<string, unknown> = {},
+): Record<string, unknown> {
   return {
     scenarioRecap: WORDS(20, "scenario"),
     executiveSummary: WORDS(40, "summary"),
-    keyFindings: [WORDS(8, "finding"), WORDS(8, "finding"), WORDS(8, "finding")],
+    keyFindings: [
+      WORDS(8, "finding"),
+      WORDS(8, "finding"),
+      WORDS(8, "finding"),
+    ],
     trajectory: WORDS(40, "trajectory"),
     risks: [0, 1, 2].map((i) => ({
       title: `Risk number ${i + 1} title`,
@@ -117,10 +156,21 @@ function goodDraft(postIds: string[], over: Record<string, unknown> = {}): Recor
       postIds: [postIds[i], postIds[i + 1]],
     })),
     recommendations: [
-      { title: "Do the thing", action: WORDS(12, "action"), expectedImpact: WORDS(6, "impact") },
-      { title: "Do the other thing", action: WORDS(12, "action"), expectedImpact: WORDS(6, "impact") },
+      {
+        title: "Do the thing",
+        action: WORDS(12, "action"),
+        expectedImpact: WORDS(6, "impact"),
+      },
+      {
+        title: "Do the other thing",
+        action: WORDS(12, "action"),
+        expectedImpact: WORDS(6, "impact"),
+      },
     ],
-    confidence: { strongSignals: [WORDS(6, "signal"), WORDS(6, "signal")], contested: [WORDS(6, "contested")] },
+    confidence: {
+      strongSignals: [WORDS(6, "signal"), WORDS(6, "signal")],
+      contested: [WORDS(6, "contested")],
+    },
     limitations: [WORDS(6, "limitation")],
     ...over,
   };
@@ -131,16 +181,23 @@ function cleanup(fx: { db: Storage; dir: string }) {
   fs.rmSync(fx.dir, { recursive: true, force: true });
 }
 
-const messages = (rejected: { ref: string; message: string }[]) => rejected.map((e) => `${e.ref}: ${e.message}`);
+const messages = (rejected: { ref: string; message: string }[]) =>
+  rejected.map((e) => `${e.ref}: ${e.message}`);
 
 /** The three risks of a good draft, with `over` merged into the first. */
-function risksWith(postIds: string[], over: Record<string, unknown>): Record<string, unknown>[] {
+function risksWith(
+  postIds: string[],
+  over: Record<string, unknown>,
+): Record<string, unknown>[] {
   const base = goodDraft(postIds).risks as Record<string, unknown>[];
   return [{ ...base[0], ...over }, ...base.slice(1)];
 }
 
 /** Two valid recommendations, with `over` merged into the first. */
-function recsWith(postIds: string[], over: Record<string, unknown>): Record<string, unknown>[] {
+function recsWith(
+  postIds: string[],
+  over: Record<string, unknown>,
+): Record<string, unknown>[] {
   const base = goodDraft(postIds).recommendations as Record<string, unknown>[];
   return [{ ...base[0], ...over }, ...base.slice(1)];
 }
@@ -148,7 +205,11 @@ function recsWith(postIds: string[], over: Record<string, unknown>): Record<stri
 describe("validateReportDraft — narrative depth", () => {
   it("accepts a draft that meets every rule", () => {
     const fx = fixture();
-    const { rejected, draft } = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds));
+    const { rejected, draft } = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds),
+    );
     expect(messages(rejected)).toEqual([]);
     expect(draft.risks).toHaveLength(3);
     expect(draft.keyFindings).toHaveLength(3);
@@ -161,7 +222,11 @@ describe("validateReportDraft — narrative depth", () => {
 
   it("rejects an executive summary under 120 chars and reports the actual length", () => {
     const fx = fixture();
-    const { rejected } = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds, { executiveSummary: WORDS(10) }));
+    const { rejected } = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds, { executiveSummary: WORDS(10) }),
+    );
     const err = rejected.find((e) => e.ref === "executiveSummary")!;
     expect(err.message).toMatch(/too thin \(\d+ chars, min 120\)/);
     expect(err.message).toContain("verdict");
@@ -170,7 +235,11 @@ describe("validateReportDraft — narrative depth", () => {
 
   it("rejects a trajectory under 120 chars", () => {
     const fx = fixture();
-    const { rejected } = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds, { trajectory: "soon" }));
+    const { rejected } = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds, { trajectory: "soon" }),
+    );
     const err = rejected.find((e) => e.ref === "trajectory")!;
     expect(err.message).toContain("min 120");
     expect(err.message).toContain("projection slope");
@@ -179,10 +248,18 @@ describe("validateReportDraft — narrative depth", () => {
 
   it("rejects a scenario recap under 60 chars but allows it to be absent", () => {
     const fx = fixture();
-    const thin = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds, { scenarioRecap: "short" }));
+    const thin = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds, { scenarioRecap: "short" }),
+    );
     expect(thin.rejected.some((e) => e.ref === "scenarioRecap")).toBe(true);
 
-    const absent = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds, { scenarioRecap: undefined }));
+    const absent = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds, { scenarioRecap: undefined }),
+    );
     expect(absent.rejected.some((e) => e.ref === "scenarioRecap")).toBe(false);
     expect(absent.draft.scenarioRecap).toBeUndefined();
     cleanup(fx);
@@ -191,19 +268,31 @@ describe("validateReportDraft — narrative depth", () => {
   it("trims before measuring, so a padded field cannot pass on whitespace", () => {
     const fx = fixture();
     const padded = `   ${WORDS(10)}   `;
-    const { rejected } = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds, { executiveSummary: padded }));
+    const { rejected } = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds, { executiveSummary: padded }),
+    );
     expect(rejected.some((e) => e.ref === "executiveSummary")).toBe(true);
     cleanup(fx);
   });
 
   it("requires at least three non-empty key findings and drops the blanks", () => {
     const fx = fixture();
-    const few = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds, { keyFindings: ["one", "two"] }));
+    const few = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds, { keyFindings: ["one", "two"] }),
+    );
     const err = few.rejected.find((e) => e.ref === "keyFindings")!;
     expect(err.message).toContain("at least 3");
     expect(err.message).toContain("got 2");
 
-    const padded = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds, { keyFindings: ["one", "two", "   "] }));
+    const padded = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds, { keyFindings: ["one", "two", "   "] }),
+    );
     expect(padded.rejected.some((e) => e.ref === "keyFindings")).toBe(true);
     cleanup(fx);
   });
@@ -216,7 +305,7 @@ describe("validateReportDraft — narrative depth", () => {
       goodDraft(fx.postIds, {
         keyFindings: [0, 1, 2, 3, 4, 5, 6].map(() => WORDS(8, "finding")),
         limitations: [0, 1, 2, 3, 4].map(() => WORDS(6, "limitation")),
-      })
+      }),
     );
     expect(draft.keyFindings).toHaveLength(5);
     expect(draft.limitations).toHaveLength(3);
@@ -228,7 +317,9 @@ describe("validateReportDraft — narrative depth", () => {
     const { rejected } = validateReportDraft(
       fx.db,
       fx.world,
-      goodDraft(fx.postIds, { confidence: { strongSignals: ["only one"], contested: [] } })
+      goodDraft(fx.postIds, {
+        confidence: { strongSignals: ["only one"], contested: [] },
+      }),
     );
     const refs = rejected.map((e) => e.ref);
     expect(refs).toContain("confidence.strongSignals");
@@ -240,7 +331,11 @@ describe("validateReportDraft — narrative depth", () => {
 describe("validateReportDraft — exactly three risks", () => {
   it("rejects fewer than three risks and states the count", () => {
     const fx = fixture();
-    const { rejected } = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds, { risks: [] }));
+    const { rejected } = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds, { risks: [] }),
+    );
     const err = rejected.find((e) => e.ref === "risks")!;
     expect(err.message).toBe("need exactly 3 risks (got 0)");
     cleanup(fx);
@@ -260,7 +355,11 @@ describe("validateReportDraft — exactly three risks", () => {
       mitigation: WORDS(20, "mitigation"),
       postIds: [fx.postIds[0], fx.postIds[1]],
     }));
-    const { rejected, draft } = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds, { risks: four }));
+    const { rejected, draft } = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds, { risks: four }),
+    );
     expect(rejected.filter((e) => e.ref === "risks")).toEqual([]);
     expect(draft.risks).toHaveLength(3);
     cleanup(fx);
@@ -279,7 +378,9 @@ describe("validateReportDraft — exactly three risks", () => {
       ...goodDraft(fx.postIds),
       risks: risksWith(fx.postIds, { postIds: fx.postIds }),
     });
-    expect(four.rejected.some((e) => e.message.includes("2-3 real post ids"))).toBe(true);
+    expect(
+      four.rejected.some((e) => e.message.includes("2-3 real post ids")),
+    ).toBe(true);
     cleanup(fx);
   });
 
@@ -311,7 +412,13 @@ describe("validateReportDraft — exactly three risks", () => {
         handle: "@zed",
         archetype: "critic",
         bio: "b",
-        traits: { openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, emotionalStability: 0.5 },
+        traits: {
+          openness: 0.5,
+          conscientiousness: 0.5,
+          extraversion: 0.5,
+          agreeableness: 0.5,
+          emotionalStability: 0.5,
+        },
         stances: {},
         platform: "both",
         activity: 0.5,
@@ -319,7 +426,9 @@ describe("validateReportDraft — exactly three risks", () => {
         follows: [],
       },
     ] as never);
-    other.db.insertPost(post({ id: "po_1", worldId: created.id, body: "Hetzner is terrible" }));
+    other.db.insertPost(
+      post({ id: "po_1", worldId: created.id, body: "Hetzner is terrible" }),
+    );
     const here = other.db.getPost(other.world.id, "po_1")!;
     const there = other.db.getPost(created.id, "po_1")!;
     expect(here.body).not.toBe(there.body);
@@ -338,7 +447,9 @@ describe("validateReportDraft — exactly three risks", () => {
     });
     expect(rejected.some((e) => e.ref === "risks[0].severity")).toBe(true);
     expect(draft.risks).toHaveLength(2);
-    expect(draft.risks.some((r) => r.severity === ("catastrophic" as never))).toBe(false);
+    expect(
+      draft.risks.some((r) => r.severity === ("catastrophic" as never)),
+    ).toBe(false);
     cleanup(fx);
   });
 });
@@ -376,7 +487,10 @@ describe("validateReportDraft — risk field enums and lengths", () => {
   it("defaults a missing, empty or null likelihood to medium", () => {
     for (const likelihood of [undefined, null, ""]) {
       const { fx, draft } = withRisk({ likelihood });
-      expect(draft.risks[0].likelihood, `likelihood=${JSON.stringify(likelihood)}`).toBe("medium");
+      expect(
+        draft.risks[0].likelihood,
+        `likelihood=${JSON.stringify(likelihood)}`,
+      ).toBe("medium");
       cleanup(fx);
     }
   });
@@ -392,15 +506,27 @@ describe("validateReportDraft — risk field enums and lengths", () => {
 
   it("enforces the title, rationale and mitigation minimums", () => {
     const short = withRisk({ title: "tiny" });
-    expect(short.rejected.some((e) => e.ref === "risks[0].title" && e.message.includes("min 8"))).toBe(true);
+    expect(
+      short.rejected.some(
+        (e) => e.ref === "risks[0].title" && e.message.includes("min 8"),
+      ),
+    ).toBe(true);
     cleanup(short.fx);
 
     const thin = withRisk({ rationale: "short" });
-    expect(thin.rejected.some((e) => e.ref === "risks[0].rationale" && e.message.includes("min 120"))).toBe(true);
+    expect(
+      thin.rejected.some(
+        (e) => e.ref === "risks[0].rationale" && e.message.includes("min 120"),
+      ),
+    ).toBe(true);
     cleanup(thin.fx);
 
     const weak = withRisk({ mitigation: "do better" });
-    expect(weak.rejected.some((e) => e.ref === "risks[0].mitigation" && e.message.includes("min 60"))).toBe(true);
+    expect(
+      weak.rejected.some(
+        (e) => e.ref === "risks[0].mitigation" && e.message.includes("min 60"),
+      ),
+    ).toBe(true);
     cleanup(weak.fx);
   });
 
@@ -415,7 +541,11 @@ describe("validateReportDraft — risk field enums and lengths", () => {
 describe("validateReportDraft — recommendations", () => {
   it("requires at least two", () => {
     const fx = fixture();
-    const { rejected } = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds, { recommendations: [] }));
+    const { rejected } = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds, { recommendations: [] }),
+    );
     const err = rejected.find((e) => e.ref === "recommendations")!;
     expect(err.message).toContain("2-4");
     expect(err.message).toContain("got 0");
@@ -429,7 +559,11 @@ describe("validateReportDraft — recommendations", () => {
       action: WORDS(12, "action"),
       expectedImpact: WORDS(6, "impact"),
     }));
-    const { draft } = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds, { recommendations: five }));
+    const { draft } = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds, { recommendations: five }),
+    );
     expect(draft.recommendations).toHaveLength(4);
     cleanup(fx);
   });
@@ -438,7 +572,11 @@ describe("validateReportDraft — recommendations", () => {
     const fx = fixture();
     const { rejected } = validateReportDraft(fx.db, fx.world, {
       ...goodDraft(fx.postIds),
-      recommendations: recsWith(fx.postIds, { title: "no", action: "short", expectedImpact: "tiny" }),
+      recommendations: recsWith(fx.postIds, {
+        title: "no",
+        action: "short",
+        expectedImpact: "tiny",
+      }),
     });
     const refs = rejected.map((e) => e.ref);
     expect(refs).toContain("recommendations[0].title");
@@ -449,7 +587,11 @@ describe("validateReportDraft — recommendations", () => {
 
   it("omits recommendations entirely when the field is missing", () => {
     const fx = fixture();
-    const { draft, rejected } = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds, { recommendations: undefined }));
+    const { draft, rejected } = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds, { recommendations: undefined }),
+    );
     expect(draft.recommendations).toBeUndefined();
     expect(rejected.some((e) => e.ref === "recommendations")).toBe(true);
     cleanup(fx);
@@ -475,14 +617,20 @@ describe("validateReportDraft — degenerate input", () => {
     const fx = fixture();
     for (const bad of [null, undefined, 42, "text"]) {
       const { rejected } = validateReportDraft(fx.db, fx.world, bad);
-      expect(rejected.length, `draft=${JSON.stringify(bad)}`).toBeGreaterThan(0);
+      expect(rejected.length, `draft=${JSON.stringify(bad)}`).toBeGreaterThan(
+        0,
+      );
     }
     cleanup(fx);
   });
 
   it("coerces non-string array members rather than throwing", () => {
     const fx = fixture();
-    const { rejected } = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds, { keyFindings: [1, 2, 3] }));
+    const { rejected } = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds, { keyFindings: [1, 2, 3] }),
+    );
     expect(rejected).toEqual([]);
     cleanup(fx);
   });
@@ -499,9 +647,11 @@ describe("validateReportDraft — numeric claim verifier integration", () => {
 
     const poisoned = validateReportDraft(fx.db, fx.world, {
       ...goodDraft(fx.postIds),
-      executiveSummary: WORDS(40, "summary") + " The crowd produced 987654 posts about it.",
+      executiveSummary: `${WORDS(40, "summary")} The crowd produced 987654 posts about it.`,
     });
-    const numeric = poisoned.rejected.filter((e) => /unverified number/i.test(e.message));
+    const numeric = poisoned.rejected.filter((e) =>
+      /unverified number/i.test(e.message),
+    );
     expect(numeric.length).toBe(1);
     expect(numeric[0].ref).toBe("executiveSummary");
     expect(numeric[0].message).toContain("987654");
@@ -518,9 +668,11 @@ describe("validateReportDraft — numeric claim verifier integration", () => {
     const total = fx.db.countPosts(fx.world.id);
     const { rejected } = validateReportDraft(fx.db, fx.world, {
       ...goodDraft(fx.postIds),
-      executiveSummary: WORDS(40, "summary") + ` The run produced ${total} posts in total.`,
+      executiveSummary: `${WORDS(40, "summary")} The run produced ${total} posts in total.`,
     });
-    expect(rejected.filter((e) => /unverified number/i.test(e.message))).toEqual([]);
+    expect(
+      rejected.filter((e) => /unverified number/i.test(e.message)),
+    ).toEqual([]);
     cleanup(fx);
   });
 
@@ -528,13 +680,20 @@ describe("validateReportDraft — numeric claim verifier integration", () => {
     const fx = fixture();
     const { rejected } = validateReportDraft(fx.db, fx.world, {
       ...goodDraft(fx.postIds),
-      risks: risksWith(fx.postIds, { rationale: WORDS(40, "rationale") + " Affects 13579 accounts." }),
+      risks: risksWith(fx.postIds, {
+        rationale: `${WORDS(40, "rationale")} Affects 13579 accounts.`,
+      }),
       confidence: {
-        strongSignals: [WORDS(6, "signal") + " Seen 24680 times.", WORDS(6, "signal")],
+        strongSignals: [
+          `${WORDS(6, "signal")} Seen 24680 times.`,
+          WORDS(6, "signal"),
+        ],
         contested: [WORDS(6, "contested")],
       },
     });
-    const refs = rejected.filter((e) => /unverified number/.test(e.message)).map((e) => e.ref);
+    const refs = rejected
+      .filter((e) => /unverified number/.test(e.message))
+      .map((e) => e.ref);
     expect(refs).toContain("risks[0].rationale");
     expect(refs).toContain("confidence.strongSignals[0]");
     cleanup(fx);
@@ -542,12 +701,16 @@ describe("validateReportDraft — numeric claim verifier integration", () => {
 
   it("caps the reported unverified numbers at six so a bad draft cannot flood the retry", () => {
     const fx = fixture();
-    const fabricated = [111111, 222222, 333333, 444444, 555555, 666666, 777777, 888888].join(" and ");
+    const fabricated = [
+      111111, 222222, 333333, 444444, 555555, 666666, 777777, 888888,
+    ].join(" and ");
     const { rejected } = validateReportDraft(fx.db, fx.world, {
       ...goodDraft(fx.postIds),
-      executiveSummary: WORDS(20, "summary") + " " + fabricated,
+      executiveSummary: `${WORDS(20, "summary")} ${fabricated}`,
     });
-    const numeric = rejected.filter((e) => /unverified number/i.test(e.message));
+    const numeric = rejected.filter((e) =>
+      /unverified number/i.test(e.message),
+    );
     expect(numeric.length).toBe(6);
     cleanup(fx);
   });
@@ -558,7 +721,11 @@ describe("validateReportDraft — numeric claim verifier integration", () => {
     const fx = fixture();
     const ids = fx.postIds.map((id) => extractNumbers(`cited ${id}`));
     for (const found of ids) expect(found).toHaveLength(0);
-    const { rejected } = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds));
+    const { rejected } = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds),
+    );
     expect(rejected).toEqual([]);
     cleanup(fx);
   });
@@ -583,7 +750,11 @@ describe("validateReportDraft — normalisation of what it accepts", () => {
 
   it("drops a limitation shorter than 15 chars rather than rejecting the draft", () => {
     const fx = fixture();
-    const { draft, rejected } = validateReportDraft(fx.db, fx.world, goodDraft(fx.postIds, { limitations: ["too short"] }));
+    const { draft, rejected } = validateReportDraft(
+      fx.db,
+      fx.world,
+      goodDraft(fx.postIds, { limitations: ["too short"] }),
+    );
     expect(rejected).toEqual([]);
     expect(draft.limitations).toBeUndefined();
     cleanup(fx);

@@ -160,7 +160,7 @@ export function submitGenerations(
       postsCreated: newPosts.length,
       stats,
       next: completed
-        ? "all rounds complete — call report_plan to draft the prediction report"
+        ? 'all rounds complete — call report({action:"plan"}) to draft the prediction report'
         : `call sim_next_batch for round ${targetRound + 1}`,
     };
   }
@@ -469,7 +469,36 @@ function organicEngagement(
             tally.likes++;
             audit.push({ post: post.id, viewer: viewer.id, action: "like" });
           }
-        } // negative-aligned twitter users mostly lurk (no downvote mechanic)
+        } else {
+          // Negative-aligned users do NOT lurk: actively voice dissent and propagate outrage
+          const strong = align < -0.3 && rng.float() < 0.22;
+          if (strong) {
+            bumpAndAudit(storage, world, post.id, "reposts");
+            tally.reposts++;
+            const rp: Post = {
+              id: mintId(),
+              worldId: world.id,
+              round,
+              personaId: viewer.id,
+              platform: "twitter",
+              kind: "repost",
+              parentId: post.id,
+              threadId: post.threadId,
+              communityId: null,
+              title: null,
+              body: `↻ ${truncate(post.body, 200)}`,
+              metrics: { likes: 0, reposts: 0, upvotes: 0, downvotes: 0, impressions: 2 },
+              mentions: post.mentions,
+              origin: "organic",
+            };
+            storage.insertPost(rp);
+            audit.push({ post: post.id, viewer: viewer.id, action: "repost" });
+          } else {
+            bumpAndAudit(storage, world, post.id, "downvotes");
+            tally.downvotes++;
+            audit.push({ post: post.id, viewer: viewer.id, action: "downvote" });
+          }
+        }
       } else {
         if (align >= 0) {
           bumpAndAudit(storage, world, post.id, "upvotes");
@@ -549,7 +578,36 @@ function organicEngagement(
               tally.likes++;
               audit.push({ post: post.id, viewer: viewer.id, action: "like", hop });
             }
-          } // negative-aligned viewers lurk, as in the one-hop pass
+          } else {
+            // Negative-aligned viewers in cascade also actively participate and amplify outrage
+            const strong = align < -0.3 && hopRng.float() < 0.22;
+            if (strong) {
+              bumpAndAudit(storage, world, post.id, "reposts");
+              tally.reposts++;
+              const rp: Post = {
+                id: mintId(),
+                worldId: world.id,
+                round,
+                personaId: viewer.id,
+                platform: "twitter",
+                kind: "repost",
+                parentId: post.id,
+                threadId: post.threadId,
+                communityId: null,
+                title: null,
+                body: `↻ ${truncate(post.body, 200)}`,
+                metrics: { likes: 0, reposts: 0, upvotes: 0, downvotes: 0, impressions: 2 },
+                mentions: post.mentions,
+                origin: "organic",
+              };
+              storage.insertPost(rp);
+              audit.push({ post: post.id, viewer: viewer.id, action: "repost", hop });
+            } else {
+              bumpAndAudit(storage, world, post.id, "downvotes");
+              tally.downvotes++;
+              audit.push({ post: post.id, viewer: viewer.id, action: "downvote", hop });
+            }
+          }
           if (engaged >= cap) break;
           // engaged nodes propagate to their own followers next hop
           if (hop < cas.maxHops) {

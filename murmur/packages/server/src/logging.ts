@@ -7,7 +7,12 @@
  */
 type Level = "debug" | "info" | "warn" | "error";
 
-const LEVELS: Record<Level, number> = { debug: 10, info: 20, warn: 30, error: 40 };
+const LEVELS: Record<Level, number> = {
+  debug: 10,
+  info: 20,
+  warn: 30,
+  error: 40,
+};
 
 /** MCP notification levels the spec defines for logging/message. */
 const MCP_LEVELS: Record<string, Level> = {
@@ -23,10 +28,13 @@ const MCP_LEVELS: Record<string, Level> = {
 
 function currentLevel(): number {
   const v = (process.env.MURMUR_LOG ?? "warn").toLowerCase();
-  return LEVELS[(v as Level)] ?? 30;
+  return LEVELS[v as Level] ?? 30;
 }
 
-type McpSink = (level: "debug" | "info" | "notice" | "warning" | "error", message: string) => Promise<void> | void;
+type McpSink = (
+  level: "debug" | "info" | "notice" | "warning" | "error",
+  message: string,
+) => Promise<void> | void;
 
 let sink: McpSink | null = null;
 

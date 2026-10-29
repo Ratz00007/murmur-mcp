@@ -32,7 +32,10 @@ export interface CalibrateResult<P extends Record<string, number>> {
  * tune: organicLikeBase, the cascade propagation probability and
  * viralityThreshold (see config.engagement / config.cascade in types.ts).
  */
-export const ENGAGEMENT_BOUNDS: Record<"organicLikeBase" | "cascadeProbability" | "viralityThreshold", ParamBound> = {
+export const ENGAGEMENT_BOUNDS: Record<
+  "organicLikeBase" | "cascadeProbability" | "viralityThreshold",
+  ParamBound
+> = {
   organicLikeBase: { min: 0.01, max: 0.35 },
   cascadeProbability: { min: 0, max: 1 },
   viralityThreshold: { min: 4, max: 40 },
@@ -52,12 +55,13 @@ export function calibrate<P extends Record<string, number>>(
   params: P,
   fitnessFn: (p: P) => number,
   bounds: { [K in keyof P]: ParamBound },
-  iters: number
+  iters: number,
 ): CalibrateResult<P> {
   const clampTo = (k: keyof P, v: number): P[keyof P] =>
     Math.min(bounds[k].max, Math.max(bounds[k].min, v)) as P[keyof P];
   const current = { ...params };
-  for (const k of Object.keys(bounds) as (keyof P)[]) current[k] = clampTo(k, current[k]) as P[keyof P];
+  for (const k of Object.keys(bounds) as (keyof P)[])
+    current[k] = clampTo(k, current[k]) as P[keyof P];
   let best = fitnessFn(current);
   let evaluations = 1;
 
@@ -68,7 +72,10 @@ export function calibrate<P extends Record<string, number>>(
       const step = (max - min) / 2 ** (iter + 1);
       for (const dir of [1, -1]) {
         const candidate = { ...current };
-        candidate[key] = clampTo(key, (current[key] as number) + dir * step) as P[keyof P];
+        candidate[key] = clampTo(
+          key,
+          (current[key] as number) + dir * step,
+        ) as P[keyof P];
         if (candidate[key] === current[key]) continue; // clamped back to where we are
         const f = fitnessFn(candidate);
         evaluations++;

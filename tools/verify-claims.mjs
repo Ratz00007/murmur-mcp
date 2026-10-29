@@ -157,14 +157,71 @@ if (historicalNotes.length) {
   for (const n of historicalNotes) console.log(`  · ${n}`);
 }
 
+// --- tool-count prose --------------------------------------------------------
+// A present-tense "N tools" in a doc the reader acts on must match the
+// registered surface. Dated records (GOAL.md, worklog, changelogs, generated
+// transcripts) are left alone — they describe the day they were written, and
+// the generated transcript is rewritten by demo-live on every run.
+const TOOL_COUNT_PROSE = /\b(\d+)\s+tools\b/gi;
+const PROSE_DOCS = ["README.md", "murmur/README.md", "murmur/SECURITY.md"];
+for (const doc of PROSE_DOCS) {
+  const p = join(ROOT, doc);
+  if (!existsSync(p)) continue;
+  const text = readFileSync(p, "utf8");
+  for (const m of text.matchAll(TOOL_COUNT_PROSE)) {
+    const claimed = Number(m[1]);
+    if (claimed !== facts.tools) {
+      problems.push(`${doc}: prose claims "${claimed} tools", registered surface is ${facts.tools}`);
+    }
+  }
+}
+
+// --- server.json against the published MCP registry schema -------------------
+// The file used to carry an unnamespaced name, a >100-char description, a
+// $schema URL that 404s and two invented top-level blocks. The registry
+// rejects all four, so CI validates the constraints that matter offline.
+const SERVER_JSON = join(ROOT, "server.json");
+if (existsSync(SERVER_JSON)) {
+  const sj = JSON.parse(readFileSync(SERVER_JSON, "utf8"));
+  if (!/^[a-zA-Z0-9.-]+\/[a-zA-Z0-9._-]+$/.test(sj.name ?? "")) {
+    problems.push(`server.json: name "${sj.name}" must be namespace/server (e.g. io.github.User/murmur-mcp)`);
+  }
+  if (typeof sj.description !== "string" || sj.description.length === 0 || sj.description.length > 100) {
+    problems.push(`server.json: description must be 1–100 chars (got ${sj.description?.length ?? 0})`);
+  }
+  if (!/^\d+\.\d+\.\d+/.test(sj.version ?? "")) {
+    problems.push(`server.json: version "${sj.version}" must be semver`);
+  }
+  for (const bad of ["runtime", "capabilities", "license"]) {
+    if (bad in sj) problems.push(`server.json: "${bad}" is not a server.json field (registry rejects unknown layout blocks)`);
+  }
+  const pkgs = sj.packages ?? [];
+  if (pkgs.length === 0) {
+    problems.push(`server.json: needs a packages[] entry with registryType/identifier/transport`);
+  }
+  for (const pkg of pkgs) {
+    for (const req of ["registryType", "identifier", "transport"]) {
+      if (!(req in pkg)) problems.push(`server.json: packages[] entry missing "${req}"`);
+    }
+  }
+  if (sj.$schema !== "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json") {
+    problems.push(`server.json: $schema must be the published 2025-12-11 schema (got ${sj.$schema})`);
+  }
+}
+
+// mcpName in package.json is how the registry proves npm ownership.
+const serverPkg = JSON.parse(readFileSync(join(MURMUR, "packages", "server", "package.json"), "utf8"));
+if (serverPkg.mcpName !== "io.github.Ratz00007/murmur-mcp") {
+  problems.push(`packages/server/package.json: mcpName must equal the server.json name (got ${serverPkg.mcpName ?? "unset"})`);
+}
+
 if (problems.length) {
   console.error(`\nCLAIM CHECK FAILED:`);
   for (const p of problems) console.error(`  - ${p}`);
-  console.error(`\nThe measured numbers are: ${facts.tests} unit+golden tests, ${facts.tools} tools.`);
-  console.error(`Fix the doc, or run: node tools/verify-claims.mjs --write`);
+  console.error(`The measured numbers are: ${facts.tests} unit+golden tests, ${facts.tools} tools.`);
   process.exit(1);
 }
 
-console.log(`\nCLAIM CHECK GREEN — ${facts.tests} unit+golden tests, ${facts.tools} tools, no stale counts.`);
+console.log(`\nCLAIM CHECK GREEN — ${facts.tests} unit+golden tests, ${facts.tools} tools, server.json registry-valid, no stale counts.`);
 
 

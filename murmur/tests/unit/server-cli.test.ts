@@ -112,12 +112,9 @@ describe("runDiff", () => {
         return true;
       };
       let code = -1;
-      const origCwd = process.cwd();
-      process.chdir(dir);
       try {
         code = runDiff(dir, [a.id, b.id]);
       } finally {
-        process.chdir(origCwd);
         (process.stdout as unknown as { write: unknown }).write = origWrite;
       }
       const text = lines.join("");
@@ -129,7 +126,11 @@ describe("runDiff", () => {
       expect(text).toContain("KEPT");
       expect(text).toContain("Shared worry");
     } finally {
-      storage.close();
+      try {
+        storage.close();
+      } catch {
+        /* ignore if already closed */
+      }
       fs.rmSync(dir, { recursive: true, force: true });
     }
   });

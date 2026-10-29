@@ -18,7 +18,11 @@ export function findWorkspaceRoot(startDir: string): string {
   if (override) return path.resolve(override);
   let dir = path.resolve(startDir);
   for (;;) {
-    if (fs.existsSync(path.join(dir, ".murmur")) || fs.existsSync(path.join(dir, ".git"))) return dir;
+    if (
+      fs.existsSync(path.join(dir, ".murmur")) ||
+      fs.existsSync(path.join(dir, ".git"))
+    )
+      return dir;
     const parent = path.dirname(dir);
     if (parent === dir) return path.resolve(startDir);
     dir = parent;
@@ -85,7 +89,12 @@ export class Workspace {
   }
 
   dossierJsonPath(slug: string, version: number): string {
-    return path.join(this.murmurDir, "reports", slug, `dossier-${version}.json`);
+    return path.join(
+      this.murmurDir,
+      "reports",
+      slug,
+      `dossier-${version}.json`,
+    );
   }
 
   /** Next dossier version: one past the highest dossier-N.json present. */
@@ -118,12 +127,12 @@ export class Workspace {
 
   appendJsonl(file: string, obj: unknown): void {
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.appendFileSync(file, JSON.stringify(obj) + "\n", "utf8");
+    fs.appendFileSync(file, `${JSON.stringify(obj)}\n`, "utf8");
   }
 
   writeAtomic(file: string, content: string): void {
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    const tmp = file + ".tmp-" + process.pid + "-" + Math.floor(Math.random() * 1e9).toString(36);
+    const tmp = `${file}.tmp-${process.pid}-${Math.floor(Math.random() * 1e9).toString(36)}`;
     fs.writeFileSync(tmp, content, "utf8");
     fs.renameSync(tmp, file);
   }

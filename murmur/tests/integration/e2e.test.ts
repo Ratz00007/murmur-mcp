@@ -6,6 +6,7 @@
  * artifacts on disk, prompts, resources and session resume.
  */
 import { describe, expect, it } from "vitest";
+import { randomUUID } from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -50,6 +51,7 @@ describe("MCP server end-to-end", () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-e2e-"));
     const { client, close } = await spawnClient(cwd);
     const maxSeen = { tokens: 0 };
+    let outside = "";
     const call = async (name: string, args: Record<string, unknown> = {}) => {
       const res = (await client.callTool({ name, arguments: args })) as {
         content?: { type: string; text?: string }[];
@@ -92,7 +94,7 @@ describe("MCP server end-to-end", () => {
       // assertion passed for the wrong reason — a false positive that made an
       // unwired jail look like a working one. It also asserts the error text,
       // so a future regression cannot pass on any unrelated failure.
-      const outside = path.join(os.tmpdir(), "murmur-jail-probe.txt");
+      outside = path.join(os.tmpdir(), `murmur-jail-probe-${randomUUID()}.txt`);
       fs.writeFileSync(outside, "SECRET-OUTSIDE-THE-WORKSPACE\n", "utf8");
       const jailed = await call("seed_add", { source: "files", paths: [outside] });
       const jailResult = (jailed.seeds as { ok: boolean; error?: string }[])[0];
@@ -237,6 +239,13 @@ describe("MCP server end-to-end", () => {
         await second.close();
       }
     } finally {
+      if (outside && fs.existsSync(outside)) {
+        try {
+          fs.unlinkSync(outside);
+        } catch {
+          /* ignore */
+        }
+      }
       await close().catch(() => {});
       fs.rmSync(cwd, { recursive: true, force: true });
     }

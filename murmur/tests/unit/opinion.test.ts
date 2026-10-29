@@ -15,14 +15,22 @@
  * would make the reported epsilon a lie.
  */
 import { describe, expect, it } from "vitest";
-import { deffuantUpdate, applyOpinionDynamics, type OpinionAgent } from "../../packages/engine/src/dynamics/opinion.js";
+import {
+  deffuantUpdate,
+  applyOpinionDynamics,
+  type OpinionAgent,
+} from "../../packages/engine/src/dynamics/opinion.js";
 import { Rng, streamRng } from "../../packages/engine/src/util/rng.js";
 import type { World } from "../../packages/engine/src/types.js";
 
 const world = (seed = "dyn-seed") => ({ seed }) as World;
 
 /** Minimal population member. */
-const agent = (id: string, stances: Record<string, number>, follows: string[] = []): OpinionAgent => ({
+const agent = (
+  id: string,
+  stances: Record<string, number>,
+  follows: string[] = [],
+): OpinionAgent => ({
   id,
   stances,
   follows,
@@ -109,7 +117,11 @@ describe("deffuantUpdate — convergence inside epsilon", () => {
 
 describe("deffuantUpdate — abstention beyond epsilon", () => {
   it("disengages when the seeded draw fires, relaxing BOTH stances 5% toward neutral", () => {
-    const r = deffuantUpdate(0.8, -0.6, { epsilon: 0.4, abstentionChance: 0.1, rng: new FixedRng(0.05) });
+    const r = deffuantUpdate(0.8, -0.6, {
+      epsilon: 0.4,
+      abstentionChance: 0.1,
+      rng: new FixedRng(0.05),
+    });
     expect(r.outcome).toBe("disengage");
     expect(r.a).toBe(0.76); // 0.8 × 0.95
     expect(r.b).toBe(-0.57); // −0.6 × 0.95
@@ -119,7 +131,11 @@ describe("deffuantUpdate — abstention beyond epsilon", () => {
   });
 
   it("does not disengage when the abstention draw misses", () => {
-    const r = deffuantUpdate(0.8, -0.6, { epsilon: 0.4, abstentionChance: 0.1, rng: new FixedRng(0.9) });
+    const r = deffuantUpdate(0.8, -0.6, {
+      epsilon: 0.4,
+      abstentionChance: 0.1,
+      rng: new FixedRng(0.9),
+    });
     expect(r.outcome).toBe("no-interaction");
     expect(r.a).toBe(0.8);
     expect(r.b).toBe(-0.6);
@@ -135,19 +151,31 @@ describe("deffuantUpdate — abstention beyond epsilon", () => {
   });
 
   it("never abstains at abstentionChance = 0 even with an rng that would fire", () => {
-    const r = deffuantUpdate(0.9, -0.9, { epsilon: 0.1, abstentionChance: 0, rng: new FixedRng(0) });
+    const r = deffuantUpdate(0.9, -0.9, {
+      epsilon: 0.1,
+      abstentionChance: 0,
+      rng: new FixedRng(0),
+    });
     expect(r.outcome).toBe("no-interaction");
   });
 
   it("always abstains at abstentionChance = 1", () => {
-    const r = deffuantUpdate(0.9, -0.9, { epsilon: 0.1, abstentionChance: 1, rng: new FixedRng(0.99) });
+    const r = deffuantUpdate(0.9, -0.9, {
+      epsilon: 0.1,
+      abstentionChance: 1,
+      rng: new FixedRng(0.99),
+    });
     expect(r.outcome).toBe("disengage");
   });
 
   it("leaves an in-epsilon pair untouched by the abstention draw", () => {
     // The draw is only consulted past epsilon; a firing rng must not change a
     // converging pair's outcome.
-    const r = deffuantUpdate(0.1, -0.1, { epsilon: 0.4, abstentionChance: 0.9, rng: new FixedRng(0) });
+    const r = deffuantUpdate(0.1, -0.1, {
+      epsilon: 0.4,
+      abstentionChance: 0.9,
+      rng: new FixedRng(0),
+    });
     expect(r.outcome).toBe("converge");
   });
 });
@@ -156,18 +184,29 @@ describe("applyOpinionDynamics — edge graph", () => {
   it("does nothing for a population of one, with or without a follow graph", () => {
     const personas = [agent("p_1", { e_1: 0.5 }, ["p_1"])];
     const r = applyOpinionDynamics(world(), 1, { personas });
-    expect(r).toEqual({ edges: 0, pairsSampled: 0, interactions: { converge: 0, disengage: 0, noInteraction: 0 }, changed: [] });
+    expect(r).toEqual({
+      edges: 0,
+      pairsSampled: 0,
+      interactions: { converge: 0, disengage: 0, noInteraction: 0 },
+      changed: [],
+    });
   });
 
   it("ignores self-follows and edges pointing at personas outside the population", () => {
-    const personas = [agent("p_1", { e_1: 0.5 }, ["p_1", "p_999"]), agent("p_2", { e_1: 0.4 }, [])];
+    const personas = [
+      agent("p_1", { e_1: 0.5 }, ["p_1", "p_999"]),
+      agent("p_2", { e_1: 0.4 }, []),
+    ];
     const r = applyOpinionDynamics(world(), 1, { personas });
     expect(r.edges).toBe(0);
     expect(r.changed).toEqual([]);
   });
 
   it("de-duplicates repeated edges and counts one edge per ordered pair", () => {
-    const personas = [agent("p_1", { e_1: 0.5 }, ["p_2", "p_2"]), agent("p_2", { e_1: 0.4 }, ["p_1"])];
+    const personas = [
+      agent("p_1", { e_1: 0.5 }, ["p_2", "p_2"]),
+      agent("p_2", { e_1: 0.4 }, ["p_1"]),
+    ];
     const r = applyOpinionDynamics(world(), 1, { personas, pairsPerRound: 1 });
     expect(r.edges).toBe(2); // p_1→p_2 and p_2→p_1, the duplicate collapsed
   });
@@ -183,10 +222,16 @@ describe("applyOpinionDynamics — edge graph", () => {
   });
 
   it("mutates the personas in place and reports every change that moved", () => {
-    const personas = [agent("p_1", { e_1: 0.5 }, ["p_2"]), agent("p_2", { e_1: 0.4 }, ["p_1"])];
+    const personas = [
+      agent("p_1", { e_1: 0.5 }, ["p_2"]),
+      agent("p_2", { e_1: 0.4 }, ["p_1"]),
+    ];
     const before = JSON.stringify(personas.map((p) => p.stances));
     const r = applyOpinionDynamics(world(), 1, { personas, pairsPerRound: 1 });
-    expect(JSON.stringify(personas.map((p) => p.stances)), "stances must actually move, not just be reported").not.toBe(before);
+    expect(
+      JSON.stringify(personas.map((p) => p.stances)),
+      "stances must actually move, not just be reported",
+    ).not.toBe(before);
     for (const c of r.changed) {
       expect(c.to).not.toBe(c.from);
     }
@@ -203,7 +248,10 @@ describe("applyOpinionDynamics — edge graph", () => {
   });
 
   it("defaults to half the edge list, at least one", () => {
-    const personas = [agent("p_1", { e_1: 0.5 }, ["p_2"]), agent("p_2", { e_1: 0.4 }, [])];
+    const personas = [
+      agent("p_1", { e_1: 0.5 }, ["p_2"]),
+      agent("p_2", { e_1: 0.4 }, []),
+    ];
     expect(applyOpinionDynamics(world(), 1, { personas }).pairsSampled).toBe(1);
   });
 });
@@ -248,14 +296,19 @@ describe("applyOpinionDynamics — determinism", () => {
     // draw to a different stream — silently changing every recorded run — fails
     // here rather than in a golden replay weeks later.
     const personas = build();
-    const direct = deffuantUpdate(0.9, -0.9, { epsilon: 0.4, rng: streamRng("seed-a", "dynamics:2:0") });
+    const direct = deffuantUpdate(0.9, -0.9, {
+      epsilon: 0.4,
+      rng: streamRng("seed-a", "dynamics:2:0"),
+    });
     expect(typeof direct.outcome).toBe("string");
 
     const run = applyOpinionDynamics(world("seed-a"), 2, { personas });
     // Whatever the draw was, the result must be reproducible from that exact
     // stream: replaying the same call sequence must not consume new numbers.
     const personas2 = build();
-    const rerun = applyOpinionDynamics(world("seed-a"), 2, { personas: personas2 });
+    const rerun = applyOpinionDynamics(world("seed-a"), 2, {
+      personas: personas2,
+    });
     expect(rerun).toEqual(run);
   });
 
@@ -263,8 +316,16 @@ describe("applyOpinionDynamics — determinism", () => {
     // abstentionChance 0 disables the only source of movement past epsilon, so
     // a fully-polarised population must be frozen — a useful negative control
     // on the whole module.
-    const personas = [agent("p_1", { e_1: 1 }, ["p_2"]), agent("p_2", { e_1: -1 }, ["p_1"])];
-    const r = applyOpinionDynamics(world("seed-x"), 1, { personas, epsilon: 0.1, mu: 0.2, abstentionChance: 0 });
+    const personas = [
+      agent("p_1", { e_1: 1 }, ["p_2"]),
+      agent("p_2", { e_1: -1 }, ["p_1"]),
+    ];
+    const r = applyOpinionDynamics(world("seed-x"), 1, {
+      personas,
+      epsilon: 0.1,
+      mu: 0.2,
+      abstentionChance: 0,
+    });
     expect(r.changed).toEqual([]);
     expect(r.interactions.noInteraction).toBeGreaterThan(0);
   });

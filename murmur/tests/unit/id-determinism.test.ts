@@ -18,9 +18,30 @@ import type { Entity } from "@murmur/engine";
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "murmur-id-"));
 
 const ENTITIES: Omit<Entity, "id" | "worldId">[] = [
-  { name: "Acme Cloud", type: "org", description: "the company", salience: 0.9, anchors: [], motives: [] },
-  { name: "Pricing Change", type: "topic", description: "the change", salience: 0.8, anchors: [], motives: [] },
-  { name: "Competitor", type: "idea", description: "the rival", salience: 0.7, anchors: [], motives: [] },
+  {
+    name: "Acme Cloud",
+    type: "org",
+    description: "the company",
+    salience: 0.9,
+    anchors: [],
+    motives: [],
+  },
+  {
+    name: "Pricing Change",
+    type: "topic",
+    description: "the change",
+    salience: 0.8,
+    anchors: [],
+    motives: [],
+  },
+  {
+    name: "Competitor",
+    type: "idea",
+    description: "the rival",
+    salience: 0.7,
+    anchors: [],
+    motives: [],
+  },
 ];
 
 const idsOf = (db: Storage, worldId: string) => ({
@@ -34,8 +55,17 @@ describe("world-scoped id minting", () => {
     // Baseline: world A alone in a fresh DB.
     const dirA = tmp();
     const dbA = new Storage(openDatabase(path.join(dirA, "murmur.db")));
-    const a = dbA.createWorld({ name: "pricing-reaction", seed: "id-det-seed" });
-    dbA.addSeed(a.id, { kind: "text", title: "brief", ref: "brief.md", text: "seed corpus", digest: "d1" });
+    const a = dbA.createWorld({
+      name: "pricing-reaction",
+      seed: "id-det-seed",
+    });
+    dbA.addSeed(a.id, {
+      kind: "text",
+      title: "brief",
+      ref: "brief.md",
+      text: "seed corpus",
+      digest: "d1",
+    });
     dbA.insertEntities(a.id, ENTITIES);
     dbA.addEvent(a.id, 0, "stage", { stage: "created" }, "world");
     const baseline = idsOf(dbA, a.id);
@@ -46,10 +76,25 @@ describe("world-scoped id minting", () => {
     const dirB = tmp();
     const dbB = new Storage(openDatabase(path.join(dirB, "murmur.db")));
     const b = dbB.createWorld({ name: "other-world", seed: "id-det-other" });
-    dbB.addSeed(b.id, { kind: "text", title: "other brief", ref: "other.md", text: "other corpus", digest: "d2" });
+    dbB.addSeed(b.id, {
+      kind: "text",
+      title: "other brief",
+      ref: "other.md",
+      text: "other corpus",
+      digest: "d2",
+    });
     dbB.insertEntities(b.id, ENTITIES);
-    const a2 = dbB.createWorld({ name: "pricing-reaction", seed: "id-det-seed" });
-    dbB.addSeed(a2.id, { kind: "text", title: "brief", ref: "brief.md", text: "seed corpus", digest: "d1" });
+    const a2 = dbB.createWorld({
+      name: "pricing-reaction",
+      seed: "id-det-seed",
+    });
+    dbB.addSeed(a2.id, {
+      kind: "text",
+      title: "brief",
+      ref: "brief.md",
+      text: "seed corpus",
+      digest: "d1",
+    });
     dbB.insertEntities(a2.id, ENTITIES);
     dbB.addEvent(a2.id, 0, "stage", { stage: "created" }, "world");
     const shifted = idsOf(dbB, a2.id);
@@ -68,8 +113,46 @@ describe("world-scoped id minting", () => {
     const db = new Storage(openDatabase(path.join(dir, "murmur.db")));
     const w1 = db.createWorld({ name: "world-one", seed: "s1" });
     const w2 = db.createWorld({ name: "world-two", seed: "s2" });
-    const p1 = db.insertPersonas(w1.id, [{ name: "Ada", handle: "@ada", archetype: "skeptic", bio: "b", traits: { openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, emotionalStability: 0.5 }, stances: {}, platform: "twitter", activity: 0.5, communityIds: [], follows: [] }]);
-    const p2 = db.insertPersonas(w2.id, [{ name: "Ada", handle: "@ada", archetype: "skeptic", bio: "b", traits: { openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, emotionalStability: 0.5 }, stances: {}, platform: "twitter", activity: 0.5, communityIds: [], follows: [] }]);
+    const p1 = db.insertPersonas(w1.id, [
+      {
+        name: "Ada",
+        handle: "@ada",
+        archetype: "skeptic",
+        bio: "b",
+        traits: {
+          openness: 0.5,
+          conscientiousness: 0.5,
+          extraversion: 0.5,
+          agreeableness: 0.5,
+          emotionalStability: 0.5,
+        },
+        stances: {},
+        platform: "twitter",
+        activity: 0.5,
+        communityIds: [],
+        follows: [],
+      },
+    ]);
+    const p2 = db.insertPersonas(w2.id, [
+      {
+        name: "Ada",
+        handle: "@ada",
+        archetype: "skeptic",
+        bio: "b",
+        traits: {
+          openness: 0.5,
+          conscientiousness: 0.5,
+          extraversion: 0.5,
+          agreeableness: 0.5,
+          emotionalStability: 0.5,
+        },
+        stances: {},
+        platform: "twitter",
+        activity: 0.5,
+        communityIds: [],
+        follows: [],
+      },
+    ]);
     expect(p1[0].id).toBe(p2[0].id); // same id, different worlds — legal
     const t1 = db.nextTaskId(w1.id);
     const t2 = db.nextTaskId(w2.id);
@@ -84,15 +167,25 @@ describe("world-scoped id minting", () => {
     // Build a v2-shaped database by hand: run migration 1 + 2 only.
     const raw = new Database(dbPath);
     raw.pragma("foreign_keys = OFF");
-    raw.exec("CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)");
+    raw.exec(
+      "CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)",
+    );
     raw.exec(MIGRATIONS[0].sql);
     raw.exec(MIGRATIONS[1].sql);
-    raw.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES (1, 't'), (2, 't')").run();
     raw
-      .prepare("INSERT INTO worlds (id, name, slug, description, stage, round, seed, config, created_at, updated_at) VALUES ('w_x','w','w','','created',0,'seed','{}','t','t')")
+      .prepare(
+        "INSERT INTO schema_migrations (version, applied_at) VALUES (1, 't'), (2, 't')",
+      )
       .run();
     raw
-      .prepare("INSERT INTO personas (id, world_id, name, handle, archetype, bio, traits, stances, platform, activity, community_ids, follows, created_at) VALUES ('p_1','w_x','Ada','@ada','skeptic','b','[]','[]','twitter',0.5,'[]','[]','t')")
+      .prepare(
+        "INSERT INTO worlds (id, name, slug, description, stage, round, seed, config, created_at, updated_at) VALUES ('w_x','w','w','','created',0,'seed','{}','t','t')",
+      )
+      .run();
+    raw
+      .prepare(
+        "INSERT INTO personas (id, world_id, name, handle, archetype, bio, traits, stances, platform, activity, community_ids, follows, created_at) VALUES ('p_1','w_x','Ada','@ada','skeptic','b','[]','[]','twitter',0.5,'[]','[]','t')",
+      )
       .run();
     raw.close();
 
@@ -102,9 +195,27 @@ describe("world-scoped id minting", () => {
     expect(p?.name).toBe("Ada");
     expect(p?.id).toBe("p_1");
     // and new world-scoped minting works on the migrated store
-    const inserted = db.insertPersonas("w_x", [{ name: "Bob", handle: "@bob", archetype: "skeptic", bio: "b", traits: { openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, emotionalStability: 0.5 }, stances: {}, platform: "twitter", activity: 0.5, communityIds: [], follows: [] }]);
+    const inserted = db.insertPersonas("w_x", [
+      {
+        name: "Bob",
+        handle: "@bob",
+        archetype: "skeptic",
+        bio: "b",
+        traits: {
+          openness: 0.5,
+          conscientiousness: 0.5,
+          extraversion: 0.5,
+          agreeableness: 0.5,
+          emotionalStability: 0.5,
+        },
+        stances: {},
+        platform: "twitter",
+        activity: 0.5,
+        communityIds: [],
+        follows: [],
+      },
+    ]);
     expect(inserted[0].id).toBe("p_2");
     db.close();
   });
 });
-

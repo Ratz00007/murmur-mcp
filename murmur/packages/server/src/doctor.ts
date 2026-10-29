@@ -23,7 +23,9 @@ export async function runDoctor(cwd: string): Promise<DoctorReport> {
   let sqliteOk = false;
   let sqliteDetail = "better-sqlite3 loaded";
   try {
-    const mod = (await import("better-sqlite3")) as unknown as { default: new (p: string) => { exec(s: string): void; close(): void } };
+    const mod = (await import("better-sqlite3")) as unknown as {
+      default: new (p: string) => { exec(s: string): void; close(): void };
+    };
     const Db = mod.default;
     const db = new Db(":memory:");
     db.exec("create table t(a)");
@@ -32,7 +34,11 @@ export async function runDoctor(cwd: string): Promise<DoctorReport> {
   } catch (e) {
     sqliteDetail = `native module failed: ${e instanceof Error ? e.message : String(e)}`;
   }
-  checks.push({ name: "SQLite native module", pass: sqliteOk, detail: sqliteDetail });
+  checks.push({
+    name: "SQLite native module",
+    pass: sqliteOk,
+    detail: sqliteDetail,
+  });
 
   const root = findWorkspaceRoot(cwd);
   const murmurDir = path.join(root, ".murmur");
@@ -47,7 +53,11 @@ export async function runDoctor(cwd: string): Promise<DoctorReport> {
   } catch (e) {
     writableDetail = `cannot write ${murmurDir}: ${e instanceof Error ? e.message : String(e)}`;
   }
-  checks.push({ name: "Workspace writable", pass: writable, detail: writableDetail });
+  checks.push({
+    name: "Workspace writable",
+    pass: writable,
+    detail: writableDetail,
+  });
 
   let worlds = 0;
   const dbFile = path.join(murmurDir, "murmur.db");
@@ -64,17 +74,36 @@ export async function runDoctor(cwd: string): Promise<DoctorReport> {
   checks.push({
     name: "World store",
     pass: worlds >= 0,
-    detail: worlds > 0 ? `${worlds} world(s) in ${path.relative(root, dbFile)}` : worlds === 0 ? "empty (no worlds yet — that's fine)" : "database exists but could not be opened",
+    detail:
+      worlds > 0
+        ? `${worlds} world(s) in ${path.relative(root, dbFile)}`
+        : worlds === 0
+          ? "empty (no worlds yet — that's fine)"
+          : "database exists but could not be opened",
   });
 
-  const detected = detectClients(cwd).map((d) => ({ client: d.client.name, configured: d.configured }));
+  const detected = detectClients(cwd).map((d) => ({
+    client: d.client.name,
+    configured: d.configured,
+  }));
   checks.push({
     name: "MCP clients detected",
     pass: true,
-    detail: detected.length ? detected.map((d) => `${d.client}${d.configured ? " (murmur configured)" : ""}`).join(", ") : "none found in this workspace/home — use any client from the support matrix",
+    detail: detected.length
+      ? detected
+          .map(
+            (d) => `${d.client}${d.configured ? " (murmur configured)" : ""}`,
+          )
+          .join(", ")
+      : "none found in this workspace/home — use any client from the support matrix",
   });
 
-  return { ok: checks.every((c) => c.pass), checks, detectedClients: detected, worlds: Math.max(0, worlds) };
+  return {
+    ok: checks.every((c) => c.pass),
+    checks,
+    detectedClients: detected,
+    worlds: Math.max(0, worlds),
+  };
 }
 
 export function printDoctor(report: DoctorReport): void {
@@ -94,5 +123,7 @@ export function printDoctor(report: DoctorReport): void {
   for (const c of CLIENTS) {
     out.write(`\n${renderInstall(c)}\n`);
   }
-  out.write(`\nOverall: ${report.ok ? "READY" : "PROBLEMS FOUND — fix the ✗ items above"}\n\n`);
+  out.write(
+    `\nOverall: ${report.ok ? "READY" : "PROBLEMS FOUND — fix the ✗ items above"}\n\n`,
+  );
 }

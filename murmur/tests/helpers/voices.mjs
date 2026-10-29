@@ -52,17 +52,41 @@ export const VOICES = {
       ],
     },
     reply: {
-      agree: ['"{frag}" — this. Exactly this. {topic} was never about the sticker price.', "Finally someone gets it. The {topic} discourse keeps skipping the part where the actual constraints live."],
-      disagree: ['"{frag}" is technically true and completely wrong — you\'re comparing {topic} to a toy.", "With respect, you\'re measuring the wrong thing. {topic} at scale is a different beast."'],
-      neutral: ["Depends on your workload. I've got benchmarks from {topic} that tell a more complicated story."],
+      agree: [
+        '"{frag}" — this. Exactly this. {topic} was never about the sticker price.',
+        "Finally someone gets it. The {topic} discourse keeps skipping the part where the actual constraints live.",
+      ],
+      disagree: [
+        '"{frag}" is technically true and completely wrong — you\'re comparing {topic} to a toy.", "With respect, you\'re measuring the wrong thing. {topic} at scale is a different beast."',
+      ],
+      neutral: [
+        "Depends on your workload. I've got benchmarks from {topic} that tell a more complicated story.",
+      ],
     },
     comment: {
-      neg: ["Two things everyone's missing about {topic}: the rate limits are per-project not per-account, and the export tool silently drops tags. Ask me how I know.", "The {topic} frustration is earned. We hit the exact same wall — six weeks of migration work for a feature downgrade."],
-      pos: ["Counterpoint from someone who migrated four teams onto {topic} last year: the horror stories are from people who skipped the pre-flight checks. Follow the guide and it's genuinely solid.", "Defending {topic} here: the reliability gain is real and measurable. We went from monthly incidents to zero."],
-      neutral: ["It depends on scale, honestly. Under 50 projects {topic} is fine; past that, budget for the edge cases the docs don't cover."],
+      neg: [
+        "Two things everyone's missing about {topic}: the rate limits are per-project not per-account, and the export tool silently drops tags. Ask me how I know.",
+        "The {topic} frustration is earned. We hit the exact same wall — six weeks of migration work for a feature downgrade.",
+      ],
+      pos: [
+        "Counterpoint from someone who migrated four teams onto {topic} last year: the horror stories are from people who skipped the pre-flight checks. Follow the guide and it's genuinely solid.",
+        "Defending {topic} here: the reliability gain is real and measurable. We went from monthly incidents to zero.",
+      ],
+      neutral: [
+        "It depends on scale, honestly. Under 50 projects {topic} is fine; past that, budget for the edge cases the docs don't cover.",
+      ],
     },
-    titles: ["PSA: I benchmarked {topic} so you don't have to", "The {topic} migration guide, reviewed line by line", "Am I the only one whose {topic} costs went up?"],
-    closers: ["Receipts in thread.", "Benchmark data on request.", "I've got the migration script if anyone wants it.", "Ask me how I know."],
+    titles: [
+      "PSA: I benchmarked {topic} so you don't have to",
+      "The {topic} migration guide, reviewed line by line",
+      "Am I the only one whose {topic} costs went up?",
+    ],
+    closers: [
+      "Receipts in thread.",
+      "Benchmark data on request.",
+      "I've got the migration script if anyone wants it.",
+      "Ask me how I know.",
+    ],
   },
 
   casual: {
@@ -94,26 +118,68 @@ export const VOICES = {
       ],
     },
     fresh: {
-      neg: ["hot take: {topic} discourse is 90% people who never read the changelog and I'm tired of pretending otherwise", "day 3 of the {topic} meltdown and I still don't fully get it but y'all are being dramatic about it"],
-      pos: ["genuinely loving the {topic} update, it fixed the one thing I actually complained about, no notes", " scrolled past 40 {topic} takes today and mine is the only correct one: it's fine, it's actually nice"],
-      neutral: ["no thoughts on {topic}, just vibing, but the replies are a museum of human behavior", "why is everyone acting like {topic} is the end of the world when it's a tuesday"],
+      neg: [
+        "hot take: {topic} discourse is 90% people who never read the changelog and I'm tired of pretending otherwise",
+        "day 3 of the {topic} meltdown and I still don't fully get it but y'all are being dramatic about it",
+      ],
+      pos: [
+        "genuinely loving the {topic} update, it fixed the one thing I actually complained about, no notes",
+        " scrolled past 40 {topic} takes today and mine is the only correct one: it's fine, it's actually nice",
+      ],
+      neutral: [
+        "no thoughts on {topic}, just vibing, but the replies are a museum of human behavior",
+        "why is everyone acting like {topic} is the end of the world when it's a tuesday",
+      ],
     },
     reply: {
-      agree: ['"{frag}" this. I have never agreed with anything harder', "screaming because this is exactly what I said in the group chat about {topic}"],
-      disagree: ['ehh "{frag}" is a stretch and we all know it. {topic} isn\'t that deep', "counterpoint: no. but I respect the passion about {topic}"],
-      neutral: ["this thread is the only good thing about {topic} season", "reading this thread like it's my job. no notes yet"],
+      agree: [
+        '"{frag}" this. I have never agreed with anything harder',
+        "screaming because this is exactly what I said in the group chat about {topic}",
+      ],
+      disagree: [
+        'ehh "{frag}" is a stretch and we all know it. {topic} isn\'t that deep',
+        "counterpoint: no. but I respect the passion about {topic}",
+      ],
+      neutral: [
+        "this thread is the only good thing about {topic} season",
+        "reading this thread like it's my job. no notes yet",
+      ],
     },
     comment: {
-      neg: ["came here from the front page. so basically {topic} is worse and costs more? cool, adding it to the list of things I'll complain about and never change", "the {topic} comments on this sub never miss. y'all turned a pricing email into a three-act play and honestly? entertaining"],
-      pos: ["unpopular take maybe but {topic} has been good to me? idk I click the buttons and the buttons work", "this thread is way more dramatic than my actual experience with {topic} but you do you, legends"],
-      neutral: ["tl;dr: some people mad, some people fine, nobody changing anything. classic {topic} thread", "I read this whole thread instead of doing my work and I regret nothing. still don't get the {topic} anger tho"],
+      neg: [
+        "came here from the front page. so basically {topic} is worse and costs more? cool, adding it to the list of things I'll complain about and never change",
+        "the {topic} comments on this sub never miss. y'all turned a pricing email into a three-act play and honestly? entertaining",
+      ],
+      pos: [
+        "unpopular take maybe but {topic} has been good to me? idk I click the buttons and the buttons work",
+        "this thread is way more dramatic than my actual experience with {topic} but you do you, legends",
+      ],
+      neutral: [
+        "tl;dr: some people mad, some people fine, nobody changing anything. classic {topic} thread",
+        "I read this whole thread instead of doing my work and I regret nothing. still don't get the {topic} anger tho",
+      ],
     },
-    titles: ["Am I the only one who doesn't get the {topic} anger?", "Someone ELI5 the {topic} thing because wow", "The {topic} takes on this site, a casual review"],
-    closers: ["anyway.", "idk just my two cents.", "this is not financial advice.", "don't come for me, I'm sensitive."],
+    titles: [
+      "Am I the only one who doesn't get the {topic} anger?",
+      "Someone ELI5 the {topic} thing because wow",
+      "The {topic} takes on this site, a casual review",
+    ],
+    closers: [
+      "anyway.",
+      "idk just my two cents.",
+      "this is not financial advice.",
+      "don't come for me, I'm sensitive.",
+    ],
   },
 
   professional: {
-    match: ["industry professional", "professional", "analyst", "consultant", "manager"],
+    match: [
+      "industry professional",
+      "professional",
+      "analyst",
+      "consultant",
+      "manager",
+    ],
     newsUndercut: {
       pos: [
         "{org2} timing a {num} undercut with import tooling is a textbook land grab. Expect the price-sensitive tier to move within a quarter. Impressive execution.",
@@ -140,26 +206,66 @@ export const VOICES = {
       ],
     },
     fresh: {
-      neg: ["Three clients asked about {topic} this week. The pattern: nobody's leaving yet, everyone's building an exit plan. That's the expensive kind of trust erosion.", "The {topic} rollout needed two weeks of comms planning and got a blog post. Amateur hour from a company that usually knows better."],
-      pos: ["Quietly impressed by the {topic} execution. The team clearly sequenced the migration tooling before the announcement — that's the detail nobody credits.", "{topic} is the rare platform decision that looks worse in the press release than in the actual unit economics."],
-      neutral: ["{topic} take from the consulting side: the reaction is priced correctly, the risk is mostly narrative risk. Manageable if they engage this week.", "Every {topic} conversation I'm in is identical: engineers shrug, procurement panics, nothing changes for six months."],
+      neg: [
+        "Three clients asked about {topic} this week. The pattern: nobody's leaving yet, everyone's building an exit plan. That's the expensive kind of trust erosion.",
+        "The {topic} rollout needed two weeks of comms planning and got a blog post. Amateur hour from a company that usually knows better.",
+      ],
+      pos: [
+        "Quietly impressed by the {topic} execution. The team clearly sequenced the migration tooling before the announcement — that's the detail nobody credits.",
+        "{topic} is the rare platform decision that looks worse in the press release than in the actual unit economics.",
+      ],
+      neutral: [
+        "{topic} take from the consulting side: the reaction is priced correctly, the risk is mostly narrative risk. Manageable if they engage this week.",
+        "Every {topic} conversation I'm in is identical: engineers shrug, procurement panics, nothing changes for six months.",
+      ],
     },
     reply: {
-      agree: ['"{frag}" — this is the sharpest read in the thread. {topic} was always a communication failure more than a product one.', "Agreed, and I'd add the data point everyone's missing: renewals are tracking fine. The {topic} panic is an engagement artifact."],
-      disagree: ['"{frag}" doesn\'t survive contact with procurement reality. {topic} switching costs are the moat, not the pricing page.', "Respectfully: you're reading the {topic} sentiment as signal when it's mostly performance. The renewals data tells a calmer story."],
-      neutral: ["The {topic} truth is somewhere between this thread's doom and the fanboys' denial. I'd want renewal cohort data before calling it."],
+      agree: [
+        '"{frag}" — this is the sharpest read in the thread. {topic} was always a communication failure more than a product one.',
+        "Agreed, and I'd add the data point everyone's missing: renewals are tracking fine. The {topic} panic is an engagement artifact.",
+      ],
+      disagree: [
+        '"{frag}" doesn\'t survive contact with procurement reality. {topic} switching costs are the moat, not the pricing page.',
+        "Respectfully: you're reading the {topic} sentiment as signal when it's mostly performance. The renewals data tells a calmer story.",
+      ],
+      neutral: [
+        "The {topic} truth is somewhere between this thread's doom and the fanboys' denial. I'd want renewal cohort data before calling it.",
+      ],
     },
     comment: {
-      neg: ["Consulting perspective on {topic}: I've walked three clients through this exact decision. The pattern that matters is not the price — it's whether the roadmap delivers in the next two quarters. If it does, this blows over. If not, the exit plans activate.", "What the {topic} thread keeps missing: enterprise renewals are already locked. The churn risk is concentrated in the small-team tier, which is exactly the tier that drives the community presence. That's the trap."],
-      pos: ["I'll defend {topic}: the actual usage data in our portfolio shows satisfaction post-migration is higher, not lower. The anger is a launch-phase artifact. Six months from now this thread ages like milk.", "For what it's worth, we modeled the {topic} change across 200 accounts and the net impact was modest. The discourse is running hot because it's cheap engagement, not because the math is scary."],
-      neutral: ["The honest answer on {topic} is nobody knows yet. Watch two numbers: 30-day churn and support ticket sentiment. Everything else in this thread is vibes."],
+      neg: [
+        "Consulting perspective on {topic}: I've walked three clients through this exact decision. The pattern that matters is not the price — it's whether the roadmap delivers in the next two quarters. If it does, this blows over. If not, the exit plans activate.",
+        "What the {topic} thread keeps missing: enterprise renewals are already locked. The churn risk is concentrated in the small-team tier, which is exactly the tier that drives the community presence. That's the trap.",
+      ],
+      pos: [
+        "I'll defend {topic}: the actual usage data in our portfolio shows satisfaction post-migration is higher, not lower. The anger is a launch-phase artifact. Six months from now this thread ages like milk.",
+        "For what it's worth, we modeled the {topic} change across 200 accounts and the net impact was modest. The discourse is running hot because it's cheap engagement, not because the math is scary.",
+      ],
+      neutral: [
+        "The honest answer on {topic} is nobody knows yet. Watch two numbers: 30-day churn and support ticket sentiment. Everything else in this thread is vibes.",
+      ],
     },
-    titles: ["The {topic} change, from someone who's run these migrations", "What the {topic} reaction gets right and wrong", "{topic}: a pricing analysis nobody asked for"],
-    closers: ["Happy to share the model.", "DM for the breakdown.", "This is not legal advice, it's cheaper.", "The data's cleaner than this thread."],
+    titles: [
+      "The {topic} change, from someone who's run these migrations",
+      "What the {topic} reaction gets right and wrong",
+      "{topic}: a pricing analysis nobody asked for",
+    ],
+    closers: [
+      "Happy to share the model.",
+      "DM for the breakdown.",
+      "This is not legal advice, it's cheaper.",
+      "The data's cleaner than this thread.",
+    ],
   },
 
   advocate: {
-    match: ["passionate advocate", "advocate", "fan", "evangelist", "community"],
+    match: [
+      "passionate advocate",
+      "advocate",
+      "fan",
+      "evangelist",
+      "community",
+    ],
     newsUndercut: {
       pos: [
         "THIS is what competition is for — {org2} just handed the community a {num} escape hatch. A genuine win for every small team that got priced around.",
@@ -186,22 +292,55 @@ export const VOICES = {
       ],
     },
     fresh: {
-      neg: ["The {topic} situation is bigger than pricing: it's about whether the community that built this ecosystem gets a seat when the decisions happen. Right now we don't.", "Unpopular but needed: if {topic} keeps going this way, the people who made it special will quietly build the next thing elsewhere. That's how communities actually die — not with drama, with moving vans."],
-      pos: ["Want to hype something real: the {topic} community rallied this week and reminded me why I've spent five years here. The product is the people. 💙", "Big love to everyone contributing to {topic} through the noise. The roadmap is happening because of you. Don't let the discourse bury that."],
-      neutral: ["{topic} thread of the week: half the community threatening to leave, the other half already packing snacks for the migration. Genuinely love this ecosystem's energy either way."],
+      neg: [
+        "The {topic} situation is bigger than pricing: it's about whether the community that built this ecosystem gets a seat when the decisions happen. Right now we don't.",
+        "Unpopular but needed: if {topic} keeps going this way, the people who made it special will quietly build the next thing elsewhere. That's how communities actually die — not with drama, with moving vans.",
+      ],
+      pos: [
+        "Want to hype something real: the {topic} community rallied this week and reminded me why I've spent five years here. The product is the people. 💙",
+        "Big love to everyone contributing to {topic} through the noise. The roadmap is happening because of you. Don't let the discourse bury that.",
+      ],
+      neutral: [
+        "{topic} thread of the week: half the community threatening to leave, the other half already packing snacks for the migration. Genuinely love this ecosystem's energy either way.",
+      ],
     },
     reply: {
-      agree: ['"{frag}" — THIS. Putting it on a banner. The {topic} discourse needed someone to say it plainly.', "This is the tweet. The whole {topic} conversation in one post. Boosting."],
-      disagree: ['I say this with love: "{frag}" is exactly the take that lets {topic} decay. We hold the things we love to a standard. That\'s not hate, that\'s care.', "Nah. {topic} deserves better than this take, and so do the people building it. We can want both."],
-      neutral: ["Both {topic} camps are right about different things. The sooner we hear each other, the sooner this gets fixed."],
+      agree: [
+        '"{frag}" — THIS. Putting it on a banner. The {topic} discourse needed someone to say it plainly.',
+        "This is the tweet. The whole {topic} conversation in one post. Boosting.",
+      ],
+      disagree: [
+        "I say this with love: \"{frag}\" is exactly the take that lets {topic} decay. We hold the things we love to a standard. That's not hate, that's care.",
+        "Nah. {topic} deserves better than this take, and so do the people building it. We can want both.",
+      ],
+      neutral: [
+        "Both {topic} camps are right about different things. The sooner we hear each other, the sooner this gets fixed.",
+      ],
     },
     comment: {
-      neg: ["OP gets it. {topic} worked because the community willed it into existence — the templates, the integrations, the endless forum answers. Strip the goodwill out and you're left with a product that costs more and belongs to nobody. We deserve a say before the next {num}-style decision.", "The {topic} thing isn't about money, it's about respect. A six-month grandfather window is a countdown timer, not a courtesy. The community hears the clock ticking."],
-      pos: ["Thread of the year, honestly. {topic} at its best is exactly what this post describes. Whatever the pricing does, the people are the product and the people are thriving. Come build with us.", "I keep seeing doom takes about {topic} and I keep remembering: this community shipped a migration guide in 48 hours when the company's took a month. We are the moat. We'll be fine."],
-      neutral: ["Genuine ask for both {topic} sides: what would change your mind? If the answer is nothing, this isn't a debate, it's grief. Both are okay. Name it correctly."],
+      neg: [
+        "OP gets it. {topic} worked because the community willed it into existence — the templates, the integrations, the endless forum answers. Strip the goodwill out and you're left with a product that costs more and belongs to nobody. We deserve a say before the next {num}-style decision.",
+        "The {topic} thing isn't about money, it's about respect. A six-month grandfather window is a countdown timer, not a courtesy. The community hears the clock ticking.",
+      ],
+      pos: [
+        "Thread of the year, honestly. {topic} at its best is exactly what this post describes. Whatever the pricing does, the people are the product and the people are thriving. Come build with us.",
+        "I keep seeing doom takes about {topic} and I keep remembering: this community shipped a migration guide in 48 hours when the company's took a month. We are the moat. We'll be fine.",
+      ],
+      neutral: [
+        "Genuine ask for both {topic} sides: what would change your mind? If the answer is nothing, this isn't a debate, it's grief. Both are okay. Name it correctly.",
+      ],
     },
-    titles: ["The {topic} decision and what the community deserves", "I'll die on this hill: {topic} is still worth it", "Can we talk about {topic} without eating each other?"],
-    closers: ["That's the whole speech.", "Love you all, even the wrong ones.", "See you in the replies.", "Bring snacks."],
+    titles: [
+      "The {topic} decision and what the community deserves",
+      "I'll die on this hill: {topic} is still worth it",
+      "Can we talk about {topic} without eating each other?",
+    ],
+    closers: [
+      "That's the whole speech.",
+      "Love you all, even the wrong ones.",
+      "See you in the replies.",
+      "Bring snacks.",
+    ],
   },
 
   skeptic: {
@@ -230,22 +369,56 @@ export const VOICES = {
       ],
     },
     fresh: {
-      neg: ["{topic} panic index, my proprietary metric, just hit 'blog post imminent'. Historically that means the actual damage is 20% of the discourse.", "The {topic} outrage cycle would be more convincing if the same accounts weren't mad about three different things last week, is all I'm saying."],
-      pos: ["Rare {topic} praise from me: they published the migration cost calculator. Actually useful. Suspicious of my own happiness about it.", "I dunk on {topic} plenty, so credit where due: this rollout is competent. The bar was in the earth's crust, but still."],
-      neutral: ["{topic} discourse temperature check: 10% legitimate grievances, 30% recycled anger, 60% people who just enjoy the fire. Myself included obviously.", "Every {topic} thread should be legally required to start with 'I have not read the changelog' to save everyone time."],
+      neg: [
+        "{topic} panic index, my proprietary metric, just hit 'blog post imminent'. Historically that means the actual damage is 20% of the discourse.",
+        "The {topic} outrage cycle would be more convincing if the same accounts weren't mad about three different things last week, is all I'm saying.",
+      ],
+      pos: [
+        "Rare {topic} praise from me: they published the migration cost calculator. Actually useful. Suspicious of my own happiness about it.",
+        "I dunk on {topic} plenty, so credit where due: this rollout is competent. The bar was in the earth's crust, but still.",
+      ],
+      neutral: [
+        "{topic} discourse temperature check: 10% legitimate grievances, 30% recycled anger, 60% people who just enjoy the fire. Myself included obviously.",
+        "Every {topic} thread should be legally required to start with 'I have not read the changelog' to save everyone time.",
+      ],
     },
     reply: {
-      agree: ['"{frag}" — finally a take that cost more than two brain cells to produce. The {topic} discourse thanks you.', "Correct on {topic}. Screenshotting this for the next time this exact thread happens, which is Tuesday."],
-      disagree: ['"{frag}" is the kind of confident wrong that gets likes. Show me the {topic} churn data or admit this is theater.', "Counterpoint on {topic}: you're pattern-matching to the last outrage instead of reading this one. They're not the same, and it matters."],
-      neutral: ["The {topic} truth, as usual, is boring: mild downside, mild upside, everyone alive to complain about it tomorrow."],
+      agree: [
+        '"{frag}" — finally a take that cost more than two brain cells to produce. The {topic} discourse thanks you.',
+        "Correct on {topic}. Screenshotting this for the next time this exact thread happens, which is Tuesday.",
+      ],
+      disagree: [
+        '"{frag}" is the kind of confident wrong that gets likes. Show me the {topic} churn data or admit this is theater.',
+        "Counterpoint on {topic}: you're pattern-matching to the last outrage instead of reading this one. They're not the same, and it matters.",
+      ],
+      neutral: [
+        "The {topic} truth, as usual, is boring: mild downside, mild upside, everyone alive to complain about it tomorrow.",
+      ],
     },
     comment: {
-      neg: ["Devil's advocate on {topic}, because someone has to: has anyone here actually left? Not 'threatened to leave' in a thread — actually exported and cancelled? Because the churn queue at renewal will tell the truth, and threads like this are where the truth goes to die.", "The {topic} anger is 80% recycled from every previous pricing change ever. The remaining 20% is legit and being drowned by people who enjoy being mad more than they enjoy being right."],
-      pos: ["Anti-doom take on {topic}: I ran the numbers for my team and the change costs us one coffee per person per month. The migration horror stories are from setups the docs explicitly warned about. Read before you rage.", "As the designated skeptic: {topic} is fine. Better than fine, actually, but I don't want them getting complacent so let's keep the panic at a low simmer."],
-      neutral: ["Rule of thumb for {topic} threads: divide every claim by the poster's investment in being right. The adjusted numbers are always boring. That's the point."],
+      neg: [
+        "Devil's advocate on {topic}, because someone has to: has anyone here actually left? Not 'threatened to leave' in a thread — actually exported and cancelled? Because the churn queue at renewal will tell the truth, and threads like this are where the truth goes to die.",
+        "The {topic} anger is 80% recycled from every previous pricing change ever. The remaining 20% is legit and being drowned by people who enjoy being mad more than they enjoy being right.",
+      ],
+      pos: [
+        "Anti-doom take on {topic}: I ran the numbers for my team and the change costs us one coffee per person per month. The migration horror stories are from setups the docs explicitly warned about. Read before you rage.",
+        "As the designated skeptic: {topic} is fine. Better than fine, actually, but I don't want them getting complacent so let's keep the panic at a low simmer.",
+      ],
+      neutral: [
+        "Rule of thumb for {topic} threads: divide every claim by the poster's investment in being right. The adjusted numbers are always boring. That's the point.",
+      ],
     },
-    titles: ["{topic}: the math nobody's doing in these threads", "Am I the only skeptic left on {topic}?", "Reading the {topic} FAQ so you don't have to"],
-    closers: ["You may now resume the outrage.", "Screenshots or it didn't happen.", "I'll wait for the numbers.", "Gratis, as always."],
+    titles: [
+      "{topic}: the math nobody's doing in these threads",
+      "Am I the only skeptic left on {topic}?",
+      "Reading the {topic} FAQ so you don't have to",
+    ],
+    closers: [
+      "You may now resume the outrage.",
+      "Screenshots or it didn't happen.",
+      "I'll wait for the numbers.",
+      "Gratis, as always.",
+    ],
   },
 
   newcomer: {
@@ -259,27 +432,67 @@ export const VOICES = {
       ],
     },
     news: {
-      neg: ["genuine question from someone who just started using {org}: is the {num} increase normal for this industry? everyone seems really upset and I'm trying to understand if I picked the wrong week to commit", "just migrated my class project to {org} last month and now it's {num} more?? is {org2} actually a real alternative or just what people say when they're angry"],
-      pos: ["probably an unpopular take from the new guy: {num} for {org} still seems like a lot of value? everyone in my cohort uses the free tier anyway, am I missing something"],
-      neutral: ["started learning {org} two weeks ago, and now my whole feed is about the {num} thing. no question, just timing I guess. is there a good explainer anywhere?", "genuine question: what does {num} actually mean for a small project like mine? the threads are scary but I can't tell what applies to me"],
+      neg: [
+        "genuine question from someone who just started using {org}: is the {num} increase normal for this industry? everyone seems really upset and I'm trying to understand if I picked the wrong week to commit",
+        "just migrated my class project to {org} last month and now it's {num} more?? is {org2} actually a real alternative or just what people say when they're angry",
+      ],
+      pos: [
+        "probably an unpopular take from the new guy: {num} for {org} still seems like a lot of value? everyone in my cohort uses the free tier anyway, am I missing something",
+      ],
+      neutral: [
+        "started learning {org} two weeks ago, and now my whole feed is about the {num} thing. no question, just timing I guess. is there a good explainer anywhere?",
+        "genuine question: what does {num} actually mean for a small project like mine? the threads are scary but I can't tell what applies to me",
+      ],
     },
     fresh: {
-      neg: ["day 9 of learning {topic} and I've hit my first wall. is this hard for everyone or did I skip a tutorial", "everyone says {topic} is beginner friendly and I'm 3 hours deep in a config error, so, lying is a thing I guess"],
-      pos: ["small win: deployed my first project on {topic} today and it worked on the first try. first try!! I'm going to be insufferable about this for a week", "shoutout to whoever wrote the {topic} quickstart, I went from zero to deployed in an afternoon. genuinely nice experience"],
-      neutral: ["is there a beginner space for {topic} or is everywhere this intense? just want to learn without picking a side in a war I don't understand"],
+      neg: [
+        "day 9 of learning {topic} and I've hit my first wall. is this hard for everyone or did I skip a tutorial",
+        "everyone says {topic} is beginner friendly and I'm 3 hours deep in a config error, so, lying is a thing I guess",
+      ],
+      pos: [
+        "small win: deployed my first project on {topic} today and it worked on the first try. first try!! I'm going to be insufferable about this for a week",
+        "shoutout to whoever wrote the {topic} quickstart, I went from zero to deployed in an afternoon. genuinely nice experience",
+      ],
+      neutral: [
+        "is there a beginner space for {topic} or is everywhere this intense? just want to learn without picking a side in a war I don't understand",
+      ],
     },
     reply: {
-      agree: ['"{frag}" — this is the first thing in this whole {topic} thread I\'ve understood and I appreciate you for it', "saving this comment for when I finally understand what {topic} is about, thank you"],
-      disagree: ["ok but as a total beginner this thread is terrifying?? is {topic} always like this"],
-      neutral: ["genuine question, still learning: is this good news or bad news for {topic}? asking for me, a person with 3 followers"],
+      agree: [
+        '"{frag}" — this is the first thing in this whole {topic} thread I\'ve understood and I appreciate you for it',
+        "saving this comment for when I finally understand what {topic} is about, thank you",
+      ],
+      disagree: [
+        "ok but as a total beginner this thread is terrifying?? is {topic} always like this",
+      ],
+      neutral: [
+        "genuine question, still learning: is this good news or bad news for {topic}? asking for me, a person with 3 followers",
+      ],
     },
     comment: {
-      neg: ["Total beginner here, so grain of salt: I chose {topic} two weeks ago based on a tutorial, and now I'm reading all this. Is there a beginner-friendly summary of what changed and whether I should care yet?", "Everyone's arguing and I'm just trying to figure out if my homework project is affected. The {topic} anger is very loud and the answers are very buried."],
-      pos: ["New user perspective on {topic}: the onboarding was genuinely nice, the docs actually match the product, and this thread is the first scary thing I've seen. Hope whatever's happening gets fixed because I was starting to like it here.", "As the newest person in this community: everyone helped me set up {topic} last week for free, unprompted. Whatever the discourse says, the people are alright."],
-      neutral: ["ELI5 request on {topic}: I've read the thread twice and I understand maybe 40%. Not complaining, just calibrating. Is there a wiki?"],
+      neg: [
+        "Total beginner here, so grain of salt: I chose {topic} two weeks ago based on a tutorial, and now I'm reading all this. Is there a beginner-friendly summary of what changed and whether I should care yet?",
+        "Everyone's arguing and I'm just trying to figure out if my homework project is affected. The {topic} anger is very loud and the answers are very buried.",
+      ],
+      pos: [
+        "New user perspective on {topic}: the onboarding was genuinely nice, the docs actually match the product, and this thread is the first scary thing I've seen. Hope whatever's happening gets fixed because I was starting to like it here.",
+        "As the newest person in this community: everyone helped me set up {topic} last week for free, unprompted. Whatever the discourse says, the people are alright.",
+      ],
+      neutral: [
+        "ELI5 request on {topic}: I've read the thread twice and I understand maybe 40%. Not complaining, just calibrating. Is there a wiki?",
+      ],
     },
-    titles: ["Just started with {topic} — should I be worried?", "Beginner question about {topic} (please be nice)", "{topic} from a newbie's perspective: it's been great so far?"],
-    closers: ["be gentle, first post.", "sorry if this is a dumb question.", "still learning, thanks for patience.", "3 followers and counting."],
+    titles: [
+      "Just started with {topic} — should I be worried?",
+      "Beginner question about {topic} (please be nice)",
+      "{topic} from a newbie's perspective: it's been great so far?",
+    ],
+    closers: [
+      "be gentle, first post.",
+      "sorry if this is a dumb question.",
+      "still learning, thanks for patience.",
+      "3 followers and counting.",
+    ],
   },
 };
 
@@ -318,8 +531,38 @@ export function voiceFor(archetype) {
 
 // Tiny polarity wordlists (mirror of the engine lexicon's strongest terms) so
 // the brain can align votes/likes with its own stance.
-export const POS_MARKERS = ["love", "great", "amazing", "excellent", "impressive", "win", "solid", "fair", "trust", "smooth", "seamless", "good", "nice", "reliable"];
-export const NEG_MARKERS = ["hate", "terrible", "ripoff", "overpriced", "greedy", "frustrating", "broken", "unfair", "scam", "worst", "paywall", "betrayal", "angry", "churn"];
+export const POS_MARKERS = [
+  "love",
+  "great",
+  "amazing",
+  "excellent",
+  "impressive",
+  "win",
+  "solid",
+  "fair",
+  "trust",
+  "smooth",
+  "seamless",
+  "good",
+  "nice",
+  "reliable",
+];
+export const NEG_MARKERS = [
+  "hate",
+  "terrible",
+  "ripoff",
+  "overpriced",
+  "greedy",
+  "frustrating",
+  "broken",
+  "unfair",
+  "scam",
+  "worst",
+  "paywall",
+  "betrayal",
+  "angry",
+  "churn",
+];
 
 export function crudePolarity(text) {
   const t = String(text || "").toLowerCase();

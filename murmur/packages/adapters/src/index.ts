@@ -13,10 +13,14 @@ export interface ServerCommand {
   args: string[];
 }
 
-export const NPM_SERVER: ServerCommand = { command: "npx", args: ["-y", "murmur-mcp"] };
+export const NPM_SERVER: ServerCommand = {
+  command: "npx",
+  args: ["-y", "murmur-mcp"],
+};
 
 /** Command as a single shell line, e.g. `npx -y murmur-mcp`. */
-export const commandLine = (server: ServerCommand) => `${server.command} ${server.args.join(" ")}`;
+export const commandLine = (server: ServerCommand) =>
+  `${server.command} ${server.args.join(" ")}`;
 
 export interface ClientAdapter {
   id: string;
@@ -44,12 +48,20 @@ export interface DetectCtx {
 }
 
 const jsonEntry = (server: ServerCommand, key = "murmur") =>
-  JSON.stringify({ mcpServers: { [key]: { command: server.command, args: server.args } } }, null, 2);
+  JSON.stringify(
+    { mcpServers: { [key]: { command: server.command, args: server.args } } },
+    null,
+    2,
+  );
 
 /** VS Code Copilot: top-level `servers`, each entry requires `type: "stdio"`. */
 const vscodeServers = (server: ServerCommand, key = "murmur") =>
   `// .vscode/mcp.json — merge into your existing file\n${JSON.stringify(
-    { servers: { [key]: { type: "stdio", command: server.command, args: server.args } } },
+    {
+      servers: {
+        [key]: { type: "stdio", command: server.command, args: server.args },
+      },
+    },
     null,
     2,
   )}`;
@@ -57,7 +69,15 @@ const vscodeServers = (server: ServerCommand, key = "murmur") =>
 /** OpenCode: `mcp` map, `type: "local"`, command is an array. */
 const opencodeMcp = (server: ServerCommand, key = "murmur") =>
   `// opencode.json — merge the mcp block into your existing file\n${JSON.stringify(
-    { mcp: { [key]: { type: "local", command: [server.command, ...server.args], enabled: true } } },
+    {
+      mcp: {
+        [key]: {
+          type: "local",
+          command: [server.command, ...server.args],
+          enabled: true,
+        },
+      },
+    },
     null,
     2,
   )}`;
@@ -76,7 +96,8 @@ const continueYaml = (server: ServerCommand, key = "murmur") =>
     ...server.args.map((a) => `      - ${a}`),
   ].join("\n");
 
-const UNVERIFIED = "UNVERIFIED: check this client's own docs for the exact file and key before pasting.";
+const UNVERIFIED =
+  "UNVERIFIED: check this client's own docs for the exact file and key before pasting.";
 
 export const CLIENTS: ClientAdapter[] = [
   {
@@ -84,11 +105,15 @@ export const CLIENTS: ClientAdapter[] = [
     name: "Claude Code",
     kind: "cli",
     install: "claude mcp add murmur -- npx -y murmur-mcp",
-    configPath: "~/.claude.json (user scope) or .mcp.json (project scope) — .claude/settings.json is permissions/hooks only, not MCP servers",
+    configPath:
+      "~/.claude.json (user scope) or .mcp.json (project scope) — .claude/settings.json is permissions/hooks only, not MCP servers",
     configSnippet: (s) => jsonEntry(s),
     configFormat: "json",
-    notes: "Reference client. Prompts surface as /murmur-predict, /murmur-simulate, /murmur-interview, /murmur-resume slash commands.",
-    detect: ({ home, cwd, exists }) => exists(path.join(home, ".claude.json")) || exists(path.join(cwd, ".claude")),
+    notes:
+      "Reference client. Prompts surface as /murmur-predict, /murmur-simulate, /murmur-interview, /murmur-resume slash commands.",
+    detect: ({ home, cwd, exists }) =>
+      exists(path.join(home, ".claude.json")) ||
+      exists(path.join(cwd, ".claude")),
   },
   {
     id: "codex",
@@ -118,22 +143,27 @@ export const CLIENTS: ClientAdapter[] = [
     name: "Antigravity",
     kind: "ide",
     install: null,
-    configPath: "UNVERIFIED — agent settings JSON, the file differs by version; check Antigravity's own MCP docs",
+    configPath:
+      "UNVERIFIED — agent settings JSON, the file differs by version; check Antigravity's own MCP docs",
     configSnippet: (s) => jsonEntry(s),
     configFormat: "json",
     unverified: true,
     notes: `Google agentic IDE. UNVERIFIED: check this client's own docs for the exact file and key. ${UNVERIFIED}`,
-    detect: ({ home, cwd, exists }) => exists(path.join(home, ".antigravity")) || exists(path.join(cwd, ".antigravity")),
+    detect: ({ home, cwd, exists }) =>
+      exists(path.join(home, ".antigravity")) ||
+      exists(path.join(cwd, ".antigravity")),
   },
   {
     id: "opencode",
     name: "OpenCode",
     kind: "cli",
     install: null,
-    configPath: "opencode.json (project root) or ~/.config/opencode/opencode.json (user)",
+    configPath:
+      "opencode.json (project root) or ~/.config/opencode/opencode.json (user)",
     configSnippet: (s) => opencodeMcp(s),
     configFormat: "json",
-    notes: "OpenCode keys servers under mcp, not mcpServers: type is local|remote and command is an array. Open client; works with any backing subscription.",
+    notes:
+      "OpenCode keys servers under mcp, not mcpServers: type is local|remote and command is an array. Open client; works with any backing subscription.",
     detect: ({ cwd, exists }) => exists(path.join(cwd, "opencode.json")),
   },
   {
@@ -141,22 +171,27 @@ export const CLIENTS: ClientAdapter[] = [
     name: "Hermes",
     kind: "cli",
     install: null,
-    configPath: "UNVERIFIED — Hermes config JSON, the file and key are not confirmed",
+    configPath:
+      "UNVERIFIED — Hermes config JSON, the file and key are not confirmed",
     configSnippet: (s) => jsonEntry(s),
     configFormat: "json",
     unverified: true,
     notes: `Terminal-first agent — founding-requirement client. UNVERIFIED: check this client's own docs for the exact file and key. ${UNVERIFIED}`,
-    detect: ({ home, exists }) => exists(path.join(home, ".hermes")) || exists(path.join(home, "hermes.json")),
+    detect: ({ home, exists }) =>
+      exists(path.join(home, ".hermes")) ||
+      exists(path.join(home, "hermes.json")),
   },
   {
     id: "cursor",
     name: "Cursor",
     kind: "ide",
     install: null,
-    configPath: ".cursor/mcp.json (project) · user scope: Settings → Tools & Integrations → Add New MCP Server (the cursor-agent CLI has no mcp add — it only lists/logs in to existing servers)",
+    configPath:
+      ".cursor/mcp.json (project) · user scope: Settings → Tools & Integrations → Add New MCP Server (the cursor-agent CLI has no mcp add — it only lists/logs in to existing servers)",
     configSnippet: (s) => jsonEntry(s),
     configFormat: "json",
-    notes: "Install is a config-file edit, not a CLI one-liner. Add the object above under mcpServers.",
+    notes:
+      "Install is a config-file edit, not a CLI one-liner. Add the object above under mcpServers.",
     detect: ({ cwd, exists }) => exists(path.join(cwd, ".cursor")),
   },
   {
@@ -168,7 +203,9 @@ export const CLIENTS: ClientAdapter[] = [
     configSnippet: (s) => jsonEntry(s),
     configFormat: "json",
     notes: "Cascade MCP settings entry.",
-    detect: ({ home, cwd, exists }) => exists(path.join(home, ".codeium")) || exists(path.join(cwd, ".windsurf")),
+    detect: ({ home, cwd, exists }) =>
+      exists(path.join(home, ".codeium")) ||
+      exists(path.join(cwd, ".windsurf")),
   },
   {
     id: "cline-continue",
@@ -182,17 +219,20 @@ export const CLIENTS: ClientAdapter[] = [
     unverified: true,
     notes:
       'UNVERIFIED: check each client\'s own docs for the exact file and key. The block above is Continue YAML — do NOT paste the JSON form into Continue (it silently loads nothing); do NOT paste the YAML into Cline, which uses an mcpServers object: {"mcpServers":{"murmur":{"command":"npx","args":["-y","murmur-mcp"]}}}.',
-    detect: ({ cwd, home, exists }) => exists(path.join(cwd, ".vscode")) || exists(path.join(home, ".continue")),
+    detect: ({ cwd, home, exists }) =>
+      exists(path.join(cwd, ".vscode")) || exists(path.join(home, ".continue")),
   },
   {
     id: "vscode",
     name: "VS Code Copilot",
     kind: "ide",
     install: null,
-    configPath: ".vscode/mcp.json (workspace) or ~/.copilot/mcp-config.json (user)",
+    configPath:
+      ".vscode/mcp.json (workspace) or ~/.copilot/mcp-config.json (user)",
     configSnippet: (s) => vscodeServers(s),
     configFormat: "json",
-    notes: "GitHub Copilot agent mode. Servers live under the top-level servers key with type stdio — mcpServers is a different tool's format and loads nothing here.",
+    notes:
+      "GitHub Copilot agent mode. Servers live under the top-level servers key with type stdio — mcpServers is a different tool's format and loads nothing here.",
     detect: ({ cwd, exists }) => exists(path.join(cwd, ".vscode")),
   },
 ];
@@ -230,7 +270,8 @@ export function detectClients(cwd: string, home = os.homedir()): Detection[] {
     ];
     for (const f of candidates) {
       try {
-        if (exists(f) && fs.readFileSync(f, "utf8").includes("murmur")) configured = true;
+        if (exists(f) && fs.readFileSync(f, "utf8").includes("murmur"))
+          configured = true;
       } catch {
         /* ignore */
       }
@@ -241,11 +282,18 @@ export function detectClients(cwd: string, home = os.homedir()): Detection[] {
 }
 
 /** Render the install instructions block for one client. */
-export function renderInstall(client: ClientAdapter, server: ServerCommand = NPM_SERVER): string {
+export function renderInstall(
+  client: ClientAdapter,
+  server: ServerCommand = NPM_SERVER,
+): string {
   const cmd = commandLine(server);
-  const lines = [`# ${client.name} (${client.kind})${client.unverified ? " — UNVERIFIED" : ""}`];
+  const lines = [
+    `# ${client.name} (${client.kind})${client.unverified ? " — UNVERIFIED" : ""}`,
+  ];
   if (client.install) {
-    lines.push(`One-liner:  ${client.install.replace("npx -y murmur-mcp", cmd)}`);
+    lines.push(
+      `One-liner:  ${client.install.replace("npx -y murmur-mcp", cmd)}`,
+    );
   } else {
     lines.push(`Command:    ${cmd}`);
   }

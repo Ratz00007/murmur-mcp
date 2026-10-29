@@ -60,10 +60,14 @@ function quantile(values: number[], q: number): number {
  * every refit's rounds (ascending); refits missing a round are skipped for it.
  * Values are rounded to 2 decimals so rendered reports replay byte-identically.
  */
-export function sensitivityIntervals(perFitTrajectories: TrajectoryPoint[][]): SensitivityInterval[] {
+export function sensitivityIntervals(
+  perFitTrajectories: TrajectoryPoint[][],
+): SensitivityInterval[] {
   const runs = perFitTrajectories.filter((t) => t.length > 0);
   if (runs.length === 0) return [];
-  const rounds = [...new Set(runs.flatMap((t) => t.map((p) => p.round)))].sort((a, b) => a - b);
+  const rounds = [...new Set(runs.flatMap((t) => t.map((p) => p.round)))].sort(
+    (a, b) => a - b,
+  );
   const out: SensitivityInterval[] = [];
   for (const round of rounds) {
     const values: number[] = [];
@@ -86,7 +90,11 @@ export function sensitivityIntervals(perFitTrajectories: TrajectoryPoint[][]): S
  * Run `fitFn` once per refit with derived seeds `${seed}:${i}` (count clamped to
  * [1, MAX_SENSITIVITY_REFITS]). fitFn must be deterministic given its seed.
  */
-export function refitSpread(seed: string, count: number, fitFn: (refitSeed: string) => TrajectoryPoint[]): TrajectoryPoint[][] {
+export function refitSpread(
+  seed: string,
+  count: number,
+  fitFn: (refitSeed: string) => TrajectoryPoint[],
+): TrajectoryPoint[][] {
   const n = Math.max(1, Math.min(MAX_SENSITIVITY_REFITS, Math.floor(count)));
   const runs: TrajectoryPoint[][] = [];
   for (let i = 0; i < n; i++) runs.push(fitFn(`${seed}:${i}`));
@@ -105,7 +113,13 @@ export const SLOPE_JITTER = 0.06;
  *
  * Returns per-refit trajectories ready for sensitivityIntervals().
  */
-export function projectionRefits(seed: string, count: number, curve: TrajectoryPoint[], _projection: Projection, ahead = 2): TrajectoryPoint[][] {
+export function projectionRefits(
+  seed: string,
+  count: number,
+  curve: TrajectoryPoint[],
+  _projection: Projection,
+  ahead = 2,
+): TrajectoryPoint[][] {
   const n = Math.max(1, Math.min(MAX_SENSITIVITY_REFITS, Math.floor(count)));
   if (curve.length < 2 || n <= 0) return [];
   const sx = curve.reduce((a, p) => a + p.round, 0);
@@ -124,10 +138,16 @@ export function projectionRefits(seed: string, count: number, curve: TrajectoryP
   return refitSpread(seed, n, (refitSeed) => {
     const rng = streamRng(refitSeed, "projection");
     const jitteredSlope = slope + (rng.float() * 2 - 1) * SLOPE_JITTER;
-    const run: TrajectoryPoint[] = curve.map((p) => ({ round: p.round, value: p.value }));
+    const run: TrajectoryPoint[] = curve.map((p) => ({
+      round: p.round,
+      value: p.value,
+    }));
     for (let i = 1; i <= ahead; i++) {
       const round = lastRound + i;
-      run.push({ round, value: round2Safe(clamp(jitteredSlope * (round - xBar) + yBar, -1, 1)) });
+      run.push({
+        round,
+        value: round2Safe(clamp(jitteredSlope * (round - xBar) + yBar, -1, 1)),
+      });
     }
     return run;
   });
