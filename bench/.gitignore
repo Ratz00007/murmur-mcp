@@ -7,6 +7,8 @@
 data/
 data-pairs/
 data-arms/
+# data-hn/ is AMENDMENT-4 output: regenerable from fetch-hn-pairs.mjs.
+data-hn/
 # data-vendor/ holds both regenerable and irreplaceable artifacts. Fetched
 # reactions and selection outputs are regenerable and stay ignored; human
 # judgement (the answer key, both arms' outputs, the score) is tracked.

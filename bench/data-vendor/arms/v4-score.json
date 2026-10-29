@@ -44,7 +44,8 @@
   "directional_reading": "Arm B ranked the match 2nd of 5; Arm A ranked it 7th of 10. If ranking quality were the metric, Arm B wins. But ranking quality was not the pre-registered metric, and promoting it now would be moving the goalposts after seeing the result. Recorded as an observation for a future protocol, not as a finding.",
   "artifacts": {
     "arm_a": "bench/data-vendor/arms/v4-arm-a.json",
-    "arm_b_dossier": "bench/data-vendor/arms/v4-arm-b-world/.murmur/reports/scaleway-price-hike/dossier-1.md",
+    "arm_b_dossier_submit": "bench/data-vendor/arms/v4-arm-b-submits/07-dossier.json",
+    "arm_b_dossier_plan": "bench/data-vendor/arms/v4-arm-b-tasks/06-dossier-plan.json",
     "arm_b_tasks": "bench/data-vendor/arms/v4-arm-b-tasks/",
     "arm_b_submits": "bench/data-vendor/arms/v4-arm-b-submits/",
     "answer_key": "bench/data-vendor/ground-truth/v4.json"
