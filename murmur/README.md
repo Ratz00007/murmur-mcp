@@ -1,21 +1,21 @@
 # Murmur
 
-**Social-simulation for coding agents. Rehearse how communities react — powered by the coding subscription you already pay for.**
+**Objection-finding for pricing and launch changes. Rehearse the arguments before you ship — powered by the coding subscription you already pay for.**
 
-Murmur is an [MCP](https://modelcontextprotocol.io) server that runs agent-based social simulations: seed it with your material (a pricing page, a policy memo, an incident brief), and a population of simulated personas debates it across Twitter-style and Reddit-style platforms. You get a versioned, in-repo scenario report — trajectory, named risks with cited posts, confidence — plus the ability to interview any simulated persona about why they wrote what they wrote. It is a simulated perspective, not a validated forecast.
+Murmur is an [MCP](https://modelcontextprotocol.io) server that rehearses community reaction to a pricing, launch, policy, or crisis decision: seed it with your material (a pricing page, a policy memo, an incident brief), and a population of simulated personas debates it across Twitter-style and Reddit-style platforms. You get a ranked objection dossier — each objection at its strongest, tied to the simulated post behind it, with a counter-case and a test plan for real humans — plus the ability to interview any simulated persona about why they wrote what they wrote. It is a structured set of arguments, not a validated forecast; simulated personas are invented critics, not your customers.
 
 **Zero API keys. Zero extra bills.** The engine is deterministic and LLM-free; every generation is performed by *your* coding agent's LLM (Claude, Codex, Gemini, Antigravity, OpenCode, Hermes…) through the connection you already have. The server makes **no outbound network calls at all** — enforced by a release-gate test that fails the build on any egress, key or token surface.
 
 ```
 You:            /murmur-predict How will r/programming react to the new pricing page?
 
-Your agent:     world_init → seed_add_files → ontology_plan → ontology_submit
-                → graph_build → personas_plan → personas_submit
-                → [sim_next_batch → sim_submit_generations] × 8 rounds
-                → report_plan → report_submit → report_export
+Your agent:     world_init → seed_add → ontology(plan/submit)
+                → graph(build) → personas(plan/submit)
+                → [sim(next_batch/submit)] × 8 rounds
+                → report(plan/submit/export)
 
 Result:         .murmur/reports/pricing-reaction/report-1.md
-                (Mermaid sentiment charts, 3 cited risks, post index, diffable)
+                (Mermaid sentiment charts, cited risks, post index, diffable)
 ```
 
 ---
@@ -67,9 +67,9 @@ Every snippet is also printed by `npx murmur-mcp doctor` (which also checks Node
 /murmur-predict How will developers react to our new pricing? Sources: pricing-page.md, FAQ.md
 ```
 
-That prompt is a playbook: your agent drives all 29 tools in order, shows you digests for approval, writes the report, and every receipt tells it the next step.
+That prompt is a playbook: your agent drives all 11 tools in order, shows you digests for approval, writes the report, and every receipt tells it the next step.
 
-> **What a run actually costs.** Zero keys, but not zero time: a default 8-round world puts the order of *hundreds* of generations in front of your host model, so wall time is set by the model and the batch size, not by Murmur. Nothing has been published end-to-end with a real LLM yet — the 270-test suite (golden byte-identical replays plus the cleanroom release gate) runs against mock generations, and `npm run demo` exercises the full pipeline headless. Treat your first real run as a rehearsal, and start with fewer rounds.
+> **What a run actually costs.** Zero keys, but not zero time: a default 8-round world puts the order of *hundreds* of generations in front of your host model, so wall time is set by the model and the batch size, not by Murmur. Nothing has been published end-to-end with a real LLM yet — the 595-test suite (golden byte-identical replays plus the cleanroom release gate) runs against mock generations, and `npm run demo` exercises the full pipeline headless. Treat your first real run as a rehearsal, and start with fewer rounds.
 
 Mid-run experimentation:
 
@@ -105,18 +105,20 @@ Mid-run experimentation:
 
 **Determinism**: content ids are count-based, all randomness flows from the world seed through named streams, and phases 2–5 of every round are pure functions of stored state. Golden-run tests replay recorded sessions and assert byte-identical outcomes.
 
-## Tool catalog (29 tools)
+## Tool catalog (11 tools)
 
 | Group | Tools |
 |---|---|
-| World | `world_init` `world_list` `world_open` `world_status` `world_config` |
-| Seeds | `seed_add_files` `seed_add_url` `seed_add_text` `seeds_review` |
-| Ontology | `ontology_plan` `ontology_submit` |
-| Graph | `graph_build` `graph_query` `graph_export_mermaid` |
-| Personas | `personas_plan` `personas_submit` `persona_inspect` `persona_edit` |
-| Simulation | `sim_configure` `sim_next_batch` `sim_submit_generations` `sim_inject_event` `sim_round_summary` `sim_timeline` |
-| Report | `report_plan` `report_submit` `report_export` |
-| Interaction | `interview_agent` `report_agent_ask` |
+| World | `world_init` `world_list` `world_config` |
+| Seeds | `seed_add` `seeds_review` |
+| Ontology | `ontology` (`plan` / `submit`) |
+| Graph | `graph` (`build` / `query` / `export`) |
+| Personas | `personas` (`plan` / `submit` / `inspect` / `edit`) |
+| Simulation | `sim` (`next_batch` / `submit` / `inject` / `summary` / `timeline`) |
+| Report | `report` (`plan` / `submit` / `export`) |
+| Interaction | `interact` (`target: "persona"` / `"run"`) |
+
+Every pre-consolidation name (the old 29-tool surface) still has a row in `MIGRATED_TOOLS` (`packages/server/src/tools/index.ts`), so receipts and error messages teach the new spelling of any old name you type.
 
 Prompts (one-command playbooks): `murmur-predict`, `murmur-simulate`, `murmur-interview`, `murmur-resume`. Resources: `murmur://worlds`, `murmur://world/{id}/state`, `murmur://world/{id}/report/{rid}`.
 
@@ -128,7 +130,7 @@ Prompts (one-command playbooks): `murmur-predict`, `murmur-simulate`, `murmur-in
   "rounds": 8,                                  // 1–40
   "batch":  { "maxPersonas": 20, "maxFeedItems": 8, "personaCardTokens": 120 },
   "context": { "maxResponseTokens": 12000 },
-  "engagement": { "viralityThreshold": 12, "organicCapPerPost": 0.6 },
+  "engagement": { "viralityThreshold": 8, "organicCapPerPost": 0.6 },
   "memory": { "episodicMaxRecords": 40 }
 }
 ```
@@ -140,14 +142,14 @@ Environment: `MURMUR_WORKSPACE` (override the workspace root; default: git repo 
 - **No API key, ever** — no key or token field exists in any config surface; the cleanroom gate statically fails the release on egress APIs, URLs, or key patterns in the shipped bundle, and audits the dependency closure for network libraries.
 - **Client neutrality** — the server contains zero client-specific branches; per-client differences live in `packages/adapters` as snippets and templates.
 - **Resumability** — every tool is safe to re-issue after a crash; sessions resume to the exact stage boundary.
-- **Performance** — the full pipeline (seeds → report) runs headless in ~0.1 s on the reference corpus; a 24-persona, 8-round world completes in a single agent session.
+- **Performance** — engine-side wall time is 1.48s at the 24×8 defaults and 2.98s at the 48×8 flagship scale (report render included, host-LLM latency excluded; `node tools/scale-benchmark.mjs <personas> <rounds>` to reproduce); a 24-persona, 8-round world completes in a single agent session.
 
 ## Repository layout
 
 ```
 packages/
   engine/      deterministic simulation core (pure TS + SQLite adapter)
-  server/      the murmur-mcp npm package: 29 tools, resources, prompts, CLI
+  server/      the murmur-mcp npm package: 11 tools, resources, prompts, CLI
   prompts/     playbook prompt packs
   adapters/    per-client install snippets + config templates (10 clients)
   templates/   scenario packs: launch, policy, crisis, finance, fiction
@@ -158,11 +160,12 @@ tests/
 examples/      a ready-to-run demo scenario + paste-ready prompts
 ```
 
-Develop: `npm install && npm run build && npm test` (270 tests) · `npm run test:e2e` · `npm run cleanroom` · `npm run demo` (headless full pipeline, no LLM needed).
+Develop: `npm install && npm run build && npm test` (595 tests) · `npm run test:e2e` · `npm run cleanroom` · `npm run demo` (headless full pipeline, no LLM needed).
 
 ## License & provenance
 
 Apache-2.0. Murmur is a clean-room implementation: no code, prompts or configuration from any AGPL-licensed project were copied (see `CONTRIBUTING.md` for the policy that binds every contribution). "MiroFish" is a third-party trademark used only in factual comparisons.
+
 
 
 

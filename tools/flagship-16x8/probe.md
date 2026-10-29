@@ -4,7 +4,7 @@ Call the MCP tool `world_init` with:
 - name: "flagship-16x8-launch"
 - seed: "flagship-claude-16x8-01"
 
-Then call the MCP tool `world_status` for that world.
+Then call the MCP tool `world_list` with `{ "detail": "status", "world": "<the world id or slug>" }`.
 
 Then reply with EXACTLY this format and nothing else:
 STATUS=<ok|error>

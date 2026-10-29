@@ -13,8 +13,9 @@ Your job is to be the crowd and the analyst.
 2. **Never patch, edit, or work around the engine.** No writing files into
    `.murmur/`, no direct SQLite, no editing source. If a submission is rejected,
    fix your *content* and resubmit through the tool.
-3. **Every number in the final report must appear in the `report_plan` evidence
-   pack.** If a figure is not in the evidence, do not state it. Never estimate.
+3. **Every number in the final report must appear in the `report({action:"plan"})`
+   evidence pack.** If a figure is not in the evidence, do not state it. Never
+   estimate.
 4. **Honour the character limits** given in each task digest (twitter posts and
    replies are 280 characters, reddit titles 140, comments 2000).
 5. **Actively use the allowed actions**: `reply`/`comment` must cite a real
@@ -60,27 +61,27 @@ specific, evidence-bound prose. No hype, no "game-changing", no invented quotes.
 >
 > ```json
 > world_init          {"name":"flagship-16x8-acme-pricing","description":"Developer and free-tier community reaction to a 40% price rise","seed":"flagship-claude-16x8-01"}
-> seed_add_text       {"title":"Acme Cloud pricing change — fictional worked example","ref":"flagship-scenario","text":"<the full scenario text>"}
+> seed_add            {"source":"text","title":"Acme Cloud pricing change — fictional worked example","text":"<the full scenario text>"}
 > seeds_review        {}
-> ontology_plan       {}
-> ontology_submit     {"taskId":"<id from ontology_plan>","result":{"entities":[ ...14-18 entities, each with name/type/description/salience/anchors[]/motives[] ]}}
-> graph_build         {}
-> graph_export_mermaid{}
-> personas_plan       {"count":16}
-> personas_submit     {"taskId":"<id>","result":{"personas":[ ...16 personas, each with name/handle/archetype/bio/traits{}/stances{}/platform/activity ]}}
-> sim_configure       {"rounds":8}
-> sim_next_batch      {}
-> sim_submit_generations {"taskId":"<id>","generations":[ {"persona":"p_N","actions":[ ... ]} ]}
-> sim_inject_event    {"round":4,"text":"<injection text>"}
-> report_plan         {"focus":"developer and free-tier community reaction to the Acme Cloud pricing increase"}
-> report_submit       {"draft":{ ...the full report draft object... }}
-> report_export       {"format":"both"}
+> ontology            {"action":"plan"}
+> ontology            {"action":"submit","task_id":"<task_id from ontology plan>","result":{"entities":[ ...14-18 entities, each with name/type/description/salience/anchors[]/motives[] ]}}
+> graph               {"action":"build"}
+> graph               {"action":"export"}
+> personas            {"action":"plan","count":16}
+> personas            {"action":"submit","task_id":"<task_id>","result":{"personas":[ ...16 personas, each with name/handle/archetype/bio/traits{}/stances{}/platform/activity ]}}
+> world_config        {"rounds":8}
+> sim                 {"action":"next_batch"}
+> sim                 {"action":"submit","task_id":"<task_id>","generations":[ {"persona":"p_N","actions":[ ... ]} ]}
+> sim                 {"action":"inject","round":4,"text":"<injection text>"}
+> report              {"action":"plan","focus":"developer and free-tier community reaction to the Acme Cloud pricing increase"}
+> report              {"action":"submit","task_id":"<task_id>","draft":{ ...the full report draft object... }}
+> report              {"action":"export","format":"both"}
 > ```
 >
 > Note the field names, which are easy to get wrong:
-> `ontology_submit` / `personas_submit` take **`result`**;
-> `report_submit` takes **`draft`**;
-> `sim_submit_generations` takes **`generations`**, and each generation keys the
+> `ontology` / `personas` submit take **`task_id`** (snake_case) and **`result`**;
+> `report` submit takes **`task_id`** and **`draft`**;
+> `sim` submit takes **`task_id`** and **`generations`**, and each generation keys the
 > persona as **`persona`** (not `personaId`). Copy every field name from the
 > tool's own input schema rather than assuming.
 
@@ -88,12 +89,12 @@ specific, evidence-bound prose. No hype, no "game-changing", no invented quotes.
 - `world_init` → name `flagship-16x8-acme-pricing`, seed `flagship-claude-16x8-01`
 
 **2. Seed**
-- `seed_add_text` with the full scenario text above (title: "Acme Cloud pricing change — fictional worked example", ref: "flagship-scenario")
-- `seeds_review`
+- `seed_add` `{source:"text", title:"Acme Cloud pricing change — fictional worked example", text: <the full scenario text>}`
+- `seeds_review` `{}`
 
 **3. Ontology**
-- `ontology_plan`
-- `ontology_submit` — 14–18 entities. Include the orgs (Acme Cloud, Nimbus Labs,
+- `ontology` `{action:"plan"}`
+- `ontology` `{action:"submit", task_id, result}` — 14–18 entities. Include the orgs (Acme Cloud, Nimbus Labs,
   StackHaven), the products (Pro plan, free tier, migration guide, observability
   layer, import tool), the topics (developer community, free-forever exports,
   amnesty window, uptime record, enterprise roadshow), the events (pricing
@@ -102,12 +103,12 @@ specific, evidence-bound prose. No hype, no "game-changing", no invented quotes.
   text that justify it.
 
 **4. Graph**
-- `graph_build`
-- `graph_export_mermaid`
+- `graph` `{action:"build"}`
+- `graph` `{action:"export"}`
 
 **5. Personas**
-- `personas_plan` with `count: 16`
-- `personas_submit` — 16 personas matching the mix described above. Each needs
+- `personas` `{action:"plan", count:16}`
+- `personas` `{action:"submit", task_id, result}` — 16 personas matching the mix described above. Each needs
   name, handle, archetype, bio, the 5 traits (openness, conscientiousness,
   extraversion, agreeableness, emotionalStability, all 0..1), stances against
   4–6 named entities (values -1..1), platform (`twitter`, `reddit`, or `both`),
@@ -116,16 +117,16 @@ specific, evidence-bound prose. No hype, no "game-changing", no invented quotes.
   least 5 clearly negative.
 
 **6. Configure**
-- `sim_configure` with `rounds: 8`
+- `world_config` `{rounds:8}`
 
 **7. Rounds 1–3**
 For each round r in 1,2,3:
-- `sim_next_batch`
-- read the digest carefully, then `sim_submit_generations` with one generation
+- `sim` `{action:"next_batch"}`
+- read the digest carefully, then `sim` `{action:"submit", task_id, generations}` with one generation
   per activated persona, keyed by that persona's id. Use varied actions.
 
 **8. Inject**
-- `sim_inject_event` with round 4 and this text:
+- `sim` `{action:"inject", round:4, text:"<injection text>"}` with this text:
   "StackHaven announces a free-tier match plus a one-click importer, and the
   StackHaven forum migration thread passes 5,000 posts."
 
@@ -133,19 +134,19 @@ For each round r in 1,2,3:
 Same loop as step 7 for r in 4,5,6,7,8.
 
 **10. Report**
-- `report_plan` (focus: "developer and free-tier community reaction to the Acme Cloud pricing increase")
-- `report_submit` — a genuine senior-analyst draft written **only** from the
+- `report` `{action:"plan", focus:"developer and free-tier community reaction to the Acme Cloud pricing increase"}`
+- `report` `{action:"submit", task_id, draft}` — a genuine senior-analyst draft written **only** from the
   evidence pack. Use the real post ids in every citation. Include: executive
   summary, the scenario, sentiment by entity, factions, controversy and
   polarization, engagement and virality, platform divergence, escalation
   chains, trajectory, 3–5 concrete recommendations, and an honest `limitations`
   list. If the evidence is thin or contradictory, say so in the limitations
   rather than overclaiming.
-- `report_export` with `format: "both"`
+- `report` `{action:"export", format:"both"}`
 
 **11. Capture**
-- `sim_timeline`
-- `sim_round_summary`
+- `sim` `{action:"timeline"}`
+- `sim` `{action:"summary"}`
 
 ## Final output
 

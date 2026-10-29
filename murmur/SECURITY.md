@@ -7,7 +7,7 @@ Murmur is a local-only scenario simulation server that speaks MCP over stdio. Th
 Murmur assumes it is **trusted** and that its host is **honest**. Specifically:
 
 - **It is a trusted local process, not a sandbox.** Murmur runs as a stdio MCP server inside a process you launched, inheriting your full environment, filesystem permissions and credentials. It has no isolation of its own. Anything it can read, it can read; anything your user account can do, it can do. Do not run it as root, and do not point it at a workspace you are not willing to expose.
-- **The workspace jail is per-tool and currently narrow.** `seed_add_files` is the only tool that reads arbitrary paths, and it does **not** currently enforce a workspace boundary — absolute paths anywhere on the filesystem are read and ingested as seed material (see "Known gaps"). Other tools operate on data already inside `.murmur/`. `MURMUR_WORKSPACE` sets the root but is not a security boundary.
+- **The workspace jail is per-tool.** `seed_add` (source `'files'`) is the only tool that reads arbitrary paths; it enforces a workspace boundary — both the literal path and the nearest-existing-ancestor real path are checked, so `../` escapes, absolute paths outside the root, and symlinks pointing out are all refused with an error (verified by the e2e jail and symlink tests). Other tools operate on data already inside `.murmur/`. `MURMUR_WORKSPACE` sets the root the jail runs against.
 - **Tool responses leave your machine.** Seed text, feed text, event text and memory text are returned to whichever MCP client you connect — in practice a third-party LLM provider. Material you attach is disclosed to that provider under its own terms. Do not attach material you are not permitted to share.
 - **Install-time egress exists (trust on first use).** `better-sqlite3` declares an install script (`prebuild-install || node-gyp rebuild --release`, `package-lock.json:1246`) that downloads a prebuilt native binary from GitHub Releases. The fetch path goes through `prebuild-install@7.1.3`, which npm marks **deprecated and unmaintained** (`package-lock.json:2660`) and which itself depends on network libraries (`simple-get`, `tunnel-agent`). This is the one place Murmur reaches the network, it happens at `npm install` rather than at runtime, and the binary is trusted on first use rather than signature-verified by Murmur. Use `npm ci` with a lockfile you have reviewed, and prefer a source build if that trade-off is unacceptable to you.
 - **Untrusted content is data, but it is still data you chose to attach.** See "Prompt-injection hardening" for what is and is not enforced.
@@ -29,7 +29,7 @@ Scoped to first-party code paths in `packages/*/src`:
 
 - **No runtime network calls.** Murmur's own code imports no `node:http`, `node:https`, `node:net`, `node:dns` or `node:tls`, and calls no `fetch`, `XMLHttpRequest` or `WebSocket`. It contains no outbound URLs. `seed_add_url` records a URL as provenance only; the engine never fetches it — the client fetches the page and passes the text in.
 - **No API keys, tokens or accounts in any configuration surface.** Murmur requires no credentials to run. It reads no environment secrets and defines no key or token fields. (Third-party dependencies are outside this claim — see the threat model.)
-- **State stays under `.murmur/` in your workspace** (SQLite plus Markdown/JSONL artifacts). This is a statement about where Murmur *writes*; the `seed_add_files` read boundary is a separate and weaker matter, below.
+- **State stays under `.murmur/` in your workspace** (SQLite plus Markdown/JSONL artifacts). This is a statement about where Murmur *writes*; the `seed_add` read boundary is enforced separately (workspace jail, above).
 
 ## Prompt-injection hardening
 
@@ -40,7 +40,7 @@ Seed material is untrusted input, and Murmur never lets it act as an engine dire
 
 ### Known gaps
 
-- **`seed_add_files` does not enforce a workspace jail.** A containment check (`assertInsideWorkspace`, `packages/server/src/tools/seeds.ts:13-18`) is defined but never invoked; the handler resolves absolute paths as given (`seeds.ts:35`). This has been confirmed by running the built server against a canary file outside the workspace root: the tool returned `ok: true` for a path reported as `..\OUTSIDE_SECRET.txt` and persisted the file's contents into the world database. Treat every file the process can read as reachable by this tool, and do not attach untrusted MCP clients to a sensitive workspace. The fix is a one-line call and should be treated as a release blocker.
+- **No known first-party filesystem escape.** The `seed_add` workspace jail (previously an open, documented release blocker) is now enforced and covered by e2e tests for both `../`/absolute escapes and symlinked parents. The remaining exposure is the threat-model one: Murmur runs with your full user permissions, so anything the process itself can read *through a legitimate workspace path* is in scope — attach only what you are willing to share with your MCP client's provider.
 
 ## Reporting a vulnerability
 

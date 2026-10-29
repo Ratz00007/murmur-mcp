@@ -85,15 +85,15 @@ Cursor, Windsurf, Cline/Continue, VS Code) with copy-paste snippets.
 
 Once connected, ask your agent things like:
 *"Simulate how r/devops reacts to our new pricing page"* — the agent drives
-the 29 Murmur tools; the LLM you already pay for does the persona voices.
+the 11 Murmur tools; the LLM you already pay for does the persona voices.
 
 ## ③ Develop, test, replay
 
 ```bash
 cd murmur
 npm install            # if you skipped Option B (dev toolchain: typescript, vitest, sqlite)
-npm test               # 270 unit + golden tests (byte-identical replay, citation integrity)
-npm run test:e2e       # 2 end-to-end: real SDK client ↔ server over stdio
+npm test               # 595 unit + golden tests (byte-identical replay, citation integrity)
+npm run test:e2e       # 190 end-to-end: 188 market-twin contracts + integration + cleanroom, real SDK client ↔ server over stdio
 npm run cleanroom      # zero-egress gate: no network APIs, no URLs, no key surfaces
 npm run build          # rebuild dist from source (all 5 packages)
 ```
@@ -114,8 +114,9 @@ measures token budget and wall time at any scale:
 
 1. `repository` / `homepage` / `bugs` in
    `murmur/packages/server/package.json` already point at
-   `github.com/Ratz00007/murmur-mcp` — create the repo at that path, or update
-   those three fields plus the badge URLs at the top of this README.
+   `github.com/Ratz00007/murmur-mcp` — the repo exists and is public; if you
+   rename it, update those three fields plus the badge URLs at the top of this
+   README.
 2. Push the repo, add the `NPM_TOKEN` secret, and the release workflow
    (`.github/workflows/release.yml`) runs every gate and publishes with
    provenance — or simply `npm publish` from `murmur/packages/server/`.
@@ -156,7 +157,7 @@ the shape of what it must write — *not* how verbose a real model is):
 
 | scale | generation items | input tasks | output content | round trip | engine wall time |
 |---|---|---|---|---|---|
-| defaults 24 × 8 | 80 | ≈ 57.8k | ≈ 6.5k | **≈ 64.3k** | 1.41s |
+| defaults 24 × 8 | 80 | ≈ 57.8k | ≈ 6.5k | **≈ 64.3k** | 1.48s |
 | flagship 48 × 8 | 160 | ≈ 85.4k | ≈ 10.9k | **≈ 96.3k** | 2.98s |
 
 Input splits roughly: ontology ≈0.8k, personas ≈1.0k, per-round sim batches
@@ -168,9 +169,9 @@ flagship) + report draft (≈1.6k). Report markdown ≈26k chars either way.
 
 | Artifact | Measured | ≈ tokens (chars/4) |
 |---|---|---|
-| Report output `report-1.md` | 26,320 chars | ≈ 6.6k output |
+| Report output `report-1.md` | 27,936 bytes (27,289 chars) | ≈ 6.8k output |
 | Round-1 generation batch prompt (reported in `DEMO-TRANSCRIPT.md`) | ≈ 932 tokens | as reported |
-| Largest single host response, budget 12,000 (reported in `DEMO-TRANSCRIPT.md`) | 4,645 tokens | as reported |
+| Largest single host response, budget 12,000 (reported in `DEMO-TRANSCRIPT.md`) | 5,015 tokens | as reported |
 | `audit.jsonl` / `interviews.jsonl` / `qa.jsonl` | 28 / 1 / 1 records (3,265 / 433 / 339 B) | ≈ 0.8k / 0.1k / 0.1k |
 
 Real-LLM cost varies by model, provider pricing and prompt caching. The tables
@@ -206,6 +207,7 @@ publish it in `gallery/` and replace this line with the measured figure.
 | Clean-room + zero-key policies | `murmur/CONTRIBUTING.md` |
 | Security / injection hardening | `murmur/SECURITY.md` |
 | License | `murmur/LICENSE` (Apache-2.0) + `murmur/NOTICE` |
+
 
 
 

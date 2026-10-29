@@ -1,34 +1,23 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2026-07-28/server.schema.json",
-  "name": "murmur-mcp",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Ratz00007/murmur-mcp",
+  "title": "Murmur",
+  "description": "Deterministic crowd simulation: personas, feeds and analyst reports for pricing and launch.",
   "version": "1.0.0",
-  "description": "Adversarial critic for pricing and launch changes: ranked objections with evidence, counter-case, and a test plan for real humans. Zero API keys; runs inside your coding agent over MCP.",
   "repository": {
     "url": "https://github.com/Ratz00007/murmur-mcp",
-    "source": "github"
+    "source": "github",
+    "subfolder": "murmur"
   },
-  "license": "Apache-2.0",
-  "runtime": {
-    "transport": "stdio",
-    "command": "npx",
-    "args": ["-y", "murmur-mcp", "serve"],
-    "node": ">=20.0.0"
-  },
-  "capabilities": {
-    "tools": [
-      "world_init",
-      "world_list",
-      "world_config",
-      "seed_add",
-      "seeds_review",
-      "ontology",
-      "graph",
-      "personas",
-      "sim",
-      "report",
-      "interact"
-    ],
-    "resources": ["murmur://worlds", "murmur://world/{id}/state", "murmur://world/{id}/report/{rid}"],
-    "prompts": ["murmur-predict", "murmur-simulate", "murmur-interview", "murmur-resume"]
-  }
+  "websiteUrl": "https://github.com/Ratz00007/murmur-mcp",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "murmur-mcp",
+      "version": "1.0.0",
+      "runtimeHint": "node",
+      "transport": { "type": "stdio" }
+    }
+  ]
 }
