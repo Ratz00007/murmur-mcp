@@ -4,7 +4,7 @@
 
 > How will developers react to the Pro plan price change?
 
-**Version** 1 · **Scenario** `pricing-reaction` · **Generated** 2026-09-28 · **Seed** `acme-demo-2026`
+**Version** 1 · **Scenario** `pricing-reaction` · **Generated** 2026-10-29 · **Seed** `acme-demo-2026`
 
 **Rounds** 5 · **Population** 12 personas · **Ontology** 14 entities · **Platforms** Twitter + Reddit
 
@@ -18,17 +18,17 @@
 
 | Simulated posts | Total engagement | Escalation chains | Viral posts | Controversy | Momentum | Most-discussed entity |
 |---|---|---|---|---|---|---|
-| 24 | 28 | 0 | 0 | **contested** 44/100 | accelerating (+33%) | Acme Cloud |
+| 25 | 2 | 0 | 0 | **low-stakes** 12/100 | cooling (-175%) | Acme Cloud |
 
-**Verdict —** 7 supporters vs 5 opponents around Acme Cloud (0 still undecided) — the population is deeply polarized. Controversy reads **contested** (44/100).
+**Verdict —** 7 supporters vs 5 opponents around Acme Cloud (0 still undecided) — the population is deeply polarized. Controversy reads **low-stakes** (12/100).
 
 ## 1. Executive Summary
 
-The simulated crowd is contested (controversy 44/100): 7 supporters against 5 opponents around Acme Cloud, with 0 personas still undecided — the persuadable middle is 0% of the population. Sentiment toward Acme Cloud ended -0.17 (from +0.87, souring); engagement is accelerating at +33% between halves of the run. No post crossed the virality threshold — reach stayed inside the follow graph, which limits how far any single frame can travel. The strongest signal in the run is hype hardening around Pricing FAQ; the risk register below details what to do about it before this plays out in public.
+The simulated crowd is low-stakes (controversy 12/100): 7 supporters against 5 opponents around Acme Cloud, with 0 personas still undecided — the persuadable middle is 0% of the population. Sentiment toward Acme Cloud ended -0.37 (from +0.76, souring); engagement is cooling at -175% between halves of the run. No post crossed the virality threshold — reach stayed inside the follow graph, which limits how far any single frame can travel. The strongest signal in the run is hype hardening around Pricing FAQ; the risk register below details what to do about it before this plays out in public.
 
 ## 2. Scenario & Population
 
-Simulated 12 personas across 14 ontology entities for 5 rounds of dual-platform mechanics, with 1 injected news event stress-testing the reaction. The population split 7 supporters vs 5 opponents (0 undecided) around Acme Cloud, producing 24 posts and 28 engagement events.
+Simulated 12 personas across 14 ontology entities for 5 rounds of dual-platform mechanics, with 1 injected news event stress-testing the reaction. The population split 7 supporters vs 5 opponents (0 undecided) around Acme Cloud, producing 25 posts and 2 engagement events.
 
 ### Entities under watch
 
@@ -36,9 +36,9 @@ Simulated 12 personas across 14 ontology entities for 5 rounds of dual-platform 
 |---|---|---|---|---|
 | Pro Plan Pricing | topic | 0.90 | 0 | the debate around Pro Plan Pricing turns on who pays for reliability |
 | Pricing FAQ | topic | 0.86 | 5 | the debate around Pricing FAQ turns on value versus lock-in |
-| Pricing Release | topic | 0.81 | 3 | the debate around Pricing Release turns on value versus lock-in |
-| Acme Cloud | org | 0.77 | 15 | Acme Cloud wants to avoid backlash |
-| Nimbus Labs | org | 0.72 | 8 | Nimbus Labs wants to avoid backlash |
+| Pricing Release | topic | 0.81 | 2 | the debate around Pricing Release turns on value versus lock-in |
+| Acme Cloud | org | 0.77 | 14 | Acme Cloud wants to avoid backlash |
+| Nimbus Labs | org | 0.72 | 9 | Nimbus Labs wants to avoid backlash |
 | Free Tier | topic | 0.68 | 2 | the debate around Free Tier turns on fairness to early users |
 | Pricing Change | topic | 0.63 | 0 | the debate around Pricing Change turns on fairness to early users |
 | Existing Customers | topic | 0.59 | 0 | the debate around Existing Customers turns on who pays for reliability |
@@ -62,11 +62,11 @@ Simulated 12 personas across 14 ontology entities for 5 rounds of dual-platform 
 
 ## 3. Key Findings
 
-1. **The population split 7/5/0 (support/oppose/undecided) — polarization 92/100, controversy 44/100 (contested).**
-2. **Sentiment toward Acme Cloud ran +0.87 → -0.17 over 5 rounds (souring); peak discourse volume hit round 3.**
-3. **Engagement is accelerating (+33% second half vs first) — the crowd is leaning in, not tuning out.**
+1. **The population split 7/5/0 (support/oppose/undecided) — polarization 92/100, controversy 12/100 (low-stakes).**
+2. **Sentiment toward Acme Cloud ran +0.76 → -0.37 over 5 rounds (souring); peak discourse volume hit round 3.**
+3. **Engagement is cooling (-175% second half vs first) — attention is decaying faster than sentiment is resolving.**
 4. **Zero viral posts: the run's reach is bounded by the follow graph — narratives are competing in a closed room.**
-5. **Twitter and Reddit disagree most on Nimbus Labs (Δ 0.88) — the same facts are producing different verdicts per platform.**
+5. **Twitter and Reddit disagree most on Acme Cloud (Δ 0.99) — the same facts are producing different verdicts per platform.**
 
 ## 4. Market Reaction
 
@@ -77,9 +77,9 @@ xychart-beta
     title "Sentiment by round - Acme Cloud / Nimbus Labs / Pricing FAQ"
     x-axis [1, 2, 3, 4, 5]
     y-axis "sentiment" -1 --> 1
-    line [0.87, -0.22, -0.05, -0.44, -0.17]
-    line [0.00, 0.49, 0.07, 0.46, 0]
-    line [0.69, 0.76, 0, 0, -0.58]
+    line [0.76, -0.40, 0.24, -0.25, -0.37]
+    line [0.29, -0.11, 0.19, 0.46, 0.32]
+    line [0.42, 0.76, 0, 0.58, 0]
 ```
 
 Lines, in chart order: **Acme Cloud**, **Nimbus Labs**, **Pricing FAQ**.
@@ -88,57 +88,49 @@ Lines, in chart order: **Acme Cloud**, **Nimbus Labs**, **Pricing FAQ**.
 
 | Entity | Type | First reading | Last reading | Δ | Direction | Mentions | Peak round |
 |---|---|---|---|---|---|---|---|
-| Pricing FAQ | topic | +0.69 | -0.58 | -1.27 | ↓ worsening | 5 | 1 |
-| Pricing Release | topic | -0.54 | -0.58 | -0.04 | → flat | 3 | 4 |
-| Acme Cloud | org | +0.87 | -0.17 | -1.04 | ↓ worsening | 15 | 3 |
-| Nimbus Labs | org | 0.00 | +0.46 | +0.46 | ↑ improving | 8 | 2 |
+| Pricing FAQ | topic | +0.42 | +0.58 | +0.16 | ↑ improving | 5 | 1 |
+| Pricing Release | topic | 0.00 | 0.00 | 0.00 | → flat | 2 | 3 |
+| Acme Cloud | org | +0.76 | -0.37 | -1.13 | ↓ worsening | 14 | 3 |
+| Nimbus Labs | org | +0.29 | +0.32 | +0.03 | → flat | 9 | 2 |
 | Free Tier | topic | +0.32 | +0.32 | 0.00 | → flat | 2 | 4 |
 
-Engagement is **accelerating** — 12 in the first half of the run vs 16 in the second (+33%).
+Engagement is **cooling** — 8 in the first half of the run vs -6 in the second (-175%).
 
 ### What the crowd actually said about Acme Cloud
 
 **Champions said**
 
-> **po_14** · @ben1 · twitter · round 3 · sentiment toward Acme Cloud +0.76 · engagement 2
+> **po_15** · @ben1 · twitter · round 3 · sentiment toward Acme Cloud +0.76 · engagement 2
 >
 > Screaming into the void but: y'all are big mad about the 30% thing but Acme Cloud literally never crashes for me?? meanwhile Nimbus Labs ate my project files in 2023 and we all just moved on This is a win for the…
 
-> **po_17** · @jonas9 · twitter · round 3 · sentiment toward Acme Cloud +0.58 · engagement 0
->
-> I've defended Acme Cloud in a hundred threads. I can't defend 30% with a straight face. The trust we built is being spent by people who never posted here. See you in the replies.
-
-> **po_3** · @elena4 · reddit · round 1 · sentiment toward Acme Cloud +0.76 · engagement -3
+> **po_3** · @elena4 · reddit · round 1 · sentiment toward Acme Cloud +0.76 · engagement -2
 >
 > small win: deployed my first project on Acme Cloud today and it worked on the first try. first try!! I'm going to be insufferable about this for a week still learning, thanks for patience.
 
 **Critics said**
 
-> **po_15** · @felix5 · twitter · round 3 · sentiment toward Acme Cloud -0.58 · engagement 2
+> **po_8** · @felix5 · twitter · round 2 · sentiment toward Acme Cloud -0.76 · engagement 2
 >
-> Following up from earlier: The 30% move puts Acme Cloud in an awkward middle: too expensive for hobbyists, not enterprise-grade for the big migrations. Someone in that pricing meeting miscalculated.
+> Screaming into the void but: Advising my clients to model 30% churn risk on Acme Cloud before renewing. The six-month grandfather window suggests their own team expects exactly that.
 
-> **po_19** · @ada0 · twitter · round 4 · sentiment toward Acme Cloud -0.76 · engagement 1
+> **po_14** · @ada0 · twitter · round 3 · sentiment toward Acme Cloud -0.54 · engagement 1
 >
-> Everyone dunking on the 30% increase is missing it: the free-tier limits are the real lock-in play. Acme Cloud knows exactly what they're doing, and I hate that I get it. Receipts in thread.
-
-> **po_27** · @jonas9 · reddit · round 5 · sentiment toward Acme Cloud -0.54 · engagement 0
->
-> PSA: We made Acme Cloud what it is — the guides, the plugins, the conference talks, all unpaid — and the thank-you is 30% more per month? That's a betrayal, plain and simple.
+> Four years of advocating Acme Cloud in every architecture review, and the thank-you is 30% more for the same plan. That's a paywall on loyalty. Evaluating Pricing Release this weekend.
 
 **On the fence**
 
-> **po_21** · @felix5 · twitter · round 4 · sentiment toward Acme Cloud 0.00 · engagement 3
+> **po_20** · @elena4 · twitter · round 4 · sentiment toward Acme Cloud 0.00 · engagement 0
 >
-> Acme Cloud's 30% increase reads as a margin defense, not a product bet. Expect churn in the prosumer segment first — and Pricing Release's timing with their importer is not a coincidence.
+> probably an unpopular take from the new guy: 30% for Acme Cloud still seems like a lot of value? everyone in my cohort uses the free tier anyway, am I missing something
 
-> **po_28** · @kira10 · twitter · round 5 · sentiment toward Acme Cloud 0.00 · engagement 2
+> **po_28** · @kira10 · twitter · round 5 · sentiment toward Acme Cloud 0.00 · engagement 0
 >
 > probably an unpopular take from the new guy: 30% for Acme Cloud still seems like a lot of value? everyone in my cohort uses the free tier anyway, am I missing something 3 followers and counting.
 
-> **po_20** · @elena4 · twitter · round 4 · sentiment toward Acme Cloud 0.00 · engagement 1
+> **po_16** · u/dev3 · reddit · round 3 · sentiment toward Acme Cloud 0.00 · engagement -1
 >
-> probably an unpopular take from the new guy: 30% for Acme Cloud still seems like a lot of value? everyone in my cohort uses the free tier anyway, am I missing something
+> Actually important: If you love this community, don't let a 30% headline decide for you. Acme Cloud is worth the patience — the roadmap is happening and it's for all of us.
 
 ## 5. Faction Map
 
@@ -155,15 +147,15 @@ Polarization: **92/100** — the population has hardened into opposing camps. Th
 
 `██████████████░░░░░░░░░░`
 
-Average stance +0.63 · 11 posts · 16 engagement received.
+Average stance +0.64 · 12 posts · 11 engagement received.
 
-**Leading voices:** @ben1 (casual scroller, stance +0.67, 3 posts) · @kira10 (curious newcomer, stance +0.67, 3 posts) · @liam11 (industry professional, stance +0.66, 1 posts)
+**Leading voices:** @grace6 (power user, stance +0.68, 1 posts) · @ben1 (casual scroller, stance +0.69, 3 posts) · @kira10 (curious newcomer, stance +0.68, 3 posts)
 
-> **po_7** · @ben1 · twitter · round 2 · sentiment toward Acme Cloud +0.32 · engagement 0
+> **po_7** · @ben1 · twitter · round 2 · sentiment toward Acme Cloud +0.32 · engagement -1
 >
 > everyone migrating because of the 30% thing… I'll keep my stuff exactly where it works. Acme Cloud has been good to me and I'm too tired for a weekend of config this is not financial advice.
 
-> **po_3** · @elena4 · reddit · round 1 · sentiment toward Acme Cloud +0.76 · engagement -3
+> **po_3** · @elena4 · reddit · round 1 · sentiment toward Acme Cloud +0.76 · engagement -2
 >
 > small win: deployed my first project on Acme Cloud today and it worked on the first try. first try!! I'm going to be insufferable about this for a week still learning, thanks for patience.
 
@@ -173,37 +165,37 @@ Faction sentiment toward Acme Cloud moved from +0.76 (round 1) to 0.00 (round 5)
 
 `██████████░░░░░░░░░░░░░░`
 
-Average stance -0.62 · 13 posts · 12 engagement received.
+Average stance -0.64 · 13 posts · -5 engagement received.
 
-**Leading voices:** @felix5 (industry professional, stance -0.65, 4 posts) · @ada0 (power user, stance -0.64, 3 posts) · u/hugo7 (casual scroller, stance -0.68, 3 posts)
+**Leading voices:** @felix5 (industry professional, stance -0.69, 4 posts) · u/hugo7 (casual scroller, stance -0.68, 4 posts) · u/ines8 (pragmatic skeptic, stance -0.50, 1 posts)
 
-> **po_8** · @felix5 · twitter · round 2 · sentiment toward Acme Cloud -0.76 · engagement 1
+> **po_17** · @felix5 · twitter · round 3 · sentiment toward Acme Cloud -0.58 · engagement 0
 >
-> Screaming into the void but: Advising my clients to model 30% churn risk on Acme Cloud before renewing. The six-month grandfather window suggests their own team expects exactly that.
+> Following up from earlier: The 30% move puts Acme Cloud in an awkward middle: too expensive for hobbyists, not enterprise-grade for the big migrations. Someone in that pricing meeting miscalculated.
 
-> **po_13** · @ada0 · twitter · round 3 · sentiment toward Acme Cloud -0.54 · engagement 0
+> **po_19** · @ada0 · twitter · round 4 · sentiment toward Acme Cloud -0.76 · engagement -3
 >
-> Four years of advocating Acme Cloud in every architecture review, and the thank-you is 30% more for the same plan. That's a paywall on loyalty. Evaluating Pricing Release this weekend.
+> Everyone dunking on the 30% increase is missing it: the free-tier limits are the real lock-in play. Acme Cloud knows exactly what they're doing, and I hate that I get it. Receipts in thread.
 
-Faction sentiment toward Acme Cloud moved from -0.76 (round 2) to -0.27 (round 5).
+Faction sentiment toward Acme Cloud moved from -0.76 (round 2) to -0.25 (round 5).
 
 ## 6. Platform Divergence
 
 | Metric | Twitter | Reddit |
 |---|---|---|
-| Posts | 21 | 7 |
-| Engagement | 30 | -2 |
+| Posts | 20 | 8 |
+| Engagement | 8 | -2 |
 | Escalation chains | 0 | 0 |
 
 | Entity | Twitter sentiment | Reddit sentiment | Divergence |
 |---|---|---|---|
-| Nimbus Labs | +0.59 (5 posts) | -0.29 (3 posts) | 0.88 |
-| Pricing FAQ | +0.64 (3 posts) | +0.17 (2 posts) | 0.47 |
-| Acme Cloud | -0.18 (12 posts) | +0.01 (3 posts) | 0.19 |
-| Free Tier | +0.32 (2 posts) | — (0 posts) | 0.00 |
-| Pricing Release | -0.57 (3 posts) | — (0 posts) | 0.00 |
+| Acme Cloud | -0.23 (12 posts) | +0.76 (2 posts) | 0.99 |
+| Pricing FAQ | +0.64 (3 posts) | +0.35 (2 posts) | 0.29 |
+| Nimbus Labs | +0.17 (5 posts) | +0.20 (4 posts) | 0.03 |
+| Free Tier | +0.16 (2 posts) | — (0 posts) | 0.00 |
+| Pricing Release | 0.00 (2 posts) | — (0 posts) | 0.00 |
 
-The largest split is **Nimbus Labs** (Δ 0.88 between platforms) — the same story is landing differently on Twitter than on Reddit, which usually means different framings are winning in each venue.
+The largest split is **Acme Cloud** (Δ 0.99 between platforms) — the same story is landing differently on Twitter than on Reddit, which usually means different framings are winning in each venue.
 
 ## 7. Persona Spotlight
 
@@ -211,13 +203,13 @@ The largest split is **Nimbus Labs** (Δ 0.88 between platforms) — the same st
 
 *industry professional who argues about pricing on the internet.*
 
-4 posts · 9 engagement received · platform twitter · arc: **warmed to Acme Cloud** (stance -0.77 → -0.65, shift +0.12)
+4 posts · 0 engagement received · platform twitter · arc: **steadfast critic of Acme Cloud** (stance -0.77 → -0.69, shift +0.08)
 
 ```
 before ████████··|··········
 after  ███████···|··········
 ```
-> **po_21** · @felix5 · twitter · round 4 · sentiment toward Acme Cloud 0.00 · engagement 3
+> **po_21** · @felix5 · twitter · round 4 · sentiment toward Acme Cloud 0.00 · engagement -1
 >
 > Acme Cloud's 30% increase reads as a margin defense, not a product bet. Expect churn in the prosumer segment first — and Pricing Release's timing with their importer is not a coincidence.
 
@@ -225,71 +217,71 @@ after  ███████···|··········
 
 *casual scroller who lives in release notes.*
 
-3 posts · 6 engagement received · platform twitter · arc: **steadfast champion of Acme Cloud** (stance +0.73 → +0.67, shift -0.06)
+3 posts · 5 engagement received · platform twitter · arc: **steadfast champion of Acme Cloud** (stance +0.73 → +0.69, shift -0.04)
 
 ```
 before ··········|···███████
 after  ··········|···███████
 ```
-> **po_14** · @ben1 · twitter · round 3 · sentiment toward Acme Cloud +0.76 · engagement 2
+> **po_15** · @ben1 · twitter · round 3 · sentiment toward Acme Cloud +0.76 · engagement 2
 >
 > Screaming into the void but: y'all are big mad about the 30% thing but Acme Cloud literally never crashes for me?? meanwhile Nimbus Labs ate my project files in 2023 and we all just moved on This is a win for the…
 
-### Kira Novak (@kira10) — curious newcomer
+### Grace Kim (@grace6) — power user
 
-*curious newcomer who argues about pricing on the internet.*
+*power user who ships side projects on weekends.*
 
-3 posts · 6 engagement received · platform twitter · arc: **steadfast champion of Acme Cloud** (stance +0.70 → +0.67, shift -0.03)
+1 posts · 6 engagement received · platform twitter · arc: **steadfast champion of Acme Cloud** (stance +0.68 → +0.68)
 
 ```
 before ··········|···███████
 after  ··········|···███████
 ```
-> **po_28** · @kira10 · twitter · round 5 · sentiment toward Acme Cloud 0.00 · engagement 2
+> **po_9** · @grace6 · twitter · round 2 · sentiment +0.76 · engagement 6
 >
-> probably an unpopular take from the new guy: 30% for Acme Cloud still seems like a lot of value? everyone in my cohort uses the free tier anyway, am I missing something 3 followers and counting.
+> Finally someone gets it. The Pricing FAQ discourse keeps skipping the part where the actual constraints live. Solid decision, no notes. Ask me how I know!
 
 ## 8. Trajectory Simulated Projection
 
-**Simulated projection — slope-jitter sensitivity around the recorded run.** No re-simulation: the ensemble least-squares-fits the observed curve and jitters the fitted slope across 5 refits (seeds `acme-demo-2026:0`…`acme-demo-2026:4`). Recorded rounds are identical in every run, so the band only opens on projected rounds — it quantifies model spread against a ±0.06 slope perturbation, not real-world uncertainty.
+**Simulated projection — slope-jitter sensitivity around the recorded run.** No re-simulation: each refit least-squares-fits the observed curve and jitters the fitted slope across 5 refits (seeds `acme-demo-2026:0`…`acme-demo-2026:4`). Recorded rounds are identical in every run, so the band only opens on projected rounds — it quantifies model spread against a ±0.06 slope perturbation, not real-world uncertainty.
 
 | Round | P10 | P50 | P90 |
 |---|---|---|---|
-| 1 | +0.87 | +0.87 | +0.87 |
-| 2 | -0.22 | -0.22 | -0.22 |
-| 3 | -0.05 | -0.05 | -0.05 |
-| 4 | -0.44 | -0.44 | -0.44 |
-| 5 | -0.17 | -0.17 | -0.17 |
-| 6 | -0.82 | -0.77 | -0.60 |
-| 7 | -1.00 | -1.00 | -0.80 |
+| 1 | +0.76 | +0.76 | +0.76 |
+| 2 | -0.40 | -0.40 | -0.40 |
+| 3 | +0.24 | +0.24 | +0.24 |
+| 4 | -0.25 | -0.25 | -0.25 |
+| 5 | -0.37 | -0.37 | -0.37 |
+| 6 | -0.77 | -0.72 | -0.55 |
+| 7 | -1.00 | -0.96 | -0.73 |
 
-The engine's least-squares extrapolation puts Acme Cloud at -0.69 by round 6, -0.92 by round 7 if nothing new lands (slope -0.23/round, direction down). Momentum is accelerating (+33%), so the near future is a tug-of-war between 7 committed supporters and 5 committed opponents over a 0-persona middle. No escalation chains formed — disagreement is staying flat instead of threading, which caps how fast either camp can recruit. The realistic branch: sentiment keeps drifting down as migration-friction posts compound, until the next injected event resets the board. Watch the triggers in the risk register — they are the earliest signals of which branch wins.
+The engine's least-squares extrapolation puts Acme Cloud at -0.64 by round 6, -0.85 by round 7 if nothing new lands (slope -0.21/round, direction down). Momentum is cooling (-175%), so the near future is a tug-of-war between 7 committed supporters and 5 committed opponents over a 0-persona middle. No escalation chains formed — disagreement is staying flat instead of threading, which caps how fast either camp can recruit. The realistic branch: sentiment keeps drifting down as migration-friction posts compound, until the next injected event resets the board. Watch the triggers in the risk register — they are the earliest signals of which branch wins.
 
 ## 9. Risk Register
 
 | # | Risk | Severity | Likelihood | Evidence |
 |---|---|---|---|---|
-| R1 | Hype hardening around Pricing FAQ | MEDIUM | MEDIUM | `po_4`, `po_9`, `po_1` |
-| R2 | Platform-split narrative on Nimbus Labs | HIGH | MEDIUM | `po_1`, `po_11` |
-| R3 | Unmuted cluster around @kira10's tweet | LOW | MEDIUM | `po_10`, `po_11`, `po_9` |
+| R1 | Hype hardening around Pricing FAQ | MEDIUM | LOW | `po_4`, `po_9`, `po_1` |
+| R2 | Platform-split narrative on Acme Cloud | HIGH | MEDIUM | `po_15`, `po_3` |
+| R3 | Unmuted cluster around @kira10's tweet | LOW | MEDIUM | `po_10`, `po_9`, `po_8` |
 
 ### R1. Hype hardening around Pricing FAQ
 
-**Severity** MEDIUM · **Likelihood** MEDIUM
+**Severity** MEDIUM · **Likelihood** LOW
 
-Across 5 rounds, posts about Pricing FAQ clustered at sentiment +0.99 (strongest: po_4 by u/hugo7, engagement 0), and 7 of 12 personas now sit in support. The supportive cluster is collecting engagement faster than the critics (16 vs 12), which hardens the champion narrative. If this pattern survives contact with the real launch, it becomes the default framing within days.
+Across 5 rounds, posts about Pricing FAQ clustered at sentiment +0.99 (strongest: po_4 by u/hugo7, engagement 0), and 7 of 12 personas now sit in support. The supportive cluster is collecting engagement faster than the critics (11 vs -5), which hardens the champion narrative. If this pattern survives contact with the real launch, it becomes the default framing within days.
 
-**Mitigation —** Bank the goodwill: arm the @ben1 cohort with early access and migration proof-points before the wider rollout, so the champion narrative carries data instead of vibes.
+**Mitigation —** Bank the goodwill: arm the @grace6 cohort with early access and migration proof-points before the wider rollout, so the champion narrative carries data instead of vibes.
 
 **Early-warning trigger —** Champion posts out-earning critical posts by 3:1 for two consecutive cycles — that is complacency fuel.
 
 **Evidence from the run:**
 
-> **po_4** · Hugo Álvarez (u/hugo7) · reddit · round 1 · sentiment +0.91 · engagement 0
+> **po_4** · Hugo Álvarez (u/hugo7) · reddit · round 1 · sentiment +0.11 · engagement 0
 >
 > genuinely loving the Pricing FAQ update, it fixed the one thing I actually complained about, no notes Solid decision, no notes.
 
-> **po_9** · Grace Kim (@grace6) · twitter · round 2 · sentiment +0.76 · engagement 3
+> **po_9** · Grace Kim (@grace6) · twitter · round 2 · sentiment +0.76 · engagement 6
 >
 > Finally someone gets it. The Pricing FAQ discourse keeps skipping the part where the actual constraints live. Solid decision, no notes. Ask me how I know!
 
@@ -297,11 +289,11 @@ Across 5 rounds, posts about Pricing FAQ clustered at sentiment +0.99 (strongest
 >
 > Screaming into the void but:  scrolled past 40 Pricing FAQ takes today and mine is the only correct one: it's fine, it's actually nice
 
-### R2. Platform-split narrative on Nimbus Labs
+### R2. Platform-split narrative on Acme Cloud
 
 **Severity** HIGH · **Likelihood** MEDIUM
 
-The same story is landing differently by venue: Nimbus Labs reads +0.59 on Twitter versus -0.29 on Reddit (divergence 0.88). Cross-posted screenshots let the angrier venue set the frame for both, and the calmer venue's arguments never catch up — the run's escalation chains concentrated where the heat was.
+The same story is landing differently by venue: Acme Cloud reads -0.23 on Twitter versus +0.76 on Reddit (divergence 0.99). Cross-posted screenshots let the angrier venue set the frame for both, and the calmer venue's arguments never catch up — the run's escalation chains concentrated where the heat was.
 
 **Mitigation —** Run the venues as separate campaigns: long-form receipts where the skepticism lives (Reddit), fast empathy where the heat lives (Twitter). Never answer a Reddit thread with a Twitter screenshot.
 
@@ -309,19 +301,19 @@ The same story is landing differently by venue: Nimbus Labs reads +0.59 on Twitt
 
 **Evidence from the run:**
 
-> **po_1** · Ben Sørensen (@ben1) · twitter · round 1 · sentiment +0.58 · engagement 4
+> **po_15** · Ben Sørensen (@ben1) · twitter · round 3 · sentiment +0.57 · engagement 2
 >
-> Screaming into the void but:  scrolled past 40 Pricing FAQ takes today and mine is the only correct one: it's fine, it's actually nice
+> Screaming into the void but: y'all are big mad about the 30% thing but Acme Cloud literally never crashes for me?? meanwhile Nimbus Labs ate my project files in 2023 and we all just moved on This is a win for the…
 
-> **po_11** · Liam Byrne (@liam11) · twitter · round 2 · sentiment +0.32 · engagement 4
+> **po_3** · Elena Rossi (@elena4) · reddit · round 1 · sentiment +0.76 · engagement -2
 >
-> Nimbus Labs timing a 30% undercut with import tooling is a textbook land grab. Expect the price-sensitive tier to move within a quarter. Impressive execution.
+> small win: deployed my first project on Acme Cloud today and it worked on the first try. first try!! I'm going to be insufferable about this for a week still learning, thanks for patience.
 
 ### R3. Unmuted cluster around @kira10's tweet
 
 **Severity** LOW · **Likelihood** MEDIUM
 
-Post po_10 (round 2, sentiment +0.58, engagement 3) keeps resurfacing in feeds across the run. High-salience anchors like this survive their news cycle and quietly set baselines for every later conversation about the same topic.
+Post po_10 (round 2, sentiment +0.32, engagement 2) keeps resurfacing in feeds across the run. High-salience anchors like this survive their news cycle and quietly set baselines for every later conversation about the same topic.
 
 **Mitigation —** Answer the post directly and publicly — a considered reply to the anchor outperforms broadcast messaging for this crowd, and starves the thread of the silence it feeds on.
 
@@ -329,17 +321,17 @@ Post po_10 (round 2, sentiment +0.58, engagement 3) keeps resurfacing in feeds a
 
 **Evidence from the run:**
 
-> **po_10** · Kira Novak (@kira10) · twitter · round 2 · sentiment +0.58 · engagement 3
+> **po_10** · Kira Novak (@kira10) · twitter · round 2 · sentiment +0.32 · engagement 2
 >
 > is Nimbus Labs seriously 30% cheaper?? my whole cohort is sharing the import link — does anyone know if it's actually good? genuinely curious
 
-> **po_11** · Liam Byrne (@liam11) · twitter · round 2 · sentiment +0.32 · engagement 4
->
-> Nimbus Labs timing a 30% undercut with import tooling is a textbook land grab. Expect the price-sensitive tier to move within a quarter. Impressive execution.
-
-> **po_9** · Grace Kim (@grace6) · twitter · round 2 · sentiment +0.76 · engagement 3
+> **po_9** · Grace Kim (@grace6) · twitter · round 2 · sentiment +0.76 · engagement 6
 >
 > Finally someone gets it. The Pricing FAQ discourse keeps skipping the part where the actual constraints live. Solid decision, no notes. Ask me how I know!
+
+> **po_8** · Felix Moreau (@felix5) · twitter · round 2 · sentiment -0.76 · engagement 2
+>
+> Screaming into the void but: Advising my clients to model 30% churn risk on Acme Cloud before renewing. The six-month grandfather window suggests their own team expects exactly that.
 
 ## 10. Recommendations
 
@@ -347,7 +339,7 @@ Post po_10 (round 2, sentiment +0.58, engagement 3) keeps resurfacing in feeds a
 
 *Expected impact:* Converts a share of the 42% opposition before it hardens; designed to blunt the first-week backlash curve.
 
-**2. Arm the @ben1 cohort.** Give the top supporters early access, migration proof-points and quotable numbers before the wider rollout — let the 58% supporter base carry the narrative with evidence instead of enthusiasm.
+**2. Arm the @grace6 cohort.** Give the top supporters early access, migration proof-points and quotable numbers before the wider rollout — let the 58% supporter base carry the narrative with evidence instead of enthusiasm.
 
 *Expected impact:* Raises organic positive amplification and gives undecided personas a data-backed alternative frame to adopt.
 
@@ -359,13 +351,13 @@ Post po_10 (round 2, sentiment +0.58, engagement 3) keeps resurfacing in feeds a
 
 **Strong signals** (multiple posts, consistent sentiment):
 
-- Sentiment toward Acme Cloud is souring with per-round consistency (+0.87 → -0.17).
-- Engagement concentrated on a small set of high-salience voices (@felix5, @kira10, @ben1).
+- Sentiment toward Acme Cloud is souring with per-round consistency (+0.76 → -0.37).
+- Engagement concentrated on a small set of high-salience voices (@grace6, @ben1, @kira10).
 
 **Contested** (population split):
 
 - Both camps are fully dug in with no undecided middle left — the next shift will come from outside events, not persuasion.
-- Platforms diverge on Nimbus Labs (Twitter +0.59 vs Reddit -0.29) — severity is contested, not direction.
+- Platforms diverge on Acme Cloud (Twitter -0.23 vs Reddit +0.76) — severity is contested, not direction.
 
 **Limitations:**
 
@@ -375,28 +367,26 @@ Post po_10 (round 2, sentiment +0.58, engagement 3) keeps resurfacing in feeds a
 
 ## Timeline of the Run — the moments a launch team would replay
 
-- **Round 1** · flashpoint: First strong criticism: u/cara2 — "Nimbus Labs panic index, my proprietary metric, just hit 'blog post imminent'. Historically that means the actual…" (`po_2`)
 - **Round 1** · rally: First strong endorsement: @ben1 — "Screaming into the void but:  scrolled past 40 Pricing FAQ takes today and mine is the only correct one: it's fine,…" (`po_1`)
+- **Round 2** · flashpoint: First strong criticism: @felix5 — "Screaming into the void but: Advising my clients to model 30% churn risk on Acme Cloud before renewing. The six-month…" (`po_8`)
 - **Round 3** · news: News injected into the world: Nimbus Labs announces a one-click import tool that undercuts Acme Cloud pricing by 30%
-- **Round 3** · shift: @ben1 shifted on Nimbus Labs: -0.70 → -0.54
-- **Round 3** · shift: u/hugo7 shifted on Nimbus Labs: 0.79 → 0.64
 
 ## Appendix A — Round-by-Round Statistics
 
 | Round | Twitter | Reddit | Engagement | Escalations | Injections | Lurkers |
 |---|---|---|---|---|---|---|
-| 1 | 3 | 3 | 2 | 0 | 0 | 0 |
-| 2 | 6 | 0 | 10 | 0 | 0 | 0 |
-| 3 | 5 | 1 | 5 | 0 | 1 | 0 |
-| 4 | 4 | 1 | 6 | 0 | 0 | 1 |
-| 5 | 3 | 2 | 5 | 0 | 0 | 0 |
+| 1 | 3 | 3 | 3 | 0 | 0 | 0 |
+| 2 | 7 | 0 | 5 | 0 | 0 | 0 |
+| 3 | 3 | 2 | 1 | 0 | 1 | 0 |
+| 4 | 3 | 2 | -3 | 0 | 0 | 0 |
+| 5 | 4 | 1 | -4 | 0 | 0 | 0 |
 
 ```mermaid
 xychart-beta
     title "Engagement by round"
     x-axis [1, 2, 3, 4, 5]
-    y-axis "engagement" 0 --> 13
-    bar [2, 10, 5, 6, 5]
+    y-axis "engagement" 0 --> 7
+    bar [3, 5, 1, -3, -4]
 ```
 
 
@@ -408,36 +398,37 @@ No escalation chains formed this run — disagreement stayed at post level inste
 
 No post crossed the virality threshold this run — reach stayed inside the follow graph.
 
-Organic (engine-simulated bystander) engagement share: **not reported** — only 4 organic reposts occurred, too few for the ratio to be meaningful.
+Organic (engine-simulated bystander) engagement share: **not reported** — only 3 organic reposts occurred, too few for the ratio to be meaningful.
 
 ## Appendix D — Post Index (evidence)
 
 | Id | By | Plat | R | Sentiment | Engagement | Excerpt |
 |---|---|---|---|---|---|---|
+| po_9 | Grace Kim (@grace6) | tw | 2 | +0.76 | 6 | Finally someone gets it. The Pricing FAQ discourse keeps skipping the part where the… |
 | po_1 | Ben Sørensen (@ben1) | tw | 1 | +0.58 | 4 | Screaming into the void but:  scrolled past 40 Pricing FAQ takes today and mine is the… |
-| po_11 | Liam Byrne (@liam11) | tw | 2 | +0.32 | 4 | Nimbus Labs timing a 30% undercut with import tooling is a textbook land grab. Expect… |
-| po_10 | Kira Novak (@kira10) | tw | 2 | +0.58 | 3 | is Nimbus Labs seriously 30% cheaper?? my whole cohort is sharing the import link — does… |
-| po_21 | Felix Moreau (@felix5) | tw | 4 | -0.58 | 3 | Acme Cloud's 30% increase reads as a margin defense, not a product bet. Expect churn in… |
-| po_25 | Felix Moreau (@felix5) | tw | 5 | 0.00 | 3 | Actually important: From the inside: a 30% undercut plus working migration tooling is… |
-| po_9 | Grace Kim (@grace6) | tw | 2 | +0.76 | 3 | Finally someone gets it. The Pricing FAQ discourse keeps skipping the part where the… |
-| po_14 | Ben Sørensen (@ben1) | tw | 3 | +0.89 | 2 | Screaming into the void but: y'all are big mad about the 30% thing but Acme Cloud… |
-| po_15 | Felix Moreau (@felix5) | tw | 3 | -0.58 | 2 | Following up from earlier: The 30% move puts Acme Cloud in an awkward middle: too… |
-| po_28 | Kira Novak (@kira10) | tw | 5 | +0.32 | 2 | probably an unpopular take from the new guy: 30% for Acme Cloud still seems like a lot… |
-| po_16 | Hugo Álvarez (u/hugo7) | rd | 3 | -0.76 | 1 | the Nimbus Labs comments on this sub never miss. y'all turned a pricing email into a… |
-| po_19 | Ada Okafor (@ada0) | tw | 4 | -0.93 | 1 | Everyone dunking on the 30% increase is missing it: the free-tier limits are the real… |
-| po_20 | Elena Rossi (@elena4) | tw | 4 | +0.32 | 1 | probably an unpopular take from the new guy: 30% for Acme Cloud still seems like a lot… |
-| po_22 | Ines Duarte (u/ines8) | rd | 4 | +0.46 | 1 | Suspicious of hype in both directions, but Nimbus Labs at 30% more with the roadmap… |
-| po_5 | Kira Novak (@kira10) | tw | 1 | +0.58 | 1 | small win: deployed my first project on Nimbus Labs today and it worked on the first… |
-| po_8 | Felix Moreau (@felix5) | tw | 2 | -0.76 | 1 | Screaming into the void but: Advising my clients to model 30% churn risk on Acme Cloud… |
-| po_13 | Ada Okafor (@ada0) | tw | 3 | -0.54 | 0 | Four years of advocating Acme Cloud in every architecture review, and the thank-you is… |
-| po_17 | Jonas Weber (@jonas9) | tw | 3 | +0.58 | 0 | I've defended Acme Cloud in a hundred threads. I can't defend 30% with a straight face.… |
+| po_10 | Kira Novak (@kira10) | tw | 2 | +0.32 | 2 | is Nimbus Labs seriously 30% cheaper?? my whole cohort is sharing the import link — does… |
+| po_15 | Ben Sørensen (@ben1) | tw | 3 | +0.57 | 2 | Screaming into the void but: y'all are big mad about the 30% thing but Acme Cloud… |
+| po_8 | Felix Moreau (@felix5) | tw | 2 | -0.76 | 2 | Screaming into the void but: Advising my clients to model 30% churn risk on Acme Cloud… |
+| po_14 | Ada Okafor (@ada0) | tw | 3 | 0.00 | 1 | Four years of advocating Acme Cloud in every architecture review, and the thank-you is… |
+| po_2 | Cara Lindqvist (u/cara2) | rd | 1 | 0.00 | 1 | Nimbus Labs panic index, my proprietary metric, just hit 'blog post imminent'.… |
+| po_22 | Hugo Álvarez (u/hugo7) | rd | 4 | +0.58 | 1 | Update from my last post:  scrolled past 40 Pricing FAQ takes today and mine is the only… |
+| po_11 | Liam Byrne (@liam11) | tw | 2 | -0.32 | 0 | Nimbus Labs timing a 30% undercut with import tooling is a textbook land grab. Expect… |
+| po_17 | Felix Moreau (@felix5) | tw | 3 | -0.58 | 0 | Following up from earlier: The 30% move puts Acme Cloud in an awkward middle: too… |
+| po_20 | Elena Rossi (@elena4) | tw | 4 | +0.16 | 0 | probably an unpopular take from the new guy: 30% for Acme Cloud still seems like a lot… |
+| po_23 | Ines Duarte (u/ines8) | rd | 4 | +0.46 | 0 | Suspicious of hype in both directions, but Nimbus Labs at 30% more with the roadmap… |
 | po_24 | Ada Okafor (@ada0) | tw | 5 | 0.00 | 0 | Update from my last post: The 30% hike isn't even the problem. Shipping it in a… |
-| po_26 | Hugo Álvarez (u/hugo7) | rd | 5 | -0.58 | 0 | Ok hear me out: welp. 30% more for Acme Cloud? guess I'm finally reading that Pricing… |
-| po_27 | Jonas Weber (@jonas9) | rd | 5 | -0.26 | 0 | PSA: We made Acme Cloud what it is — the guides, the plugins, the conference talks, all… |
-| po_4 | Hugo Álvarez (u/hugo7) | rd | 1 | +0.91 | 0 | genuinely loving the Pricing FAQ update, it fixed the one thing I actually complained… |
-| po_7 | Ben Sørensen (@ben1) | tw | 2 | +0.32 | 0 | everyone migrating because of the 30% thing… I'll keep my stuff exactly where it works.… |
-| po_2 | Cara Lindqvist (u/cara2) | rd | 1 | -0.58 | -1 | Nimbus Labs panic index, my proprietary metric, just hit 'blog post imminent'.… |
-| po_3 | Elena Rossi (@elena4) | rd | 1 | +0.87 | -3 | small win: deployed my first project on Acme Cloud today and it worked on the first try.… |
+| po_26 | Hugo Álvarez (u/hugo7) | rd | 5 | +0.32 | 0 | wait, Nimbus Labs is 30% cheaper AND has an import button?? brb moving my side project,… |
+| po_28 | Kira Novak (@kira10) | tw | 5 | +0.16 | 0 | probably an unpopular take from the new guy: 30% for Acme Cloud still seems like a lot… |
+| po_4 | Hugo Álvarez (u/hugo7) | rd | 1 | +0.11 | 0 | genuinely loving the Pricing FAQ update, it fixed the one thing I actually complained… |
+| po_5 | Kira Novak (@kira10) | tw | 1 | +0.58 | 0 | small win: deployed my first project on Nimbus Labs today and it worked on the first… |
+| po_16 | Dev Patel (u/dev3) | rd | 3 | +0.76 | -1 | Actually important: If you love this community, don't let a 30% headline decide for you.… |
+| po_18 | Hugo Álvarez (u/hugo7) | rd | 3 | 0.00 | -1 | the Nimbus Labs comments on this sub never miss. y'all turned a pricing email into a… |
+| po_21 | Felix Moreau (@felix5) | tw | 4 | 0.00 | -1 | Acme Cloud's 30% increase reads as a margin defense, not a product bet. Expect churn in… |
+| po_25 | Felix Moreau (@felix5) | tw | 5 | -0.58 | -1 | Actually important: The 30% move puts Acme Cloud in an awkward middle: too expensive for… |
+| po_7 | Ben Sørensen (@ben1) | tw | 2 | +0.32 | -1 | everyone migrating because of the 30% thing… I'll keep my stuff exactly where it works.… |
+| po_3 | Elena Rossi (@elena4) | rd | 1 | +0.76 | -2 | small win: deployed my first project on Acme Cloud today and it worked on the first try.… |
+| po_19 | Ada Okafor (@ada0) | tw | 4 | -0.76 | -3 | Everyone dunking on the 30% increase is missing it: the free-tier limits are the real… |
+| po_27 | Jonas Weber (@jonas9) | tw | 5 | -0.54 | -3 | We made Acme Cloud what it is — the guides, the plugins, the conference talks, all… |
 
 ## Appendix E — Methodology & Reproducibility
 
@@ -445,4 +436,4 @@ Each round the engine activated a weighted subset of the 12-persona population, 
 
 **Reproduce:** initialize a world with seed `acme-demo-2026`, attach the same seeds, and drive the same host model through the plan/submit protocol. The engine's state — and therefore every number in this report — replays identically.
 
-**Leaderboard (top voices):** @felix5 (industry professional, 4 posts, 9 engagement) · @kira10 (curious newcomer, 4 posts, 6 engagement) · @ben1 (casual scroller, 3 posts, 6 engagement) · @liam11 (industry professional, 1 posts, 4 engagement) · @grace6 (power user, 2 posts, 3 engagement) · @ada0 (power user, 5 posts, 1 engagement) · u/hugo7 (casual scroller, 3 posts, 1 engagement) · u/ines8 (pragmatic skeptic, 1 posts, 1 engagement)
+**Leaderboard (top voices):** @grace6 (power user, 1 posts, 6 engagement) · @ben1 (casual scroller, 3 posts, 5 engagement) · @kira10 (curious newcomer, 4 posts, 2 engagement) · u/cara2 (pragmatic skeptic, 1 posts, 1 engagement) · @liam11 (industry professional, 1 posts, 0 engagement) · @felix5 (industry professional, 4 posts, 0 engagement) · u/hugo7 (casual scroller, 4 posts, 0 engagement) · u/ines8 (pragmatic skeptic, 1 posts, 0 engagement)

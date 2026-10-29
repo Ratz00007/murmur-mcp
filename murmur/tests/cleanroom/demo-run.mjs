@@ -12,11 +12,14 @@ import * as url from "node:url";
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..", "..");
 
+// pathToFileURL, not a bare path: on Windows `await import("C:\\...")` throws
+// ERR_UNSUPPORTED_ESM_URL_SCHEME, which is exactly how this command was broken
+// on the one platform the repo is developed on.
 const { runPipeline } = await import(
-  path.join(root, "tests", "helpers", "pipeline.mjs")
+  url.pathToFileURL(path.join(root, "tests", "helpers", "pipeline.mjs")).href
 );
 const engine = await import(
-  path.join(root, "packages", "engine", "dist", "index.js")
+  url.pathToFileURL(path.join(root, "packages", "engine", "dist", "index.js")).href
 );
 
 const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-demo-"));

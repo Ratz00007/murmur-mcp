@@ -1219,10 +1219,12 @@ export function renderReportMarkdown(
   L.push("## 8. Trajectory Simulated Projection");
   L.push("");
   if (projection && focusEntity && sensitivity && sensitivity.length > 0) {
-    // Ensemble UQ: seeded P10–P50–P90 bands replace the old 2-point line.
+    // Slope-jitter sensitivity: seeded P10–P50–P90 bands replace the old
+    // 2-point line. Deliberately NOT called an ensemble — it refits the same
+    // observed curve, it does not resample the simulation.
     const runs = world.config.sensitivity?.refitCount ?? 5;
     L.push(
-      `**Simulated projection — slope-jitter sensitivity around the recorded run.** No re-simulation: the ensemble least-squares-fits the observed curve and jitters the fitted slope across ${runs} refits (seeds \`${world.seed}:0\`…\`${world.seed}:${runs - 1}\`). ` +
+      `**Simulated projection — slope-jitter sensitivity around the recorded run.** No re-simulation: each refit least-squares-fits the observed curve and jitters the fitted slope across ${runs} refits (seeds \`${world.seed}:0\`…\`${world.seed}:${runs - 1}\`). ` +
         `Recorded rounds are identical in every run, so the band only opens on projected rounds — it quantifies model spread against a ±0.06 slope perturbation, not real-world uncertainty.`,
     );
     L.push("");

@@ -759,7 +759,7 @@ export function renderReportHtml(
     const actual = D.projection.points.filter((p) => !p.projected);
     const proj = D.projection.points.filter((p) => p.projected);
     if (D.sensitivity && D.sensitivity.length > 0) {
-      // Ensemble UQ: seeded P10–P90 band replaces the single extrapolated line.
+      // Slope-jitter sensitivity: seeded P10-P90 band replaces the single extrapolated line.
       const runs = world.config.sensitivity?.refitCount ?? 5;
       const svgW = 640,
         svgH = 200,
@@ -803,7 +803,7 @@ export function renderReportHtml(
         )
         .join("");
       H.push(
-        `<div class="panel"><h4>Outlook — ${esc(D.focusEntity.name)} <span style="float:right;font-weight:400;text-transform:none;letter-spacing:0">shaded = P10–P90 ensemble · line = recorded + P50</span></h4>` +
+        `<div class="panel"><h4>Outlook — ${esc(D.focusEntity.name)} <span style="float:right;font-weight:400;text-transform:none;letter-spacing:0">shaded = P10–P90 slope-jitter band · line = recorded + P50</span></h4>` +
           `<svg viewBox="0 0 ${svgW} ${svgH}" width="100%" height="${svgH}">` +
           `<line x1="${padL}" y1="${y(0).toFixed(1)}" x2="${svgW - padR}" y2="${y(0).toFixed(1)}" stroke="var(--line2)" stroke-width="1"/>` +
           `<polygon points="${lo} ${hi}" fill="var(--accent)" fill-opacity="0.18"/>` +

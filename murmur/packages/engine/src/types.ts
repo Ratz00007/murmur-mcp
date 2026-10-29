@@ -191,7 +191,7 @@ export const DEFAULT_CONFIG: MurmurConfig = {
   // Deffuant bounded confidence: ε = interaction radius, μ = pull rate,
   // abstentionChance = P(slight disengagement) when |a − b| > ε.
   dynamics: { epsilon: 0.4, mu: 0.2, abstentionChance: 0.1 },
-  // Seeded ensemble runs behind the report's P10–P90 projection bands (max 10).
+  // Seeded slope-jitter refits behind the report's P10-P90 projection bands (max 10).
   sensitivity: { refitCount: 5 },
 };
 

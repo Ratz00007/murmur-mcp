@@ -112,12 +112,12 @@ out(`engine tells the agent what is next: ${init.next}`);
 
 // ================================ STAGE 2 ======================================
 stage(2, "FEED IT YOUR DOCS (seeds)");
-arrow("seed_add_files", j({ paths: ["examples/pricing-page.md", "examples/FAQ.md", "examples/CHANGELOG.md"] }));
-const files = await call(client, "seed_add_files", { paths: ["examples/pricing-page.md", "examples/FAQ.md", "examples/CHANGELOG.md"] });
+arrow("seed_add", j({ source: "files", paths: ["examples/pricing-page.md", "examples/FAQ.md", "examples/CHANGELOG.md"] }));
+const files = await call(client, "seed_add", { source: "files", paths: ["examples/pricing-page.md", "examples/FAQ.md", "examples/CHANGELOG.md"] });
 for (const s of files.seeds) out(`${String(s.path).padEnd(26)} → ${s.ok === false ? "ERROR: " + s.error : s.seedId + " · " + s.bytes + " bytes" + (s.duplicate ? " · duplicate (deduped)" : "")}`);
 out(`coverage: ${j(files.coverage)}`);
-arrow("seed_add_text", j({ title: "Competitive context brief", text: "«strategy brief — elided»" }));
-const brief = await call(client, "seed_add_text", { title: "Competitive context brief", text: SEED_CORPUS });
+arrow("seed_add", j({ source: "text", title: "Competitive context brief" }));
+const brief = await call(client, "seed_add", { source: "text", title: "Competitive context brief", text: SEED_CORPUS });
 out(`${brief.seed.id} · ${brief.seed.bytes} bytes · digest: ${String(brief.seed.digest).slice(0, 90)}…`);
 arrow("seeds_review");
 const review = await call(client, "seeds_review");
@@ -127,12 +127,12 @@ out(`next: ${review.next}`);
 
 // ================================ STAGE 3 ======================================
 stage(3, "ONTOLOGY — the brain extracts the entities");
-arrow("ontology_plan");
-const ontPlan = await call(client, "ontology_plan");
+arrow("ontology", j({ action: "plan" }));
+const ontPlan = await call(client, "ontology", { action: "plan" });
 out(`task ${ontPlan.taskId} · the brain sees ${ontPlan.task.items[0].payload.seeds.length} seed digests and is asked for entities + types + salience + motives + anchors`);
 const ontResult = completeOntology(ontPlan.task);
-arrow("ontology_submit", `{ task_id: "${ontPlan.taskId}", result: ${ontResult.entities.length} entities }`);
-const ont = await call(client, "ontology_submit", { task_id: ontPlan.taskId, result: ontResult });
+arrow("ontology", `{ action: "submit", task_id: "${ontPlan.taskId}", result: ${ontResult.entities.length} entities }`);
+const ont = await call(client, "ontology", { action: "submit", task_id: ontPlan.taskId, result: ontResult });
 out(`inserted ${ont.inserted} entities (engine validated types, salience, anchors):`);
 for (const e of ont.entities.slice(0, 10)) out(`${e.name.slice(0, 24).padEnd(24)} ${e.type.padEnd(8)} salience ${e.salience}`);
 if (ont.entities.length > 10) out(`… +${ont.entities.length - 10} more`);
@@ -141,30 +141,30 @@ const tracked = (ont.entities.find((e) => /acme/i.test(e.name)) ?? ont.entities[
 
 // ================================ STAGE 4 ======================================
 stage(4, "TENSION GRAPH — deterministic derivation");
-arrow("graph_build");
-const g = await call(client, "graph_build");
+arrow("graph", j({ action: "build" }));
+const g = await call(client, "graph", { action: "build" });
 out(`${g.relations} relations · ${g.tensionsAbove05} tensions > 0.5 · ${g.communities} communities (subreddits derived from entity types)`);
 for (const t of (g.topTensions ?? []).slice(0, 3)) out(`top tension: ${j(t)}`);
-arrow("graph_export_mermaid");
-const mm = await call(client, "graph_export_mermaid");
-out(`wrote ${mm.path} · ${mm.nodes} nodes · ${mm.edges} edges — first lines:`);
+arrow("graph", j({ action: "export" }));
+const mm = await call(client, "graph", { action: "export" });
+out(`wrote ${mm.path} · ${mm.nodeCount} nodes · ${mm.edgeCount} edges — first lines:`);
 const mmLines = fs.readFileSync(path.join(DEMO, String(mm.path)), "utf8").split("\n");
 for (const l of mmLines.slice(0, 16)) note(l);
 if (mmLines.length > 16) note(`… +${mmLines.length - 16} more lines`);
 
 // ================================ STAGE 5 ======================================
 stage(5, "POPULATION — the brain drafts the personas");
-arrow("personas_plan", j({ count: 12 }));
-const pPlan = await call(client, "personas_plan", { count: 12 });
+arrow("personas", j({ action: "plan", count: 12 }));
+const pPlan = await call(client, "personas", { action: "plan", count: 12 });
 out(`task ${pPlan.taskId} · archetype menu the engine offers: ${pPlan.task.items[0].payload.population.archetypes.map((a) => a.name).join(", ")}`);
 const pResult = completePersonas(pPlan.task);
-arrow("personas_submit", `{ task_id: "${pPlan.taskId}", result: 12 personas }`);
-const pop = await call(client, "personas_submit", { task_id: pPlan.taskId, result: pResult });
+arrow("personas", `{ action: "submit", task_id: "${pPlan.taskId}", result: 12 personas }`);
+const pop = await call(client, "personas", { action: "submit", task_id: pPlan.taskId, result: pResult });
 out(`population ${pop.population} · platform mix ${j(pop.platformBreakdown)} · ${pop.followEdges} follow edges · ${pop.communityMemberships} community memberships`);
 out(`archetypes ${j(pop.archetypeBreakdown)}`);
 const firstP = String(pop.personaIds[0]);
-arrow("persona_inspect", j({ persona: firstP }));
-const insp = await call(client, "persona_inspect", { persona: firstP });
+arrow("personas", j({ action: "inspect", persona: firstP }));
+const insp = await call(client, "personas", { action: "inspect", persona: firstP });
 const card = insp.card?.card ?? insp.card;
 const tok = insp.card?.tokens ?? "?";
 out(`${card.name} (${card.handle}) · ${card.archetype} · ${card.platform}`);
@@ -175,13 +175,13 @@ out(`recent posts: ${(insp.recentPosts ?? []).length} (simulation not started ye
 
 // ================================ STAGE 6 ======================================
 stage(6, "SIMULATION — 5 rounds on two platforms");
-arrow("sim_configure", j({ rounds: 5 }));
-await call(client, "sim_configure", { rounds: 5 });
+arrow("world_config", j({ rounds: 5 }));
+await call(client, "world_config", { rounds: 5 });
 out(`5 rounds configured · stage: configured`);
 
 // ---- round 1, shown in detail ----
-arrow("sim_next_batch");
-let batch = await call(client, "sim_next_batch");
+arrow("sim", j({ action: "next_batch" }));
+let batch = await call(client, "sim", { action: "next_batch" });
 out(`round ${batch.round} · ${batch.personas} personas activated · batch ≈ ${batch.totalTokens} tokens (feeds personalized per persona)`);
 const d0 = batch.task.items[0].payload;
 out(`── what the brain sees for ONE persona (${d0.persona.name}, ${d0.persona.handle}) ──`);
@@ -193,31 +193,31 @@ const col0 = d0.collective ?? {};
 note(`collective: trending ${j(col0.trending ?? []).slice(0, 80)} · events ${j(col0.events ?? []).slice(0, 80)}`);
 note(`allowed actions: ${j(d0.allowedActions)}`);
 const gens = completeSim(batch.task);
-arrow("sim_submit_generations", `{ task_id: "${batch.taskId}", generations: ${gens.length} persona action sets }`);
-let sub = await call(client, "sim_submit_generations", { task_id: batch.taskId, generations: gens });
+arrow("sim", `{ action: "submit", task_id: "${batch.taskId}", generations: ${gens.length} persona action sets }`);
+let sub = await call(client, "sim", { action: "submit", task_id: batch.taskId, generations: gens });
 const s1 = sub.statsDigest;
 out(`round ${sub.round} applied · ${sub.postsCreated} posts created · ${sub.appliedPersonas} personas acted, ${sub.lurkers} lurked`);
 out(`stats: tw ${s1.postsByPlatform.twitter} · rd ${s1.postsByPlatform.reddit} · engagement ${s1.engagement.likes + s1.engagement.reposts + s1.engagement.upvotes + s1.engagement.downvotes} · "${tracked}" sentiment ${s1.sentimentByEntity[tracked] ?? "n/a"} · escalations ${s1.escalations}`);
 
 // ---- inject an event before round 3 ----
-arrow("sim_inject_event", j({ text: "Nimbus Labs announces a one-click import tool that undercuts Acme Cloud pricing by 30%", round: 3 }));
-const inj = await call(client, "sim_inject_event", { text: "Nimbus Labs announces a one-click import tool that undercuts Acme Cloud pricing by 30%", round: 3, type: "price" });
+arrow("sim", j({ action: "inject", text: "Nimbus Labs announces a one-click import tool that undercuts Acme Cloud pricing by 30%", round: 3 }));
+const inj = await call(client, "sim", { action: "inject", text: "Nimbus Labs announces a one-click import tool that undercuts Acme Cloud pricing by 30%", round: 3, type: "price" });
 out(`event ${inj.eventId} queued for round ${inj.landsInRound} — activated personas will see it in their digest`);
 
 // ---- rounds 2..5, compact ----
 for (const r of [2, 3, 4, 5]) {
-  batch = await call(client, "sim_next_batch");
+  batch = await call(client, "sim", { action: "next_batch" });
   const g2 = completeSim(batch.task);
-  arrow("sim_next_batch → sim_submit_generations", `{ round ${batch.round}, ${batch.personas} personas }`);
-  sub = await call(client, "sim_submit_generations", { task_id: batch.taskId, generations: g2 });
+  arrow("sim next_batch → submit", `{ round ${batch.round}, ${batch.personas} personas }`);
+  sub = await call(client, "sim", { action: "submit", task_id: batch.taskId, generations: g2 });
   const s = sub.statsDigest;
   const ev = s.engagement.likes + s.engagement.reposts + s.engagement.upvotes + s.engagement.downvotes;
   out(`round ${sub.round} · tw ${s.postsByPlatform.twitter} · rd ${s.postsByPlatform.reddit} · engagement ${ev} · "${tracked}" sentiment ${s.sentimentByEntity[tracked] ?? "n/a"} ${s.sentimentByEntity[tracked] != null ? bar(s.sentimentByEntity[tracked]) : ""} · escalations ${s.escalations} · movers ${s.topMovers.length ? s.topMovers.slice(0, 2).map((m) => `${m.entity} ${m.from}→${m.to}`).join(", ") : "—"}`);
 }
 out(`simulation complete: ${sub.completed} · stage: ${sub.next}`);
 
-arrow("sim_timeline");
-const tl = await call(client, "sim_timeline");
+arrow("sim", j({ action: "timeline" }));
+const tl = await call(client, "sim", { action: "timeline" });
 out(`round │  tw │  rd │ engagement │ sentiment toward "${tracked}"`);
 for (const row of tl.timeline) {
   const sv = row.sentimentByEntity?.[tracked];
@@ -227,16 +227,16 @@ out(`engagement peaks (μ+2σ): ${j(tl.engagementPeaks)}`);
 
 // ================================ STAGE 7 ======================================
 stage(7, "REPORT — the brain narrates, the engine grounds it");
-arrow("report_plan", j({ focus: "developer reaction to the pricing change" }));
-const rPlan = await call(client, "report_plan", { focus: "developer reaction to the pricing change" });
+arrow("report", j({ action: "plan", focus: "developer reaction to the pricing change" }));
+const rPlan = await call(client, "report", { action: "plan", focus: "developer reaction to the pricing change" });
 out(`task ${rPlan.taskId} · the brain gets a stats pack + evidence posts and must cite real post ids in exactly 3 risks`);
 const draft = completeReportTask(rPlan.task);
-arrow("report_submit", `{ task_id: "${rPlan.taskId}", draft: recap + findings + trajectory + 3 risks (mitigated) + recommendations + confidence }`);
-const rep = await call(client, "report_submit", { task_id: rPlan.taskId, draft });
+arrow("report", `{ action: "submit", task_id: "${rPlan.taskId}", draft: recap + findings + trajectory + 3 risks (mitigated) + recommendations + confidence }`);
+const rep = await call(client, "report", { action: "submit", task_id: rPlan.taskId, draft });
 out(`report v${rep.version} stored · engine verified every cited post id exists:`);
 for (const r of rep.risks) note(r);
-arrow("report_export");
-const ex = await call(client, "report_export", { format: "both" });
+arrow("report", j({ action: "export", format: "both" }));
+const ex = await call(client, "report", { action: "export", format: "both" });
 const mdRel = ex.files.find((f) => f.path.endsWith(".md"));
 const htmlRel = ex.files.find((f) => f.path.endsWith(".html"));
 const reportFile = path.join(DEMO, String(mdRel.path));
@@ -250,8 +250,8 @@ if (mdLines.length > 62) say(`… +${mdLines.length - 62} more lines (stance bar
 
 // ================================ STAGE 8 ======================================
 stage(8, "INTERROGATE THE WORLD (F7)");
-arrow("interview_agent", j({ persona: firstP, question: "Why do you call the migration guide a paywall?" }));
-const iv = await call(client, "interview_agent", { persona: firstP, question: "Why do you call the migration guide a paywall?" });
+arrow("interact", j({ target: "persona", persona: firstP, question: "Why do you call the migration guide a paywall?" }));
+const iv = await call(client, "interact", { target: "persona", persona: firstP, question: "Why do you call the migration guide a paywall?" });
 const ivp = iv.pack;
 out(`engine grounded the interview — ${ivp.persona?.name ?? insp.persona.name} · ${ivp.posts?.length ?? 0} of their posts + ${ivp.memory?.length ?? 0} memories in the pack:`);
 for (const p of (ivp.posts ?? []).slice(0, 3)) note(`${p.id} (r${p.round}, ${p.platform}, sentiment ${p.sentiment}) ${String(p.body).slice(0, 70)}`);
@@ -259,18 +259,18 @@ const recent = (ivp.posts ?? [])[0];
 const ivAnswer = recent
   ? `Because I lived it — I said it myself in ${recent.id}: "${String(recent.body).slice(0, 60)}…". A third project goes read-only for 90 days then archives itself. Call that a migration guide all you want; it is a paywall with extra steps, and my feed agrees.`
   : "Because I have been watching this space for years — this is a paywall with extra steps.";
-arrow("interview_agent", `{ persona, question, answer: "«in-character answer citing " + ${recent?.id ?? "own posts"} + »" }`);
-const ivLog = await call(client, "interview_agent", { persona: firstP, question: "Why do you call the migration guide a paywall?", answer: ivAnswer });
+arrow("interact", `{ target: "persona", persona, question, answer: "«in-character answer citing " + ${recent?.id ?? "own posts"} + »" }`);
+const ivLog = await call(client, "interact", { target: "persona", persona: firstP, question: "Why do you call the migration guide a paywall?", answer: ivAnswer });
 out(`logged: ${ivLog.logged} → ${ivLog.file}`);
 
-arrow("report_agent_ask", j({ question: "What are the posts behind the biggest risk, and how strong is the evidence?" }));
-const ask = await call(client, "report_agent_ask", { question: "What are the posts behind the biggest risk, and how strong is the evidence?" });
+arrow("interact", j({ target: "run", question: "What are the posts behind the biggest risk, and how strong is the evidence?" }));
+const ask = await call(client, "interact", { target: "run", question: "What are the posts behind the biggest risk, and how strong is the evidence?" });
 out(`evidence pack (matched: ${j(ask.pack.matchedEntities)}):`);
 for (const e of (ask.pack.evidence ?? []).slice(0, 3)) note(`${e.id} ${e.by} [${e.plat}] r${e.round} sentiment ${e.sentiment} — ${String(e.body).slice(0, 70)}`);
 const ev0 = (ask.pack.evidence ?? [])[0];
 const askAnswer = `The strongest evidence is ${ev0 ? `${ev0.id} (${ev0.by}, round ${ev0.round}, sentiment ${ev0.sentiment})` : "the escalation chains"}${(ask.pack.evidence ?? [])[1] ? `, plus ${(ask.pack.evidence ?? [])[1].id} which escalated within one round` : ""}. Engagement concentrated on these posts across multiple rounds — strong evidence, not weak.`;
-arrow("report_agent_ask", `{ question, answer: "«answer citing " + ${ev0?.id ?? "evidence"} + »" }`);
-const askLog = await call(client, "report_agent_ask", { question: "What are the posts behind the biggest risk, and how strong is the evidence?", answer: askAnswer });
+arrow("interact", `{ target: "run", question, answer: "«answer citing " + ${ev0?.id ?? "evidence"} + »" }`);
+const askLog = await call(client, "interact", { target: "run", question: "What are the posts behind the biggest risk, and how strong is the evidence?", answer: askAnswer });
 out(`logged: ${askLog.logged} → ${askLog.file}`);
 
 // ================================ STAGE 9 ======================================
@@ -281,11 +281,11 @@ out("killed the first client, spawned a fresh server process — the world persi
 arrow("world_list");
 const wl = await call(client2, "world_list");
 out(`${wl.worlds.length} world: ${wl.worlds[0].name} · ${wl.worlds[0].stage} · round ${wl.worlds[0].round}`);
-arrow("world_open", j({ world: wl.worlds[0].id }));
-const wo = await call(client2, "world_open", { world: String(wl.worlds[0].id) });
+arrow("world_list", j({ detail: "open", world: wl.worlds[0].id }));
+const wo = await call(client2, "world_list", { detail: "open", world: String(wl.worlds[0].id) });
 out(`active again · stage ${wo.world.stage} · next: ${wo.next}`);
-arrow("world_status");
-const st = await call(client2, "world_status");
+arrow("world_list", j({ detail: "status" }));
+const st = await call(client2, "world_list", { detail: "status" });
 out(`stage ${st.stage ?? st.world?.stage} · counts ${j(st.counts)} · next ${j(st.next)}`);
 await client2.close();
 
