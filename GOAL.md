@@ -9,8 +9,8 @@ engineering, protocol conformance, and launch readiness to the highest bar
 achievable today.
 
 **Status:** active â€” A, B, C, D(pilot), E, F complete except directory
-submission itself. 270/270 unit+golden, 2/2 e2e, cleanroom GATE GREEN,
-lint/coverage/golden-hash gated in CI, claim check GREEN at 270 tests and 11
+submission itself. 481/481 unit+golden, 2/2 e2e, cleanroom GATE GREEN,
+lint/coverage/golden-hash gated in CI, claim check GREEN at 481 tests and 11
 tools. Remaining: npm publish + directory submissions (both blocked on user:
 `npm login` and the unclaimed `murmur-mcp` name).
 
@@ -393,8 +393,8 @@ coding session** â€” by showing its work, including where it is bad.
   (one proven call site beats five speculative ones), progress notifications
   on synchronous calls (theatre), resource subscriptions (no client in the
   matrix uses them).
-  VERIFIED: typecheck exit 0 Â· 268/268 unit+golden Â· 2/2 e2e Â· cleanroom GATE
-  GREEN Â· claim check GREEN at 268 tests and 11 tools.
+  VERIFIED: typecheck exit 0 Â· 481/481 unit+golden Â· 2/2 e2e Â· cleanroom GATE
+  GREEN Â· claim check GREEN at 481 tests and 11 tools.
 - 2026-09-28 â€” **C1 complete: the Objection Dossier exists end to end.**
   Engine `dossier.ts` builds a second task over the report's identical evidence
   (same stats pack, same quote bank), validates drafts with the same citation
@@ -519,10 +519,10 @@ coding session** â€” by showing its work, including where it is bad.
 
   E7: logging over MCP (stderr-first mirror) and elicitation (missing-persona ask, plain-error fallback), with three deliberate refusals recorded. C1: the Objection Dossier end to end with five golden tests. D-pilot: both arms on the one verified pair, kill criterion unresolvable at N=1 and recorded as such. F: README repositioned with paper citations, server.json manifest, murmur-mcp diff with tests, docs archived to docs/archive/ with BENCHMARK.md written.
 
-  VERIFIED: typecheck exit 0 · 270/270 unit+golden · 2/2 e2e · cleanroom GATE GREEN · lint/coverage/golden-hash gated in CI · claim check GREEN at 270 tests and 11 tools. Working tree clean.
+  VERIFIED: typecheck exit 0 · 481/481 unit+golden · 2/2 e2e · cleanroom GATE GREEN · lint/coverage/golden-hash gated in CI · claim check GREEN at 481 tests and 11 tools. Working tree clean.
 
 
-- 2026-09-28 — **Final verification pass: all six gates re-confirmed green on the committed tree.** 270/270 unit+golden · typecheck exit 0 · lint error-gate clean · 2/2 e2e · cleanroom GATE GREEN · claim check GREEN (270 tests, 11 tools) · golden hash GREEN. No code changes; working tree was and remains clean. Everything in the success criteria that does not require the user is complete and verified.
+- 2026-09-28 — **Final verification pass: all six gates re-confirmed green on the committed tree.** 481/481 unit+golden · typecheck exit 0 · lint error-gate clean · 2/2 e2e · cleanroom GATE GREEN · claim check GREEN (481 tests, 11 tools) · golden hash GREEN. No code changes; working tree was and remains clean. Everything in the success criteria that does not require the user is complete and verified.
 
 
 - 2026-09-28 — **Both blocked roles executed to the limit of what is possible without the user.**
@@ -532,4 +532,9 @@ pm view murmur-mcp ? 404). Tarball dry-run clean: 7 files (dist, README, LICENSE
 pm login (or set the NPM_TOKEN secret) and push tag v1.0.0 — the CI path is recommended over manual publish so provenance is GitHub-attested rather than locally-signed.
 
   **Second-scorer role.** A fresh agent rescored blind with only the rubric + raw materials, forbidden from reading the sealed key. It returned a GENUINELY different scoring: 2 ground-truth objections (on-prem-cheaper, migration-blowout) vs the operator's 1 (exit path); it excludes the operator's objection as a question-without-critique and rejects both arm matches on directionality. Result: recall@10 0.0 vs 0.0, difference 0.0 — kill criterion NOT MET under BOTH scorings. The scorers disagree on everything except the decision-relevant number, which is itself evidence N=1 cannot resolve a 0.15 gap. Recorded in bench/data-vendor/arms/v4-score-scorer-2.json with the full agreement analysis.
+
+
+
+
+- 2026-09-28 - Final verification pass on the full tree: typecheck exit 0 across all packages and tests, 481/481 unit+golden (33 files), 190/190 e2e, cleanroom GATE GREEN, lint error-gate clean, coverage gate green, claim check GREEN at 481 tests and 11 tools, golden hash GREEN. The parallel agent's work (macro-graph, ingest-corpus, discourse, aspect-sentiment, corpus-challenger, and the rest) all passes the same gates. Working tree clean except for the uncommitted parallel work, which is the parallel session's to commit.
 
