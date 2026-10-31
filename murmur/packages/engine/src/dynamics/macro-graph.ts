@@ -335,6 +335,9 @@ export function serializeMacroGraph(state: MacroGraphState): Buffer {
  */
 export function deserializeMacroGraph(buffer: Uint8Array | Buffer): MacroGraphState {
   const buf = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  if (buf.byteLength < 12) {
+    throw new Error("Truncated buffer: insufficient bytes for node/edge count");
+  }
   let offset = 0;
 
   const magic = buf.readUInt32LE(offset);
@@ -347,6 +350,11 @@ export function deserializeMacroGraph(buffer: Uint8Array | Buffer): MacroGraphSt
   offset += 4;
   const edgeCount = buf.readInt32LE(offset);
   offset += 4;
+
+  const expectedBytes = 12 + nodeCount * 13 + edgeCount * 8;
+  if (buf.byteLength < expectedBytes) {
+    throw new Error("Truncated buffer: insufficient bytes for node/edge count");
+  }
 
   const nodeF32Bytes = nodeCount * 4;
   const nodeU8Bytes = nodeCount * 1;

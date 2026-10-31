@@ -25,7 +25,7 @@ The product promise is that Murmur runs entirely on the user's existing coding s
 ```bash
 npm install
 npm run build         # engine, prompts, adapters, templates, server bundle
-npm test              # unit + golden (595 tests)
+npm test              # unit + golden (631 tests)
 npm run test:e2e      # real MCP client <-> server over stdio + cleanroom gate
 npm run demo          # headless full pipeline (mock brain, no LLM)
 npm run typecheck

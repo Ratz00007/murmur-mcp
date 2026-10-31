@@ -48,7 +48,7 @@ Host Agent / MCP Client (Claude Desktop, Antigravity, Custom)
 | M5 | Adversarial War Room & Executive Decision Intelligence | Features 11, 12, 13, 14, 15, 16 | M2, M3, M4 | DONE |
 | M6 | Final Dual-Track E2E Test Suite Pass & Adversarial Hardening | Features 17, 18 | M1-M5, TEST_READY | DONE |
 
-Status is measured, not declared: 595/595 unit+golden, 190/190 e2e (188
+Status is measured, not declared: 631/631 unit+golden, 190/190 e2e (188
 market-twin contracts), lint 0 errors, typecheck 0, cleanroom GATE GREEN. The
 milestone table said M5 IN_PROGRESS / M6 PLANNED while every gate was green,
 which is the same class of stale-doc defect the claim gate exists to catch.

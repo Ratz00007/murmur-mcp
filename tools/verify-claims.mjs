@@ -138,6 +138,20 @@ function numericClaimsIn(doc) {
   return hits;
 }
 
+if (WRITE) {
+  const docsToUpdate = [...CURRENT_CLAIM_DOCS, "PROJECT.md"];
+  for (const doc of docsToUpdate) {
+    const p = join(ROOT, doc);
+    if (!existsSync(p)) continue;
+    let text = readFileSync(p, "utf8");
+    text = text.replace(/\b\d{2,3}\/\d{2,3}(\s+unit\+golden|\s+unit\s+and\s+golden)\b/gi, `${facts.tests}/${facts.tests}$1`);
+    text = text.replace(/\b\d{2,3}(\s+(?:unit\s*\+\s*golden|unit and golden|passing)?\s*tests?\b)/gi, `${facts.tests}$1`);
+    text = text.replace(/\b\d{2,3}(-test suite\b)/gi, `${facts.tests}$1`);
+    writeFileSync(p, text, "utf8");
+    console.log(`  Updated ${doc} to claim ${facts.tests} tests.`);
+  }
+}
+
 for (const doc of CURRENT_CLAIM_DOCS) {
   for (const h of numericClaimsIn(doc)) {
     problems.push(`${h.doc}: claims ${h.bad.join("/")} tests, measured ${facts.tests}`);

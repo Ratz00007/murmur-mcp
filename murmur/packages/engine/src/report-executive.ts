@@ -68,7 +68,11 @@ export function computeExecutiveARRRisk(
   macroOutrage: number,
   churnedNodeFraction: number,
 ): ExecutiveARRRisk {
-  if (totalARR <= 0) {
+  const safeTotalARR = Number.isFinite(totalARR) && totalARR > 0 ? totalARR : 0;
+  const safeOutrage = Number.isFinite(macroOutrage) ? Math.max(0, Math.min(1, macroOutrage)) : 0;
+  const safeChurnFraction = Number.isFinite(churnedNodeFraction) ? Math.max(0, Math.min(1, churnedNodeFraction)) : 0;
+
+  if (safeTotalARR <= 0) {
     return {
       totalARR: 0,
       grossARRAtRisk: 0,
@@ -87,17 +91,17 @@ export function computeExecutiveARRRisk(
 
   // Logistic hazard model: hazard = 1 / (1 + exp(-4 * (outrage - 0.5)))
   // Keep hazard finite and mathematically continuous for all inputs
-  const hazard = 1.0 / (1.0 + Math.exp(-4.0 * (macroOutrage - 0.5)));
+  const hazard = 1.0 / (1.0 + Math.exp(-4.0 * (safeOutrage - 0.5)));
 
   // Gross ARR at risk represents the portion of the customer base exposed to defection
-  const grossARRAtRisk = Math.min(totalARR, Math.round(totalARR * Math.min(1.0, Math.max(0.0, hazard * 0.45))));
+  const grossARRAtRisk = Math.min(safeTotalARR, Math.round(safeTotalARR * Math.min(1.0, Math.max(0.0, hazard * 0.45))));
 
   // Base loss rate balances empirical macro churn and hazard expectation
-  const baseLossRate = Math.min(1.0, Math.max(0.0, Math.max(churnedNodeFraction, hazard * 0.18)));
-  const expectedChurnLossARR = Math.min(totalARR, Math.round(totalARR * baseLossRate));
+  const baseLossRate = Math.min(1.0, Math.max(0.0, Math.max(safeChurnFraction, hazard * 0.18)));
+  const expectedChurnLossARR = Math.min(safeTotalARR, Math.round(safeTotalARR * baseLossRate));
 
   const baseCaseLoss = expectedChurnLossARR;
-  const p90CaseLoss = Math.min(totalARR, Math.round(expectedChurnLossARR * 1.65));
+  const p90CaseLoss = Math.min(safeTotalARR, Math.round(expectedChurnLossARR * 1.65));
   const mitigatedCaseLoss = expectedChurnLossARR > 0 ? Math.max(1, Math.round(expectedChurnLossARR * 0.35)) : 0;
 
   // Waterfall arithmetic balance:
@@ -105,10 +109,10 @@ export function computeExecutiveARRRisk(
   // Stage 1: Direct Boycott / Churn (-baseCaseLoss)
   // Stage 2: Pipeline Freeze / Downgrades (-freezeLoss)
   // Stage 3: Vaccine Terms Recovery (+recovery)
-  const freezeLoss = Math.min(totalARR - baseCaseLoss, Math.round(baseCaseLoss * 0.4));
+  const freezeLoss = Math.min(safeTotalARR - baseCaseLoss, Math.round(baseCaseLoss * 0.4));
   const vaccineRecovery = Math.round(baseCaseLoss * 0.65);
 
-  const balance0 = totalARR;
+  const balance0 = safeTotalARR;
   const balance1 = balance0 - baseCaseLoss;
   const balance2 = balance1 - freezeLoss;
   const balance3 = balance2 + vaccineRecovery;
@@ -121,7 +125,7 @@ export function computeExecutiveARRRisk(
   ];
 
   return {
-    totalARR,
+    totalARR: safeTotalARR,
     grossARRAtRisk,
     expectedChurnLossARR,
     baseCaseLoss,
@@ -174,10 +178,11 @@ export function computeCompetitorMigration(
     u: 1.5 * (c.isOSS ? 1 : 0) + 2.0 * c.featureParity - 1.2 * c.switchingFriction,
   }));
 
-  const expSum = utilities.reduce((acc, curr) => acc + Math.exp(curr.u), 0);
+  const maxU = Math.max(...utilities.map((u) => u.u));
+  const expSum = utilities.reduce((acc, curr) => acc + Math.exp(curr.u - maxU), 0);
 
   return utilities.map((u) => {
-    const share = Math.exp(u.u) / expSum;
+    const share = expSum > 0 ? Math.exp(u.u - maxU) / expSum : 1.0 / utilities.length;
     const sharePercent = Math.round(share * 1000) / 10;
     return {
       competitor: u.name,
@@ -345,16 +350,20 @@ export function buildCompleteExecutiveReport(params: {
 }): ExecutiveDecisionReport {
   const { vendor, topic, totalARR, macroOutrage, churnFraction, competitors } = params;
 
-  const arrRisk = computeExecutiveARRRisk(totalARR, macroOutrage, churnFraction);
+  const safeTotalARR = Number.isFinite(totalARR) && totalARR > 0 ? totalARR : 0;
+  const safeOutrage = Number.isFinite(macroOutrage) ? Math.max(0, Math.min(1, macroOutrage)) : 0;
+  const safeChurnFraction = Number.isFinite(churnFraction) ? Math.max(0, Math.min(1, churnFraction)) : 0;
+
+  const arrRisk = computeExecutiveARRRisk(safeTotalARR, safeOutrage, safeChurnFraction);
   const competitorMigration = computeCompetitorMigration(
     arrRisk.expectedChurnLossARR,
-    Math.round(1000 * churnFraction),
+    Math.round(1000 * safeChurnFraction),
     competitors,
   );
-  const mediaHeadlines = generateMediaHeadlines(vendor, topic, macroOutrage);
-  const vaccineRewrites = generateVaccineRewrites(vendor, totalARR);
+  const mediaHeadlines = generateMediaHeadlines(vendor, topic, safeOutrage);
+  const vaccineRewrites = generateVaccineRewrites(vendor, safeTotalARR);
 
-  const svgWaterfall = renderSvgWaterfall(arrRisk.netARRWaterfall, totalARR > 0 ? totalARR * 1.15 : 100);
+  const svgWaterfall = renderSvgWaterfall(arrRisk.netARRWaterfall, safeTotalARR > 0 ? safeTotalARR * 1.15 : 100);
 
   const renderedHtmlDashboard = `<!DOCTYPE html>
 <html lang="en">
@@ -419,7 +428,7 @@ export function buildCompleteExecutiveReport(params: {
 <body>
   <header>
     <h1>Executive Decision Report: ${vendor}</h1>
-    <div class="metric-sub">Simulation Topic: <strong>${topic}</strong> | Macro Outrage: <strong>${Math.round(macroOutrage * 100)}%</strong></div>
+    <div class="metric-sub">Simulation Topic: <strong>${topic}</strong> | Macro Outrage: <strong>${Math.round(safeOutrage * 100)}%</strong></div>
   </header>
 
   <div id="arr-risk" class="card" style="margin-bottom: 24px;">

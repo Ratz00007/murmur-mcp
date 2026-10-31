@@ -26,6 +26,7 @@ export function listHistoricalCases(): HistoricalBacklashCase[] {
 export function getHistoricalCase(idOrName: string): HistoricalBacklashCase | undefined {
   if (!idOrName) return undefined;
   const target = idOrName.toLowerCase().trim();
+  if (!target) return undefined;
   return CANONICAL_HISTORICAL_CASES.find((c) => {
     const id = c.id.toLowerCase();
     const vendor = c.vendor.toLowerCase();

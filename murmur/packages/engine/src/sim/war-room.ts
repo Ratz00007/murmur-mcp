@@ -61,9 +61,10 @@ export function executeMinimaxDebate(
   const safePolicy = policyText ?? "";
 
   // Bounded excerpting for evidence to avoid exceeding token envelopes or memory limits
+  const trimmedPolicy = safePolicy.trim();
   const policyExcerpt =
-    safePolicy.length > 0
-      ? safePolicy.slice(0, 150).trim()
+    trimmedPolicy.length > 0
+      ? trimmedPolicy.slice(0, 150)
       : "No explicit policy text provided; analyzed against default standard commercial terms.";
 
   const lowerTopic = safeTopic.toLowerCase();
@@ -76,7 +77,12 @@ export function executeMinimaxDebate(
   const isRetroactive = !isVoluntaryOrBenign && /retroactive|lifetime|shipped/i.test(combinedText);
   const isLicensingOrOSS = !isVoluntaryOrBenign && /bsl|sspl|fork|relicens/i.test(combinedText);
   const isTelemetryOrFraud = !isVoluntaryOrBenign && /fraud|unverifiable|attribution/i.test(combinedText);
-  const isSevere = isInstallOrUnitFee || isRetroactive || isLicensingOrOSS || isTelemetryOrFraud;
+  const severeCount =
+    (isInstallOrUnitFee ? 1 : 0) +
+    (isRetroactive ? 1 : 0) +
+    (isLicensingOrOSS ? 1 : 0) +
+    (isTelemetryOrFraud ? 1 : 0);
+  const isSevere = severeCount >= 1;
 
   // Turn 1: Prosecution Indictment
   const turn1Claim = isInstallOrUnitFee
@@ -189,8 +195,8 @@ export function executeMinimaxDebate(
   ];
 
   // Adjudicator viability score and recommendation
-  // Severe retroactive/install policies get a low viability score (e.g. 28)
-  const viabilityScore = isSevere ? 28 : 65;
+  // If severeCount >= 3 -> 15 ("full_retraction"), >= 1 -> 28 ("revise_terms"), else 65 ("proceed")
+  const viabilityScore = severeCount >= 3 ? 15 : severeCount >= 1 ? 28 : 65;
   const recommendation = viabilityScore < 20 ? "full_retraction" : viabilityScore < 50 ? "revise_terms" : "proceed";
 
   const adjudicatorVerdict: MinimaxDebateVerdict = {
