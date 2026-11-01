@@ -11,9 +11,9 @@ achievable today.
 **Status:** active — A, B, C, D(pilot), E, F complete except directory
 submission itself. 650/650 unit+golden, 193/193 e2e (last measured), cleanroom
 GATE GREEN when rebuilt, lint/coverage/golden-hash gated in CI, claim check
-GREEN at 650 tests and 12 tools. Remaining: npm publish + directory submissions
-(both blocked on user:
-`npm login` and the unclaimed `murmur-mcp` name).
+GREEN at 650 tests and 12 tools. `murmur-mcp@1.0.0` is published on the npm
+registry. Remaining: MCP directory submission (blocked on user — registry
+login).
 
 **Replaces:** the prior "Murmur Phase 0 + Phase 1: Ship, Prove, and De-risk"
 goal. Two of its claims are **disproved by direct inspection** and are corrected
@@ -112,8 +112,9 @@ coding session** — by showing its work, including where it is bad.
 - [x] F4 murmur-mcp diff: objection delta between stored dossiers
 
 ### Blocked on the user
-- `npm login` + publish — the `murmur-mcp` name is unclaimed. Runbook:
-  `murmur/packages/server/PUBLISH-CHECKLIST.md`.
+- MCP directory submission — the npm package is published and `server.json`
+  is registry-valid; submission needs the MCP registry login at
+  https://registry.modelcontextprotocol.io (GitHub OAuth).
 - Second person to score Arm A vs Arm B. At N=5 a single operator is tolerable
   only if the answer key is written before any arm output is seen; at N=20 it
   is not, and a second reviewer is required.

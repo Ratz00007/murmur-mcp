@@ -3,7 +3,7 @@
 [![build](https://img.shields.io/github/actions/workflow/status/Ratz00007/murmur-mcp/ci.yml?branch=main)](https://github.com/Ratz00007/murmur-mcp/actions)
 [![npm](https://img.shields.io/npm/v/murmur-mcp.svg)](https://www.npmjs.com/package/murmur-mcp)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](murmur/LICENSE)
-[![MCP](https://img.shields.io/badge/MCP-server%20%C2%B7%2011%20tools-brightgreen.svg)](murmur/README.md)
+[![MCP](https://img.shields.io/badge/MCP-server%20%C2%B7%2012%20tools-brightgreen.svg)](murmur/README.md)
 
 **Before you ship a pricing or launch change, find the objections that would kill it — ranked by blast radius, each tied to the simulated post behind it, inside the coding agent you already use, with no extra API keys.**
 
@@ -53,9 +53,7 @@ One-time setup — pick either option:
 # Option A — install from source (dist is pre-built inside the bundle)
 cd murmur && npm install
 
-# Option B — install from npm (release artifacts ship via npm with provenance
-# once the repo is live; the npm name `murmur-mcp` is still unclaimed, so this
-# fails until the package is published — use Option A until then)
+# Option B — install from npm (the registry package — the primary route)
 npm install -g murmur-mcp
 murmur-mcp doctor                                # environment check
 npx murmur-mcp doctor                            # …or run one-off, no global install
@@ -122,7 +120,7 @@ measures token budget and wall time at any scale:
    (`.github/workflows/release.yml`) runs every gate and publishes with
    provenance — or simply `npm publish` from `murmur/packages/server/`.
 
-The npm name `murmur-mcp` was still unclaimed at build time.
+The npm name `murmur-mcp` is published (`murmur-mcp@1.0.0`, Apache-2.0, npm registry).
 
 ## The guarantees (why no API key)
 
