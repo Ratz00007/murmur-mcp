@@ -137,15 +137,29 @@ export function registerSeedTools(server: McpServer, ctx: ServerContext): void {
             "Canonical case study ID (e.g. 'unity-runtime-fee-2023', 'docker-hub-free-team-2023', 'redis-licensing-pivot-2024', 'hashicorp-bsl-2023') — source:'corpus' only",
           ),
         platform: z
-          .enum(["reddit", "hackernews", "twitter", "github"])
+          .enum([
+            "reddit",
+            "hackernews",
+            "twitter",
+            "github",
+            "lobsters",
+            "stackexchange",
+            "mastodon",
+            "bluesky",
+            "discourse",
+            "devto",
+            "rss",
+          ])
           .optional()
-          .describe("Discourse platform — source:'discourse' only"),
+          .describe(
+            "Discourse platform — source:'discourse' only. The first four have live adapters; the rest come from tools/collector as pre-structured threads",
+          ),
         threadId: z
           .string()
           .optional()
           .describe("Thread ID or thread URL — source:'discourse' only"),
         thread: z
-          .custom<any>()
+          .custom<unknown>()
           .optional()
           .describe("Pre-structured DiscourseThread object or JSON string — source:'discourse' only"),
         world: z
@@ -290,7 +304,6 @@ export function registerSeedTools(server: McpServer, ctx: ServerContext): void {
             const adapter = getDiscourseAdapter(platform);
             discourseThread = await adapter.fetchThread(
               threadId || url || "default",
-              { tier: 1 },
             );
           } else if (text) {
             const raw = JSON.parse(text);

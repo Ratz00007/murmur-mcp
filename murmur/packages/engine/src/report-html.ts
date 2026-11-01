@@ -1,12 +1,15 @@
 /**
  * Stage 5 — HTML dashboard renderer. Produces a single self-contained
- * report-N.html next to the Markdown report: inline CSS, inline SVG, zero
- * JavaScript, zero external resources (no CDN, no webfonts, not even a URL —
- * the server ships a strict no-egress guarantee and the dashboard inherits
- * it). The numbers come from the same collectReportData() source of truth as
+ * report-N.html next to the Markdown report: inline CSS, inline SVG, and one
+ * inline vanilla-JS drill-down layer (F4) — zero external resources (no CDN,
+ * no webfonts, no external script/link/font, not even a URL — the server ships
+ * a strict no-egress guarantee and the dashboard inherits it). The inline JS
+ * only toggles visibility of detail panels already baked into the file; with
+ * JavaScript disabled every panel stays collapsed and the report reads fully.
+ * The numbers come from the same collectReportData() source of truth as
  * the Markdown renderer, so report-N.md and report-N.html can never disagree.
  */
-import type { Post, ReportRecord, World } from "./types.js";
+import type { Persona, Post, ReportRecord, Traits, World } from "./types.js";
 import type { Storage } from "./store/storage.js";
 import {
   engagementPeaks,
@@ -14,8 +17,12 @@ import {
   sentimentCurve,
   topPostsByEngagement,
 } from "./aggregate.js";
-import type { ReportQuote } from "./analytics.js";
-import { collectReportData, REPORT_DISCLAIMER } from "./report.js";
+import type { FactionInfo, PersonaArc, ReportQuote } from "./analytics.js";
+import {
+  collectReportData,
+  REPORT_DISCLAIMER,
+  type ReportData,
+} from "./report.js";
 import { engagementScore } from "./util/engagement.js";
 import { fmtSigned, truncate } from "./util/text.js";
 
@@ -185,6 +192,30 @@ ul.pl li{margin:4px 0}
 ul.pl.pos li::marker{color:var(--pos)}
 ul.pl.neg li::marker{color:var(--neg)}
 ul.pl.dim li::marker{color:var(--dim)}
+.dd-tools{display:flex;justify-content:flex-end;align-items:center;margin:16px 0 -8px}
+.dd-tools[hidden]{display:none}
+.dd-all{background:var(--panel);border:1px solid var(--line2);color:var(--accent2);border-radius:99px;padding:5px 14px;font:inherit;font-size:12.5px;cursor:pointer}
+.dd-all:hover{background:var(--panel2)}
+.dd-all:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dd-toggle{background:none;border:0;margin:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.dd-toggle:hover{color:var(--accent2)}
+.dd-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.dd-toggle::after{content:"+";margin-left:8px;color:var(--accent);font-weight:700;font-family:var(--mono)}
+.dd-toggle[aria-expanded="true"]::after{content:"–"}
+[data-dd-head]{cursor:pointer}
+.chip.dd-toggle{font-size:11px;padding:1px 8px;border:1px solid var(--line2);background:var(--panel2);border-radius:99px}
+.chip.dd-toggle:hover{color:var(--accent2);border-color:var(--accent)}
+.dd-panel{border-top:1px dashed var(--line2);margin-top:14px;padding-top:14px}
+.dd-panel[hidden]{display:none}
+.dd-panel>.dd-label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 10px}
+.dd-kv{display:flex;gap:6px 8px;flex-wrap:wrap;align-items:baseline;margin:0 0 12px}
+.dd-meter{display:grid;grid-template-columns:150px 1fr 52px;gap:10px;align-items:center;font-size:12.5px;margin:5px 0}
+.dd-meter .lbl{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dd-meter .val{font-family:var(--mono);color:var(--muted);text-align:right;font-size:11.5px}
+.dd-meter .meter{margin-top:0}
+.dd-cols{display:grid;grid-template-columns:1fr 1fr;gap:4px 22px}
+@media(max-width:860px){.dd-cols{grid-template-columns:1fr}}
+@media(max-width:680px){.dd-meter{grid-template-columns:110px 1fr 46px}}
 .foot{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:12.5px}
 .foot .seed{font-family:var(--mono);color:var(--muted)}
 @media print{
@@ -195,6 +226,8 @@ ul.pl.dim li::marker{color:var(--dim)}
   .card,.panel,.quote,.summary,.verdict,details{break-inside:avoid;border-color:#d7dfe9;background:#fff}
   details{page-break-inside:avoid}
   details:not([open]) .inner{display:none}
+  .dd-tools{display:none}
+  .dd-panel{break-inside:avoid}
 }
 `;
 
@@ -460,6 +493,231 @@ function stanceTrack(v: number): string {
 }
 
 // ---------------------------------------------------------------------------
+// drill-down explorer (F4) — additive detail panels behind accessible toggles.
+// Panels only contain data already computed into the report payload, so the
+// static (JS-disabled) report loses nothing; the script is a constant string
+// with no randomness, no clock and no network, keeping renders byte-stable.
+// ---------------------------------------------------------------------------
+
+const TRAIT_ROWS: { key: keyof Traits; label: string }[] = [
+  { key: "openness", label: "Openness" },
+  { key: "conscientiousness", label: "Conscientiousness" },
+  { key: "extraversion", label: "Extraversion" },
+  { key: "agreeableness", label: "Agreeableness" },
+  { key: "emotionalStability", label: "Emotional stability" },
+];
+
+/** One inline script per report: event-delegation drill-down toggles. Pure
+ * visibility toggling — no network, no storage, no timers, no randomness. */
+const DD_SCRIPT = `
+(function(){
+  "use strict";
+  var d = document;
+  function all(sel){ return Array.prototype.slice.call(d.querySelectorAll(sel)); }
+  function setPanel(p, open){
+    if(open){ p.removeAttribute("hidden"); p.setAttribute("aria-hidden","false"); }
+    else { p.setAttribute("hidden",""); p.setAttribute("aria-hidden","true"); }
+  }
+  function setValue(v, open){
+    all('[data-drilldown="'+v+'"]').forEach(function(t){
+      t.setAttribute("aria-expanded", open?"true":"false");
+    });
+    all('[data-drilldown-panel="'+v+'"]').forEach(function(p){ setPanel(p, open); });
+  }
+  function anyOpen(){
+    return all("[data-drilldown]").some(function(t){
+      return t.getAttribute("aria-expanded")==="true";
+    });
+  }
+  function syncTools(){
+    var b = d.getElementById("dd-toggle-all");
+    if(!b) return;
+    var open = anyOpen();
+    b.setAttribute("aria-expanded", open?"true":"false");
+    b.textContent = open ? "Collapse all details" : "Expand all details";
+  }
+  d.addEventListener("click", function(ev){
+    var el = ev.target;
+    if(!el || typeof el.closest !== "function") return;
+    var btn = el.closest("[data-drilldown]");
+    if(!btn){
+      var head = el.closest("[data-dd-head]");
+      if(head) btn = head.querySelector("[data-drilldown]");
+    }
+    if(!btn || !btn.hasAttribute("data-drilldown")) return;
+    setValue(btn.getAttribute("data-drilldown"), btn.getAttribute("aria-expanded") !== "true");
+    syncTools();
+  });
+  var allBtn = d.getElementById("dd-toggle-all");
+  if(allBtn) allBtn.addEventListener("click", function(){
+    var open = !anyOpen();
+    all("[data-drilldown]").forEach(function(t){
+      setValue(t.getAttribute("data-drilldown"), open);
+    });
+    syncTools();
+  });
+  var tools = d.getElementById("dd-tools");
+  if(tools){
+    if(all("[data-drilldown]").length === 0) tools.setAttribute("hidden","");
+    else tools.removeAttribute("hidden");
+  }
+})();`;
+
+function ddLabel(text: string): string {
+  return `<div class="dd-label">${esc(text)}</div>`;
+}
+
+/** Unique DOM id per rendered panel occurrence. The data-drilldown value may
+ * back several panels (a persona can lead a faction and star in the spotlight
+ * section); the script toggles all panels of one value together. */
+function nextPanelId(counts: Map<string, number>, value: string): string {
+  const n = (counts.get(value) ?? 0) + 1;
+  counts.set(value, n);
+  const safe = value.replace(/[^a-zA-Z0-9_-]+/g, "-");
+  return n === 1 ? `dd-panel-${safe}` : `dd-panel-${safe}-${n}`;
+}
+
+function ddToggle(
+  value: string,
+  panelId: string,
+  inner: string,
+  cls?: string,
+): string {
+  return (
+    `<button type="button" class="dd-toggle${cls ? ` ${cls}` : ""}" data-drilldown="${esc(value)}"` +
+    ` aria-expanded="false" aria-controls="${esc(panelId)}">${inner}</button>`
+  );
+}
+
+function ddPanel(panelId: string, value: string, body: string): string {
+  return (
+    `<div class="dd-panel" id="${esc(panelId)}" data-drilldown-panel="${esc(value)}" hidden aria-hidden="true">` +
+    body +
+    `</div>`
+  );
+}
+
+function meterRow(label: string, value: number, color: string): string {
+  const pct = Math.round(Math.min(1, Math.max(0, value)) * 100);
+  return (
+    `<div class="dd-meter"><span class="lbl">${esc(label)}</span>` +
+    `<div class="meter"><i style="width:${pct}%;background:${color}"></i></div>` +
+    `<span class="val">${pct}%</span></div>`
+  );
+}
+
+function stanceMeterRow(label: string, value: number): string {
+  return (
+    `<div class="dd-meter"><span class="lbl">${esc(label)}</span>` +
+    `${stanceTrack(value)}<span class="val">${fmtSigned(value)}</span></div>`
+  );
+}
+
+/** Detail panel for one persona: traits, the full stance book, and the
+ * persona's own posts about the focus entity (negative ones listed as
+ * objections). Everything comes from the already-collected payload. */
+function personaPanel(
+  D: ReportData,
+  persona: Persona | undefined,
+  arc: PersonaArc | undefined,
+  focusId: string | null,
+): string {
+  const pid = persona?.id ?? arc?.personaId ?? "";
+  const name = persona?.name ?? arc?.name ?? "Persona";
+  const handle = persona?.handle ?? arc?.handle ?? "";
+  const parts: string[] = [];
+  parts.push(
+    ddLabel(`Persona details — ${name}${handle ? ` (${handle})` : ""}`),
+  );
+  if (persona) {
+    parts.push(
+      `<div class="dd-kv"><span class="chip">platform ${esc(persona.platform)}</span><span class="chip">activity ${Math.round(persona.activity * 100)}%</span>${arc ? `<span class="chip">${esc(arc.arcLabel)}</span>` : ""}</div>`,
+    );
+    const traits = TRAIT_ROWS.map((t) =>
+      meterRow(t.label, persona.traits[t.key], "var(--accent)"),
+    ).join("");
+    const stanceRows = D.entities.filter(
+      (e) => persona.stances[e.id] !== undefined,
+    );
+    parts.push(
+      `<div class="dd-cols"><div>${ddLabel("Traits (simulated self-report)")}${traits}</div>` +
+        `<div>${ddLabel("Stance book — end of run")}` +
+        (stanceRows.length > 0
+          ? stanceRows
+              .map((e) => stanceMeterRow(e.name, persona.stances[e.id]))
+              .join("")
+          : `<p class="chart-note">No declared stances — opinions formed during the run.</p>`) +
+        `</div></div>`,
+    );
+  }
+  if (!pid) return parts.join("");
+  const own = D.posts.filter((p) => p.personaId === pid && p.kind !== "repost");
+  if (own.length === 0) {
+    parts.push(
+      `<p class="chart-note">No posts recorded for this persona in the run.</p>`,
+    );
+    return parts.join("");
+  }
+  const chrono = own
+    .slice()
+    .sort((a, b) => a.round - b.round || a.id.localeCompare(b.id));
+  const aboutFocus = focusId
+    ? chrono.filter((p) => p.mentions.some((m) => m.entityId === focusId))
+    : [];
+  const pool = aboutFocus.length > 0 ? aboutFocus : chrono;
+  const card = (p: Post) =>
+    postQuoteCard(p, D.handles.get(p.personaId) ?? p.personaId);
+  const objections = pool.filter((p) => postSentiment(p) < -0.05).slice(0, 4);
+  const endorsements = pool.filter((p) => postSentiment(p) > 0.05).slice(0, 4);
+  const focusLabel = D.focusEntity?.name ?? "the scenario";
+  if (objections.length > 0)
+    parts.push(
+      ddLabel(`Objections — posts about ${focusLabel}`) +
+        objections.map(card).join(""),
+    );
+  if (endorsements.length > 0)
+    parts.push(
+      ddLabel(`Endorsements — posts about ${focusLabel}`) +
+        endorsements.map(card).join(""),
+    );
+  if (objections.length === 0 && endorsements.length === 0)
+    parts.push(ddLabel("On the record") + pool.slice(0, 4).map(card).join(""));
+  return parts.join("");
+}
+
+/** Detail panel for one faction: the leaders table (per-leader stance — not
+ * shown on the card) and the faction's round-by-round stance arc. */
+function factionPanel(D: ReportData, f: FactionInfo): string {
+  const parts: string[] = [];
+  parts.push(ddLabel(`Faction details — ${f.label}`));
+  if (f.leaders.length > 0) {
+    parts.push(
+      `<table><tr><th>Leader</th><th>Archetype</th><th class="mono">Stance</th><th class="mono">Posts</th><th class="mono">Eng</th></tr>` +
+        f.leaders
+          .map(
+            (l) =>
+              `<tr><td><b>${esc(l.handle)}</b></td><td>${esc(l.archetype)}</td><td class="mono">${fmtSigned(l.stance)}</td><td class="mono">${l.posts}</td><td class="mono">${l.engagement}</td></tr>`,
+          )
+          .join("") +
+        `</table>`,
+    );
+  } else {
+    parts.push(
+      `<p class="chart-note">No standout voices — engagement inside this camp is evenly spread.</p>`,
+    );
+  }
+  if (f.sentimentByRound.length > 0) {
+    parts.push(
+      ddLabel(`Stance arc toward ${D.factions.focusEntity}`) +
+        f.sentimentByRound
+          .map((p) => stanceMeterRow(`round ${p.round}`, p.value))
+          .join(""),
+    );
+  }
+  return parts.join("");
+}
+
+// ---------------------------------------------------------------------------
 // the dashboard
 // ---------------------------------------------------------------------------
 
@@ -471,7 +729,20 @@ export function renderReportHtml(
   const D = collectReportData(storage, world, report);
   const d = report.narrative;
   const focusName = D.focusEntity?.name;
+  const focusId = D.focusEntity?.id ?? null;
   const H: string[] = [];
+  // drill-down lookups — all derived from the already-collected payload, so
+  // the .md and the .html keep sharing one source of truth
+  const personasById = new Map<string, Persona>();
+  const personasByHandle = new Map<string, Persona>();
+  for (const p of D.personas) {
+    personasById.set(p.id, p);
+    if (!personasByHandle.has(p.handle)) personasByHandle.set(p.handle, p);
+  }
+  const arcsById = new Map<string, PersonaArc>(
+    D.arcs.map((a) => [a.personaId, a] as const),
+  );
+  const panelIds = new Map<string, number>();
 
   // ---- topbar + hero -------------------------------------------------------
   const sup = D.factions.factions.find((f) => f.key === "supporters");
@@ -516,6 +787,10 @@ export function renderReportHtml(
   );
   H.push(
     `<div class="verdict"><div class="lbl">Verdict</div>${esc(D.factions.verdict)} Controversy reads <b>${esc(D.controversy.label)}</b> (${D.controversy.score}/100).</div>`,
+  );
+  // drill-down master control: inert (and hidden) until the inline script runs
+  H.push(
+    `<div class="dd-tools" id="dd-tools" hidden><button type="button" id="dd-toggle-all" class="dd-all" aria-expanded="false">Expand all details</button></div>`,
   );
 
   // ---- KPIs ----------------------------------------------------------------
@@ -656,19 +931,41 @@ export function renderReportHtml(
   H.push(`</div>`);
   for (const f of D.factions.factions) {
     if (f.size === 0) continue;
+    const factionPanelId = nextPanelId(panelIds, `faction:${f.key}`);
     H.push(
       `<div class="card faction" style="margin-top:14px;border-left:3px solid ${fcolors[f.key]}">`,
     );
     H.push(
-      `<div class="head"><h3>${esc(f.label)}</h3><span class="chip">${f.size} ${f.size === 1 ? "persona" : "personas"} · ${Math.round(f.share * 100)}%</span><span class="chip">avg stance ${fmtSigned(f.avgStance)}</span><span class="chip">${f.posts} posts</span><span class="chip">${f.engagement} eng</span></div>`,
+      `<div class="head" data-dd-head><h3>${ddToggle(`faction:${f.key}`, factionPanelId, esc(f.label))}</h3><span class="chip">${f.size} ${f.size === 1 ? "persona" : "personas"} · ${Math.round(f.share * 100)}%</span><span class="chip">avg stance ${fmtSigned(f.avgStance)}</span><span class="chip">${f.posts} posts</span><span class="chip">${f.engagement} eng</span></div>`,
     );
     H.push(
       `<div class="share-bar"><i style="width:${(f.share * 100).toFixed(1)}%;background:${fcolors[f.key]}"></i></div>`,
     );
     if (f.leaders.length > 0) {
-      H.push(
-        `<div class="leaders">${f.leaders.map((l) => `<span class="chip"><b>${esc(l.handle)}</b> · ${esc(l.archetype)} · ${l.posts} posts</span>`).join("")}</div>`,
-      );
+      const leaderPanels: string[] = [];
+      const chips = f.leaders
+        .map((l) => {
+          const persona = personasByHandle.get(l.handle);
+          if (!persona)
+            return `<span class="chip"><b>${esc(l.handle)}</b> · ${esc(l.archetype)} · ${l.posts} posts</span>`;
+          const lpid = nextPanelId(panelIds, `persona:${persona.id}`);
+          leaderPanels.push(
+            ddPanel(
+              lpid,
+              `persona:${persona.id}`,
+              personaPanel(D, persona, arcsById.get(persona.id), focusId),
+            ),
+          );
+          return ddToggle(
+            `persona:${persona.id}`,
+            lpid,
+            `<b>${esc(l.handle)}</b> · ${esc(l.archetype)} · ${l.posts} posts`,
+            "chip",
+          );
+        })
+        .join("");
+      H.push(`<div class="leaders">${chips}</div>`);
+      for (const lp of leaderPanels) H.push(lp);
     }
     for (const q of f.quotes) H.push(quoteCard(q, D.factions.focusEntity));
     if (f.sentimentByRound.length >= 2) {
@@ -678,6 +975,7 @@ export function renderReportHtml(
         `<p class="chart-note">Faction sentiment toward ${esc(D.factions.focusEntity)} moved from ${fmtSigned(a.value)} (round ${a.round}) to ${fmtSigned(b.value)} (round ${b.round}).</p>`,
       );
     }
+    H.push(ddPanel(factionPanelId, `faction:${f.key}`, factionPanel(D, f)));
     H.push(`</div>`);
   }
 
@@ -728,9 +1026,10 @@ export function renderReportHtml(
     );
     H.push(`<div class="grid3">`);
     for (const a of D.arcs) {
+      const arcPanelId = nextPanelId(panelIds, `persona:${a.personaId}`);
       H.push(`<div class="card persona">`);
       H.push(
-        `<h3>${esc(a.name)} <span style="color:var(--muted);font-weight:400;font-size:13px">${esc(a.handle)}</span></h3>`,
+        `<h3 data-dd-head>${ddToggle(`persona:${a.personaId}`, arcPanelId, esc(a.name))} <span style="color:var(--muted);font-weight:400;font-size:13px">${esc(a.handle)}</span></h3>`,
       );
       H.push(
         `<div class="meta"><span class="chip">${esc(a.archetype)}</span><span class="chip">${a.posts} posts</span><span class="chip">${a.engagement} eng</span><span class="pill ${sentClass(a.delta)} arc">${esc(a.arcLabel)}</span></div>`,
@@ -746,6 +1045,13 @@ export function renderReportHtml(
         `<p class="chart-note">stance ${fmtSigned(a.focusStart)} → ${fmtSigned(a.focusEnd)}${a.delta !== 0 ? ` (shift ${fmtSigned(a.delta)})` : ""}</p>`,
       );
       if (a.signatureQuote) H.push(quoteCard(a.signatureQuote, focusName));
+      H.push(
+        ddPanel(
+          arcPanelId,
+          `persona:${a.personaId}`,
+          personaPanel(D, personasById.get(a.personaId), a, focusId),
+        ),
+      );
       H.push(`</div>`);
     }
     H.push(`</div>`);
@@ -1027,8 +1333,10 @@ export function renderReportHtml(
   // ---- footer ----------------------------------------------------------------------------------------------
   H.push(
     `<footer class="foot">Murmur simulated perspective dashboard · deterministic statistics by the engine, narrative by the host coding agent · generated ${esc(D.date)} from world <b>${esc(world.slug)}</b> · report v${report.version} · ` +
-      `this file is self-contained (inline CSS + SVG, no external requests) and safe to commit, share or print.</footer>`,
+      `this file is self-contained (inline CSS + SVG + JS, no external requests) and safe to commit, share or print.</footer>`,
   );
-  H.push(`</div></body></html>`);
+  H.push(`</div>`);
+  H.push(`<script>${DD_SCRIPT.trim()}</script>`);
+  H.push(`</body></html>`);
   return H.join("\n");
 }

@@ -1,0 +1,8 @@
+{
+ "url": "https://hn.algolia.com/api/v1/items/37143175",
+ "method": "GET",
+ "status": 200,
+ "retrievedAt": "2026-11-01T05:52:04.153Z",
+ "sha256": "7cecefcbbfdce282cb3515bdbbb01a53a6042c7648ca64a9bc50c9056b5d5e87",
+ "body": "{\"author\":\"RyeCombinator\",\"children\":[],\"created_at\":\"2023-08-16T05:30:13.000Z\",\"created_at_i\":1692163813,\"id\":37143175,\"options\":[],\"parent_id\":null,\"points\":1,\"story_id\":37143175,\"text\":null,\"title\":\"Spacelift's latest statement on HashiCorp's BSL adoption\",\"type\":\"story\",\"url\":\"https://spacelift.io/blog/spacelift-latest-statement-on-hashicorp-bsl\"}\n"
+}

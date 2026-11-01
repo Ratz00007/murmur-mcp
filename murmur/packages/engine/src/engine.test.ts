@@ -388,9 +388,11 @@ describe("report html dashboard", () => {
     expect(html).toContain("Critics said");
     expect(html).toContain("sev-high");
     expect(html).toContain("po_1");
-    // zero-egress promise holds for the artifact itself: no URLs, no scripts, no external loads
+    // zero-egress promise holds for the artifact itself: no URLs, no external
+    // loads — the F4 drill-down layer is one inline script with no src
     expect(html).not.toMatch(/https?:\/\//);
-    expect(html).not.toContain("<script");
+    expect(html.match(/<script>/g)?.length).toBe(1);
+    expect(html).not.toMatch(/<script[^>]*src/i);
     expect(html).not.toContain("<link");
     expect(html).not.toContain("xmlns");
     // injected content is escaped
@@ -406,6 +408,52 @@ describe("report html dashboard", () => {
     expect(ha).toBe(hb);
     a.db.close();
     b.db.close();
+  });
+
+  it("adds an accessible drill-down layer: hooks, collapsed panels, expand-all control", () => {
+    const { db, world, record } = build();
+    const html = renderReportHtml(db, world, record);
+    // (a) data-* contract: factions by key, personas by persona id
+    expect(html).toContain('data-drilldown="faction:supporters"');
+    expect(html).toContain('data-drilldown="faction:opponents"');
+    expect(html).toMatch(/data-drilldown="persona:[A-Za-z0-9_-]+"/);
+    // every toggle is a real <button>, starts collapsed, and points at a
+    // panel that exists, starts hidden and aria-hidden (state checked per
+    // element — the stylesheet legitimately mentions aria-expanded="true" as
+    // the expanded-state selector)
+    const toggles = [...html.matchAll(/<button[^>]*data-drilldown=[^>]*>/g)].map(
+      (m) => m[0],
+    );
+    expect(toggles.length).toBeGreaterThan(0);
+    for (const t of toggles) expect(t).toContain('aria-expanded="false"');
+    expect(html).toMatch(/id="dd-toggle-all"[^>]*aria-expanded="false"/);
+    for (const m of [...html.matchAll(/aria-controls="([^"]+)"/g)]) {
+      expect(html).toContain(`id="${m[1]}"`);
+    }
+    const panels = [...html.matchAll(/<div class="dd-panel"[^>]*>/g)].map(
+      (m) => m[0],
+    );
+    expect(panels.length).toBeGreaterThan(0);
+    for (const p of panels) {
+      expect(p).toContain(" hidden");
+      expect(p).toContain('aria-hidden="true"');
+    }
+    // panels carry additive payload data: per-leader stance table, persona
+    // traits, stance book and objection lists
+    expect(html).toContain("Faction details —");
+    expect(html).toContain("Persona details —");
+    expect(html).toContain("Traits (simulated self-report)");
+    expect(html).toContain("Stance book — end of run");
+    expect(html).toContain("Objections — posts about");
+    // expand/collapse-all control: present but collapsed until JS unhides it
+    expect(html).toContain('id="dd-tools" hidden');
+    expect(html).toContain('id="dd-toggle-all"');
+    expect(html).toContain("Expand all details");
+    // (b) still zero external references, offline
+    expect(html).not.toMatch(/https?:\/\//);
+    // (c) drill-down markup is byte-stable across renders of the same world
+    expect(renderReportHtml(db, world, record)).toBe(html);
+    db.close();
   });
 });
 

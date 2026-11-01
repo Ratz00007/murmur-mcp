@@ -1,0 +1,8 @@
+{
+ "url": "https://lobste.rs/search.json?q=license&what=stories&order=newest&page=1",
+ "method": "GET",
+ "status": 400,
+ "retrievedAt": "2026-11-01T05:49:21.398Z",
+ "sha256": "466c1495bb65ba8f0696e7df0194c876dc94331d688fb9760f0ec40eee7ab4d7",
+ "body": "{\"error\":\"400 Unpermitted query or form parameter\"}"
+}

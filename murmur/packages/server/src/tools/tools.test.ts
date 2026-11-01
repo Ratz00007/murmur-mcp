@@ -77,7 +77,7 @@ const SPILL_RECEIPT = {
 
 describe("tool surface", () => {
   it("declares exactly TOOL_COUNT tools, with no duplicates", () => {
-    expect(TOOL_COUNT).toBe(11);
+    expect(TOOL_COUNT).toBe(12);
     expect(TOOL_NAMES).toHaveLength(TOOL_COUNT);
     expect(new Set(TOOL_NAMES).size).toBe(TOOL_COUNT);
   });
@@ -86,7 +86,7 @@ describe("tool surface", () => {
     expect(() => assertToolSurface()).not.toThrow();
     const fromModules = Object.values(MODULE_TOOL_NAMES).flat();
     expect(fromModules.sort()).toEqual([...TOOL_NAMES].sort());
-    expect(Object.keys(MODULE_TOOL_NAMES)).toHaveLength(8);
+    expect(Object.keys(MODULE_TOOL_NAMES)).toHaveLength(9);
   });
 
   it("fails the assertion when a module and the declared list disagree", () => {
@@ -192,6 +192,8 @@ describe("output schemas", () => {
 describe("the live server", () => {
   it("registers exactly TOOL_COUNT tools, each with an outputSchema", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-surface-"));
+    fs.mkdirSync(path.join(cwd, ".murmur"), { recursive: true });
+    process.env.MURMUR_WORKSPACE = cwd;
     const ctx = new ServerContext(cwd);
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();

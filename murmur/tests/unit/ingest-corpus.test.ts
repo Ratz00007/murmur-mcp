@@ -200,6 +200,7 @@ describe("Historical Backlash Corpus (F05)", () => {
     it("ingests canonical corpus case into world via MCP server", async () => {
       const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
       const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-corpus-test-"));
+      fs.mkdirSync(path.join(tmpDir, ".murmur"), { recursive: true });
       const ctx = new ServerContext(tmpDir);
       const server = buildServer(ctx);
       await server.connect(serverTransport);
@@ -248,6 +249,7 @@ describe("Historical Backlash Corpus (F05)", () => {
     it("rejects unknown caseId with helpful list of available cases", async () => {
       const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
       const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-corpus-err-"));
+      fs.mkdirSync(path.join(tmpDir, ".murmur"), { recursive: true });
       const ctx = new ServerContext(tmpDir);
       const server = buildServer(ctx);
       await server.connect(serverTransport);

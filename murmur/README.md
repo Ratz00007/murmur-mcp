@@ -4,7 +4,7 @@
 
 Murmur is an [MCP](https://modelcontextprotocol.io) server that rehearses community reaction to a pricing, launch, policy, or crisis decision: seed it with your material (a pricing page, a policy memo, an incident brief), and a population of simulated personas debates it across Twitter-style and Reddit-style platforms. You get a ranked objection dossier — each objection at its strongest, tied to the simulated post behind it, with a counter-case and a test plan for real humans — plus the ability to interview any simulated persona about why they wrote what they wrote. It is a structured set of arguments, not a validated forecast; simulated personas are invented critics, not your customers.
 
-**Zero API keys. Zero extra bills.** The engine is deterministic and LLM-free; every generation is performed by *your* coding agent's LLM (Claude, Codex, Gemini, Antigravity, OpenCode, Hermes…) through the connection you already have. The server makes **no outbound network calls at all** — enforced by a release-gate test that fails the build on any egress, key or token surface.
+**Zero API keys. Zero extra bills.** The engine is deterministic and LLM-free; every generation is performed by *your* coding agent's LLM (Claude, Codex, Gemini, Antigravity, OpenCode, Hermes…) through the connection you already have. The server ships **no network code** — enforced by the build gate (static scans of bundle + engine source, plus an obfuscation scan) and a runtime probe that executes the engine adapters with fetch stubbed to throw and fails if fetch is ever called.
 
 ```
 You:            /murmur-predict How will r/programming react to the new pricing page?
@@ -67,9 +67,9 @@ Every snippet is also printed by `npx murmur-mcp doctor` (which also checks Node
 /murmur-predict How will developers react to our new pricing? Sources: pricing-page.md, FAQ.md
 ```
 
-That prompt is a playbook: your agent drives all 11 tools in order, shows you digests for approval, writes the report, and every receipt tells it the next step.
+That prompt is a playbook: your agent drives all 12 tools in order, shows you digests for approval, writes the report, and every receipt tells it the next step.
 
-> **What a run actually costs.** Zero keys, but not zero time: a default 8-round world puts the order of *hundreds* of generations in front of your host model, so wall time is set by the model and the batch size, not by Murmur. Nothing has been published end-to-end with a real LLM yet — the 631-test suite (golden byte-identical replays plus the cleanroom release gate) runs against mock generations, and `npm run demo` exercises the full pipeline headless. Treat your first real run as a rehearsal, and start with fewer rounds.
+> **What a run actually costs.** Zero keys, but not zero time: a default 8-round world puts the order of *hundreds* of generations in front of your host model, so wall time is set by the model and the batch size, not by Murmur. Nothing has been published end-to-end with a real LLM yet — the 650-test suite (golden byte-identical replays plus the cleanroom release gate) runs against mock generations, and `npm run demo` exercises the full pipeline headless. Treat your first real run as a rehearsal, and start with fewer rounds.
 
 Mid-run experimentation:
 
@@ -105,7 +105,7 @@ Mid-run experimentation:
 
 **Determinism**: content ids are count-based, all randomness flows from the world seed through named streams, and phases 2–5 of every round are pure functions of stored state. Golden-run tests replay recorded sessions and assert byte-identical outcomes.
 
-## Tool catalog (11 tools)
+## Tool catalog (12 tools)
 
 | Group | Tools |
 |---|---|
@@ -149,7 +149,7 @@ Environment: `MURMUR_WORKSPACE` (override the workspace root; default: git repo 
 ```
 packages/
   engine/      deterministic simulation core (pure TS + SQLite adapter)
-  server/      the murmur-mcp npm package: 11 tools, resources, prompts, CLI
+  server/      the murmur-mcp npm package: 12 tools, resources, prompts, CLI
   prompts/     playbook prompt packs
   adapters/    per-client install snippets + config templates (10 clients)
   templates/   scenario packs: launch, policy, crisis, finance, fiction
@@ -160,7 +160,7 @@ tests/
 examples/      a ready-to-run demo scenario + paste-ready prompts
 ```
 
-Develop: `npm install && npm run build && npm test` (631 tests) · `npm run test:e2e` · `npm run cleanroom` · `npm run demo` (headless full pipeline, no LLM needed).
+Develop: `npm install && npm run build && npm test` (650 tests) · `npm run test:e2e` · `npm run cleanroom` · `npm run demo` (headless full pipeline, no LLM needed).
 
 ## License & provenance
 

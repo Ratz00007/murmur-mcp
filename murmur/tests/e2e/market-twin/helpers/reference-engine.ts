@@ -28,8 +28,15 @@ export interface MacroGraphInitOptions {
   kolRatio?: number;
 }
 
-export function createMacroGraphState(opts: MacroGraphInitOptions): MacroGraphState {
-  const { nodeCount, averageDegree, initialOutrageSeedRate = 0.05, kolRatio = 0.02 } = opts;
+export function createMacroGraphState(
+  opts: MacroGraphInitOptions,
+): MacroGraphState {
+  const {
+    nodeCount,
+    averageDegree,
+    initialOutrageSeedRate = 0.05,
+    kolRatio = 0.02,
+  } = opts;
   const edgeCount = nodeCount * averageDegree;
 
   const stances = new Float32Array(nodeCount);
@@ -42,8 +49,8 @@ export function createMacroGraphState(opts: MacroGraphInitOptions): MacroGraphSt
   for (let i = 0; i < nodeCount; i++) {
     // Normal distribution approximation for stance [-1.0, 1.0]
     stances[i] = ((i % 100) / 50.0 - 1.0) * 0.5;
-    susceptibility[i] = 0.2 + 0.6 * ((i * 7919) % 1000) / 1000;
-    const isKOL = (i % Math.floor(1 / kolRatio)) === 0;
+    susceptibility[i] = 0.2 + (0.6 * ((i * 7919) % 1000)) / 1000;
+    const isKOL = i % Math.floor(1 / kolRatio) === 0;
     kolWeight[i] = isKOL ? 20.0 + 80.0 * (((i * 3571) % 100) / 100) : 1.0;
 
     if (i < nodeCount * initialOutrageSeedRate) {
@@ -100,7 +107,16 @@ export function stepMacroGraph(
   } = { round: 1 },
 ): MacroStepResult {
   const startTime = performance.now();
-  const { nodeCount, stances, outrage, susceptibility, kolWeight, states, rowPointers, columnIndices } = state;
+  const {
+    nodeCount,
+    stances,
+    outrage,
+    susceptibility,
+    kolWeight,
+    states,
+    rowPointers,
+    columnIndices,
+  } = state;
   const decay = options.decayFactor ?? 0.95;
   const beta = options.contagionBeta ?? 0.25;
   const churnThreshold = options.churnThreshold ?? 0.85;
@@ -108,7 +124,13 @@ export function stepMacroGraph(
   let totalStance = 0;
   let totalOutrage = 0;
   let churnCount = 0;
-  const dist = { susceptible: 0, exposed: 0, infected: 0, contagious: 0, churned: 0 };
+  const dist = {
+    susceptible: 0,
+    exposed: 0,
+    infected: 0,
+    contagious: 0,
+    churned: 0,
+  };
 
   const nextOutrage = new Float32Array(nodeCount);
   const nextStances = new Float32Array(nodeCount);
@@ -130,8 +152,10 @@ export function stepMacroGraph(
       neighborCount++;
     }
 
-    const avgNeighborOutrage = neighborCount > 0 ? neighborOutrageSum / neighborCount : 0;
-    const exposure = (neighborInfluence / (neighborCount + 1)) * beta * susceptibility[i];
+    const _avgNeighborOutrage =
+      neighborCount > 0 ? neighborOutrageSum / neighborCount : 0;
+    const exposure =
+      (neighborInfluence / (neighborCount + 1)) * beta * susceptibility[i];
 
     // State transition logic (SEICR)
     let s = currentState;
@@ -144,6 +168,8 @@ export function stepMacroGraph(
     } else if (s === 3) {
       if (outrage[i] > churnThreshold && stances[i] < -0.6) {
         s = 4; // Churned
+      } else if (outrage[i] < 0.35 && exposure < 0.25) {
+        s = 2; // Contagious cools back to Infected (matches production macro-graph.ts)
       }
     }
 
@@ -155,8 +181,14 @@ export function stepMacroGraph(
       nextStances[i] = -1.0;
       churnCount++;
     } else {
-      nextOutrage[i] = Math.min(1.0, Math.max(0.0, outrage[i] * decay + exposure));
-      nextStances[i] = Math.min(1.0, Math.max(-1.0, stances[i] - exposure * 0.5));
+      nextOutrage[i] = Math.min(
+        1.0,
+        Math.max(0.0, outrage[i] * decay + exposure),
+      );
+      nextStances[i] = Math.min(
+        1.0,
+        Math.max(-1.0, stances[i] - exposure * 0.5),
+      );
     }
 
     totalStance += nextStances[i];
@@ -194,7 +226,11 @@ export function computeOutrageMultiplier(outrageScore: number): number {
   return 1.0 + 3.0 * (o * o);
 }
 
-export function computeTheRatio(replies: number, quotes: number, likes: number): {
+export function computeTheRatio(
+  replies: number,
+  quotes: number,
+  likes: number,
+): {
   ratioScore: number;
   isRatioed: boolean;
   controversyMultiplier: number;
@@ -202,7 +238,10 @@ export function computeTheRatio(replies: number, quotes: number, likes: number):
   const safeLikes = Math.max(1, likes);
   const ratioScore = (replies + quotes * 1.5) / safeLikes;
   const isRatioed = ratioScore >= 2.0;
-  const controversyMultiplier = Math.min(5.0, 1.0 + Math.log10(Math.max(1.0, ratioScore)));
+  const controversyMultiplier = Math.min(
+    5.0,
+    1.0 + Math.log10(Math.max(1.0, ratioScore)),
+  );
   return {
     ratioScore: Math.round(ratioScore * 100) / 100,
     isRatioed,
@@ -214,7 +253,10 @@ export function computeTheRatio(replies: number, quotes: number, likes: number):
 // 3. KOL Centrality & Reach (F10)
 // ==========================================
 
-export function calculateKOLWeight(inDegreeFollowers: number, pageRankAuthority: number): number {
+export function calculateKOLWeight(
+  inDegreeFollowers: number,
+  pageRankAuthority: number,
+): number {
   // Power law scaling: W_kol in [1.0, 100.0]
   const followerWeight = Math.log10(Math.max(1, inDegreeFollowers)) * 10;
   const authorityWeight = pageRankAuthority * 50;
@@ -244,7 +286,10 @@ export function rankFeedPostsWithKOL(
       const recency = Math.exp(-(currentRound - p.recencyRound) / 3);
 
       const baseEngagement = p.likes + p.replies * 2 + p.quotes * 3;
-      const finalScore = (recency + (baseEngagement / 100) * ratio.controversyMultiplier) * (kolWeight / 10) * outrageMult;
+      const finalScore =
+        (recency + (baseEngagement / 100) * ratio.controversyMultiplier) *
+        (kolWeight / 10) *
+        outrageMult;
       return {
         id: p.id,
         finalScore: Math.round(finalScore * 100) / 100,
@@ -258,83 +303,112 @@ export function rankFeedPostsWithKOL(
 // 4. Minimax Adversarial Debate (F11)
 // ==========================================
 
-export function executeMinimaxDebate(topic: string, policyText: string): MinimaxDebateResult {
+export function executeMinimaxDebate(
+  topic: string,
+  policyText: string,
+): MinimaxDebateResult {
   return {
     topic,
     turns: [
       {
         role: "prosecution",
         turnIndex: 1,
-        claim: "The proposed model extracts unearned rent, destroys trust, and guarantees catastrophic defection.",
+        claim:
+          "The proposed model extracts unearned rent, destroys trust, and guarantees catastrophic defection.",
         arguments: [
           "Unilateral imposition of retroactive costs breaks downstream developer unit economics.",
           "Developers are liable for uncontrollable third-party actions (e.g. pirated installs, namespace squatting).",
         ],
-        evidence: [policyText.slice(0, 150), "Historical precedent shows 15-25% ARR churn within 90 days."],
+        evidence: [
+          policyText.slice(0, 150),
+          "Historical precedent shows 15-25% ARR churn within 90 days.",
+        ],
       },
       {
         role: "defense",
         turnIndex: 2,
-        claim: "The policy aligns platform infrastructure expenditure with heavy commercial consumers.",
+        claim:
+          "The policy aligns platform infrastructure expenditure with heavy commercial consumers.",
         arguments: [
           "Over 90% of small/hobbyist developers remain completely exempt from fees under revenue gates.",
           "Infrastructure scaling costs necessitate contribution from hyper-scale commercial deployments.",
         ],
-        evidence: ["Infrastructure cost reports", "Market median SaaS pricing benchmarks"],
+        evidence: [
+          "Infrastructure cost reports",
+          "Market median SaaS pricing benchmarks",
+        ],
       },
       {
         role: "prosecution",
         turnIndex: 3,
-        claim: "The defense ignores reputational contagion: the 10% affected produce 90% of ecosystem trust and network effects.",
+        claim:
+          "The defense ignores reputational contagion: the 10% affected produce 90% of ecosystem trust and network effects.",
         arguments: [
           "Top open-source contributors and studios will actively promote neutral forks (Godot, Valkey, OpenTofu).",
           "Enterprise risk-management teams will place the vendor on mandatory multi-year replacement lists.",
         ],
-        evidence: ["Public letters of boycott from key opinion leaders", "GitHub star velocity for emerging forks"],
+        evidence: [
+          "Public letters of boycott from key opinion leaders",
+          "GitHub star velocity for emerging forks",
+        ],
       },
       {
         role: "adjudicator",
         turnIndex: 4,
-        claim: "Verdict: The policy carries an unacceptably high risk-to-revenue ratio and requires terms revision.",
+        claim:
+          "Verdict: The policy carries an unacceptably high risk-to-revenue ratio and requires terms revision.",
         arguments: [
           "Prosecution demonstrated irrecoverable legal/economic exposure in retroactive clauses.",
           "Defense failed to show enforceable protection against rogue attribution or bad-faith charges.",
         ],
-        evidence: ["Synthesized objections matrix", "Projected net ARR waterfall"],
+        evidence: [
+          "Synthesized objections matrix",
+          "Projected net ARR waterfall",
+        ],
       },
     ],
     killingObjections: [
       {
         rank: 1,
         title: "Unverifiable Attribution & Retroactive Liability",
-        economicOrLegalMechanism: "Contractual ambiguity exposing customers to unhedged balance-sheet liabilities.",
-        unrebuttableFact: "Customers cannot independently audit telemetry used to calculate billed sums.",
+        economicOrLegalMechanism:
+          "Contractual ambiguity exposing customers to unhedged balance-sheet liabilities.",
+        unrebuttableFact:
+          "Customers cannot independently audit telemetry used to calculate billed sums.",
         severityScore: 9.8,
       },
       {
         rank: 2,
         title: "Ecosystem Forking Under Neutral Foundations",
-        economicOrLegalMechanism: "Zero switching cost for cloud providers backing Linux Foundation forks.",
-        unrebuttableFact: "Cloud providers capture downstream demand without paying vendor license fees.",
+        economicOrLegalMechanism:
+          "Zero switching cost for cloud providers backing Linux Foundation forks.",
+        unrebuttableFact:
+          "Cloud providers capture downstream demand without paying vendor license fees.",
         severityScore: 9.2,
       },
       {
         rank: 3,
         title: "Low-ARPU Freemium Bankruptcy Inversion",
-        economicOrLegalMechanism: "Fixed marginal unit charges exceed customer average revenue per user.",
-        unrebuttableFact: "A free-to-play app with $0.05 ARPU and $0.20 per-install fee is insolvent.",
+        economicOrLegalMechanism:
+          "Fixed marginal unit charges exceed customer average revenue per user.",
+        unrebuttableFact:
+          "A free-to-play app with $0.05 ARPU and $0.20 per-install fee is insolvent.",
         severityScore: 8.9,
       },
     ],
     fragileAssumptions: [
       {
-        assumption: "Customers lack credible alternatives and will accept unilateral terms.",
-        failureCondition: "Viable open-source forks emerge with tier-1 enterprise support.",
+        assumption:
+          "Customers lack credible alternatives and will accept unilateral terms.",
+        failureCondition:
+          "Viable open-source forks emerge with tier-1 enterprise support.",
         probabilityOfFailure: 0.85,
       },
       {
-        assumption: "Public backlash subsides within 14 days without impacting sales pipeline.",
-        failureCondition: "Mainstream tech and financial press frame vendor as hostile partner.",
+        assumption:
+          "Public backlash subsides within 14 days without impacting sales pipeline.",
+        failureCondition:
+          "Mainstream tech and financial press frame vendor as hostile partner.",
         probabilityOfFailure: 0.9,
       },
     ],
@@ -368,9 +442,21 @@ export function computeExecutiveARRRisk(
 
   const netARRWaterfall = [
     { stage: "Starting ARR", deltaARR: 0, balance: totalARR },
-    { stage: "Direct Boycott / Churn", deltaARR: -baseCaseLoss, balance: totalARR - baseCaseLoss },
-    { stage: "Pipeline Freeze / Downgrades", deltaARR: -Math.round(baseCaseLoss * 0.4), balance: totalARR - Math.round(baseCaseLoss * 1.4) },
-    { stage: "Vaccine Terms Recovery", deltaARR: Math.round(baseCaseLoss * 0.65), balance: totalARR - Math.round(baseCaseLoss * 0.75) },
+    {
+      stage: "Direct Boycott / Churn",
+      deltaARR: -baseCaseLoss,
+      balance: totalARR - baseCaseLoss,
+    },
+    {
+      stage: "Pipeline Freeze / Downgrades",
+      deltaARR: -Math.round(baseCaseLoss * 0.4),
+      balance: totalARR - Math.round(baseCaseLoss * 1.4),
+    },
+    {
+      stage: "Vaccine Terms Recovery",
+      deltaARR: Math.round(baseCaseLoss * 0.65),
+      balance: totalARR - Math.round(baseCaseLoss * 0.75),
+    },
   ];
 
   return {
@@ -391,12 +477,20 @@ export function computeExecutiveARRRisk(
 export function computeCompetitorMigration(
   totalChurnARR: number,
   totalChurnAccounts: number,
-  competitors: Array<{ name: string; isOSS: boolean; featureParity: number; switchingFriction: number }>,
+  competitors: Array<{
+    name: string;
+    isOSS: boolean;
+    featureParity: number;
+    switchingFriction: number;
+  }>,
 ): ExecutiveDecisionReport["competitorMigration"] {
   // Multinomial logit: U_i = 1.5 * isOSS + 2.0 * featureParity - 1.2 * switchingFriction
   const utilities = competitors.map((c) => ({
     name: c.name,
-    u: 1.5 * (c.isOSS ? 1 : 0) + 2.0 * c.featureParity - 1.2 * c.switchingFriction,
+    u:
+      1.5 * (c.isOSS ? 1 : 0) +
+      2.0 * c.featureParity -
+      1.2 * c.switchingFriction,
   }));
 
   const expSum = utilities.reduce((acc, curr) => acc + Math.exp(curr.u), 0);
@@ -421,7 +515,11 @@ export function computeCompetitorMigration(
 // 7. Media & Press Headline Predictor (F14)
 // ==========================================
 
-export function generateMediaHeadlines(vendor: string, topic: string, outrage: number): ExecutiveDecisionReport["mediaHeadlines"] {
+export function generateMediaHeadlines(
+  vendor: string,
+  topic: string,
+  outrage: number,
+): ExecutiveDecisionReport["mediaHeadlines"] {
   const isHighOutrage = outrage > 0.6;
   return [
     {
@@ -467,25 +565,40 @@ export function generateVaccineRewrites(
   vendor: string,
   targetRevenueARR: number,
 ): ExecutiveDecisionReport["vaccineRewrites"] {
+  const safeVendor = vendor && vendor.length > 0 ? vendor : "Our Platform";
+  const thresholdNotice =
+    targetRevenueARR > 0
+      ? `$${Math.min(200000, Math.round(targetRevenueARR * 0.01)).toLocaleString()}/yr`
+      : "$200k/yr";
+
   return [
     {
       strategy: "grandfathering_shield",
-      revisedCopy: `All existing customers, projects, and versions shipped prior to today remain 100% permanently grandfathered under our legacy terms. The new terms apply exclusively to newly registered projects starting next fiscal year.`,
-      neutralizedObjections: ["Unilateral retroactive terms change", "Broken balance-sheet trust for shipped assets"],
+      revisedCopy: `${safeVendor} guarantees that all existing customers, projects, and versions shipped prior to today remain 100% permanently grandfathered under our legacy terms. The new terms apply exclusively to newly registered projects starting next fiscal year.`,
+      neutralizedObjections: [
+        "Unilateral retroactive terms change",
+        "Broken balance-sheet trust for shipped assets",
+      ],
       preservedRevenuePercent: 88,
       projectedSentimentRecovery: 0.65,
     },
     {
       strategy: "transparent_unit_cost",
-      revisedCopy: `We are replacing black-box estimates with a fully transparent, cost-pass-through infrastructure calculator. Fees only trigger once actual resource consumption surpasses $200k/yr, audited via open-source telemetry.`,
-      neutralizedObjections: ["Unverifiable install-bombing fraud", "Black-box proprietary billing telemetry"],
+      revisedCopy: `We are replacing black-box estimates with a fully transparent, cost-pass-through infrastructure calculator. Fees only trigger once actual resource consumption surpasses ${thresholdNotice}, audited via open-source telemetry.`,
+      neutralizedObjections: [
+        "Unverifiable install-bombing fraud",
+        "Black-box proprietary billing telemetry",
+      ],
       preservedRevenuePercent: 82,
       projectedSentimentRecovery: 0.78,
     },
     {
       strategy: "safe_harbor_free_tier",
       revisedCopy: `Hobbyists, indie developers, and registered open-source non-profits receive an unconditional Safe Harbor guarantee: zero runtime fees, zero deletion threats, and permanent community namespace preservation.`,
-      neutralizedObjections: ["Destruction of open-source free team accounts", "Freemium low-ARPU bankruptcy"],
+      neutralizedObjections: [
+        "Destruction of open-source free team accounts",
+        "Freemium low-ARPU bankruptcy",
+      ],
       preservedRevenuePercent: 94,
       projectedSentimentRecovery: 0.85,
     },
@@ -502,10 +615,20 @@ export function buildCompleteExecutiveReport(params: {
   totalARR: number;
   macroOutrage: number;
   churnFraction: number;
-  competitors: Array<{ name: string; isOSS: boolean; featureParity: number; switchingFriction: number }>;
+  competitors: Array<{
+    name: string;
+    isOSS: boolean;
+    featureParity: number;
+    switchingFriction: number;
+  }>;
 }): ExecutiveDecisionReport {
-  const { vendor, topic, totalARR, macroOutrage, churnFraction, competitors } = params;
-  const arrRisk = computeExecutiveARRRisk(totalARR, macroOutrage, churnFraction);
+  const { vendor, topic, totalARR, macroOutrage, churnFraction, competitors } =
+    params;
+  const arrRisk = computeExecutiveARRRisk(
+    totalARR,
+    macroOutrage,
+    churnFraction,
+  );
   const competitorMigration = computeCompetitorMigration(
     arrRisk.expectedChurnLossARR,
     Math.round(1000 * churnFraction),

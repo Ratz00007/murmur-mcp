@@ -192,7 +192,7 @@ describe("Empirical Challenger M2: Corpus & Seed MCP Stress Suite", () => {
       expect(() =>
         validateHistoricalBacklashCase({
           ...base,
-          timeline: [{ stage: "announcement", daysAfterT0: "day 0" as any, headline: "H", sentimentScore: 0 }],
+          timeline: [{ stage: "announcement", daysAfterT0: "day 0" as unknown as number, headline: "H", sentimentScore: 0 }],
         }),
       ).toThrow("Invalid daysAfterT0");
 
@@ -265,13 +265,13 @@ describe("Empirical Challenger M2: Corpus & Seed MCP Stress Suite", () => {
       expect(() =>
         validateHistoricalBacklashCase({
           ...base,
-          churnImpact: { estimatedARRChurnPercent: "ten" as any, primaryMigrationDestinations: [] },
+          churnImpact: { estimatedARRChurnPercent: "ten" as unknown as number, primaryMigrationDestinations: [] },
         }),
       ).toThrow("Invalid churnImpact");
       expect(() =>
         validateHistoricalBacklashCase({
           ...base,
-          churnImpact: { estimatedARRChurnPercent: 10, primaryMigrationDestinations: null as any },
+          churnImpact: { estimatedARRChurnPercent: 10, primaryMigrationDestinations: null as unknown as string[] },
         }),
       ).toThrow("Invalid primaryMigrationDestinations");
     });
@@ -330,6 +330,7 @@ describe("Empirical Challenger M2: Corpus & Seed MCP Stress Suite", () => {
 
     const setupMcp = async () => {
       tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-stress-mcp-"));
+      fs.mkdirSync(path.join(tmpDir, ".murmur"), { recursive: true });
       ctx = new ServerContext(tmpDir);
       const server = buildServer(ctx);
       [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -501,6 +502,7 @@ describe("Empirical Challenger M2: Corpus & Seed MCP Stress Suite", () => {
   describe("4. World Seed Ingestion, Deduplication, and Lifecycle Stability", () => {
     it("successfully creates valid world seeds for all canonical cases", () => {
       const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-seeds-world-"));
+      fs.mkdirSync(path.join(tmpDir, ".murmur"), { recursive: true });
       const ctx = new ServerContext(tmpDir);
       try {
         const world = ctx.storage.createWorld({ name: "Canonical Seed Ingestion Test" });
@@ -543,6 +545,7 @@ describe("Empirical Challenger M2: Corpus & Seed MCP Stress Suite", () => {
 
     it("guarantees idempotency and byte deduplication under rapid repeated additions", () => {
       const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-dedup-stress-"));
+      fs.mkdirSync(path.join(tmpDir, ".murmur"), { recursive: true });
       const ctx = new ServerContext(tmpDir);
       try {
         const world = ctx.storage.createWorld({ name: "Dedup Stress Test" });
@@ -582,6 +585,7 @@ describe("Empirical Challenger M2: Corpus & Seed MCP Stress Suite", () => {
 
     it("survives heavy multi-world rapid cycling without resource exhaustion or lock contention", () => {
       const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-multiworld-stress-"));
+      fs.mkdirSync(path.join(tmpDir, ".murmur"), { recursive: true });
       const ctx = new ServerContext(tmpDir);
       try {
         const initialMemory = process.memoryUsage().heapUsed;

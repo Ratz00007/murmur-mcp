@@ -72,6 +72,9 @@ describe("resolveServerCommand", () => {
 describe("runDiff", () => {
   it("diffs two dossiers: added, removed, kept", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-diff-"));
+    // Hard-fail workspace root discovery requires a marker; plant .murmur so
+    // this temp dir is a valid workspace before constructing Workspace.
+    fs.mkdirSync(path.join(dir, ".murmur"), { recursive: true });
     const ws = new Workspace(dir);
     ws.ensure();
     const storage = new Storage(openDatabase(ws.dbPath));

@@ -251,7 +251,15 @@ export function runDiff(cwd: string, positionals: string[]): number {
     );
     return 1;
   }
-  const ws = new Workspace(cwd);
+  let ws: Workspace;
+  try {
+    ws = new Workspace(cwd);
+  } catch (e) {
+    process.stderr.write(
+      `no Murmur workspace at ${cwd} (${e instanceof Error ? e.message : String(e)}) — run this where a world exists\n`,
+    );
+    return 1;
+  }
   // A directory with no .murmur store has no worlds and no dossiers. Say so
   // with exit 1 rather than crashing inside SQLite's file handling.
   if (!fs.existsSync(ws.dbPath)) {

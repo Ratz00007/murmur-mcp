@@ -33,6 +33,23 @@ import {
 } from "../types.js";
 
 // ---------------------------------------------------------------------------
+// SQL safety: internal table-name allowlist for identifier interpolation.
+// mintId interpolates a table name into SQL, so it must come from this fixed
+// set — never from caller input.
+// ---------------------------------------------------------------------------
+const TABLE_WHITELIST = new Set([
+  "generations",
+  "seeds",
+  "entities",
+  "relations",
+  "personas",
+  "memories",
+  "events",
+  "reports",
+  "posts",
+]);
+
+// ---------------------------------------------------------------------------
 // Open + migrate
 // ---------------------------------------------------------------------------
 
@@ -266,29 +283,60 @@ export class Storage {
    * was created first, which broke the same-seed replay contract in
    * multi-world workspaces.
    *
-   * Derived from MAX(n) rather than COUNT(*), because COUNT(*) is only
-   * collision-free while every row is minted in one uninterrupted sequence.
-   * `memories` is not: `compactIfNeeded` deletes folded rows and then appends
-   * a summary, so a COUNT-based counter re-minted an id that was still in use
-   * and violated the composite primary key. For any world that has never had a
-   * row deleted — which is every world during a normal run and every golden
-   * fixture — COUNT and MAX are equal, so this change is byte-identical on the
-   * replay path. Callers that do not already run inside a transaction wrap the
-   * mint + insert in one, so two concurrent sessions cannot mint the same id.
+   * O(1) via the id_counters table (created in migration 5): a per-(world,
+   * table) next_id counter is read and incremented instead of scanning the
+   * table for MAX(id) on every mint. The counter is seeded lazily from
+   * MAX(n)+1 on first use per world/table, so minted ids are byte-identical
+   * to the historical MAX-based derivation on every uninterrupted insert
+   * sequence — which is the golden replay path. (COUNT == MAX on every world
+   * that has never had a row deleted; `memories` can delete via
+   * `compactIfNeeded`, but the MAX-seed + monotonic counter stays above any
+   * previously-minted id, so it can never re-mint a live id.) Callers that do
+   * not already run inside a transaction wrap the mint + insert in one, so
+   * two concurrent sessions cannot mint the same id.
    */
   private mintId(prefix: string, table: string, worldId: string): string {
+    if (!TABLE_WHITELIST.has(table)) {
+      throw new Error(`unsafe table name for mintId: '${table}'`);
+    }
     const row = this.db
       .prepare(
-        `SELECT MAX(CAST(substr(id, ${prefix.length + 2}) AS INTEGER)) AS m FROM ${table} WHERE world_id = ?`,
+        "SELECT next_id FROM id_counters WHERE world_id=? AND table_name=?",
       )
-      .get(worldId) as { m: number | null } | undefined;
-    const n = row?.m ?? 0;
-    return `${prefix}_${n + 1}`;
+      .get(worldId, table) as { next_id: number } | undefined;
+    if (!row) {
+      // Seed the counter from MAX(n)+1 so the very first mint matches what
+      // the legacy SELECT MAX(...) derivation would have produced.
+      const maxRow = this.db
+        .prepare(
+          `SELECT MAX(CAST(substr(id, ${prefix.length + 2}) AS INTEGER)) AS m FROM ${table} WHERE world_id = ?`,
+        )
+        .get(worldId) as { m: number | null } | undefined;
+      const n = (maxRow?.m ?? 0) + 1;
+      this.db
+        .prepare(
+          "INSERT INTO id_counters (world_id, table_name, next_id) VALUES (?,?,?)",
+        )
+        .run(worldId, table, n + 1);
+      return `${prefix}_${n}`;
+    }
+    const n = row.next_id;
+    this.db
+      .prepare(
+        "UPDATE id_counters SET next_id=? WHERE world_id=? AND table_name=?",
+      )
+      .run(n + 1, worldId, table);
+    return `${prefix}_${n}`;
   }
 
   /** Public id mint for generation tasks (t_1, t_2, … within each world). */
   nextTaskId(worldId: string): string {
     return this.mintId("t", "generations", worldId);
+  }
+
+  /** Public id mint for posts (po_1, po_2, … within each world). */
+  mintPostId(worldId: string): string {
+    return this.mintId("po", "posts", worldId);
   }
 
   // ----- worlds -----------------------------------------------------------
@@ -764,8 +812,9 @@ export class Storage {
 
   insertPost(post: Omit<Post, "id"> & { id?: string }): Post {
     // World-scoped fallback so ids are deterministic per world (po_1, po_2, …
-    // within each world; the posts PK is composite — world_id, id).
-    const id = post.id ?? `po_${this.countPosts(post.worldId) + 1}`;
+    // within each world; the posts PK is composite — world_id, id). Uses the
+    // O(1) counter-backed mint so bulk inserts don't degrade to O(N²).
+    const id = post.id ?? this.mintPostId(post.worldId);
     const threadId = post.threadId || id; // root posts are their own thread
     this.db
       .prepare(
@@ -830,10 +879,15 @@ export class Storage {
       conds.push("round<=?");
       args.push(opts.maxRound);
     }
+    // SQL safety: LIMIT is interpolated, so coerce to a bounded integer.
+    const rawLimit = opts.limit == null ? 0 : Number(opts.limit);
+    const limit = Number.isFinite(rawLimit)
+      ? Math.trunc(clamp(rawLimit, 0, FETCH_ALL))
+      : 0;
     return (
       this.db
         .prepare(
-          `SELECT * FROM posts WHERE ${conds.join(" AND ")} ORDER BY round DESC, id DESC ${opts.limit ? `LIMIT ${opts.limit}` : ""}`,
+          `SELECT * FROM posts WHERE ${conds.join(" AND ")} ORDER BY round DESC, id DESC ${limit > 0 ? `LIMIT ${limit}` : ""}`,
         )
         .all(...args) as Row[]
     ).map(postFromRow);
@@ -863,6 +917,37 @@ export class Storage {
         )
         .all(worldId, parentId) as Row[]
     ).map(postFromRow);
+  }
+
+  /**
+   * Batch variant of childrenOf for feed ranking: loads children for many
+   * parents in one query and groups them by parent id. Rows are ordered by id
+   * globally, so each group is id-ordered exactly as childrenOf returns —
+   * feed output is byte-identical to the per-parent loop it replaces.
+   */
+  childrenOfMany(
+    worldId: string,
+    parentIds: readonly string[],
+  ): Map<string, Post[]> {
+    const map = new Map<string, Post[]>();
+    const ids = [...new Set(parentIds)].filter((id) => id);
+    for (let i = 0; i < ids.length; i += 500) {
+      const chunk = ids.slice(i, i + 500);
+      const rows = this.db
+        .prepare(
+          `SELECT * FROM posts WHERE world_id=? AND parent_id IN (${chunk.map(() => "?").join(",")}) ORDER BY id`,
+        )
+        .all(worldId, ...chunk) as Row[];
+      for (const r of rows) {
+        const p = postFromRow(r);
+        if (p.parentId === null) continue;
+        const key = p.parentId;
+        const arr = map.get(key);
+        if (arr) arr.push(p);
+        else map.set(key, [p]);
+      }
+    }
+    return map;
   }
 
   threadPosts(worldId: string, threadId: string): Post[] {

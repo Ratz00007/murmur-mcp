@@ -40,7 +40,7 @@ describe("Tier 1 - F01: Windows Stability & Test Timeouts", () => {
 
   it("handles rapid consecutive database reopenings in the same workspace", async () => {
     const ws = createTestWorkspace();
-    const { storage: s1, world } = initDirectWorld(ws.cwd, "reopen-world");
+    const { storage: s1 } = initDirectWorld(ws.cwd, "reopen-world");
     s1.close();
 
     const dbPath = path.join(ws.cwd, ".murmur", "murmur.db");
@@ -57,7 +57,7 @@ describe("Tier 1 - F01: Windows Stability & Test Timeouts", () => {
   it("executes operations well within the 60s test timeout threshold", async () => {
     const start = performance.now();
     const ws = createTestWorkspace();
-    const { storage, world } = initDirectWorld(ws.cwd, "timeout-check");
+    const { storage } = initDirectWorld(ws.cwd, "timeout-check");
     ws.storage = storage;
 
     storage.listWorlds();
@@ -70,7 +70,10 @@ describe("Tier 1 - F01: Windows Stability & Test Timeouts", () => {
     const workspaces = Array.from({ length: 3 }, () => createTestWorkspace());
     try {
       const worlds = workspaces.map((ws, i) => {
-        const { storage, world } = initDirectWorld(ws.cwd, `concurrent-world-${i}`);
+        const { storage, world } = initDirectWorld(
+          ws.cwd,
+          `concurrent-world-${i}`,
+        );
         ws.storage = storage;
         return { storage, world };
       });

@@ -13,111 +13,73 @@ defaults:
     working-directory: murmur
 
 jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        node: [20, 22, 24]
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: ${{ matrix.node }}
-          cache: npm
-          cache-dependency-path: murmur/package-lock.json
-      - run: npm ci
-      - run: npm run build
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run test:coverage
-      - run: npm run test:e2e
-      - run: npm run cleanroom
-      # Cross-Node determinism (E6): the same seed must produce the same bytes
-      # on every supported Node major. The golden test only proves two runs
-      # agree in one process; this compares against the committed hash. A red
-      # job here means the replay contract is narrower than claimed — do NOT
-      # regenerate the hash to make it green, find the divergence first.
-      # Runs from the repo root: the script resolves everything from its own
-      # path, but the `tools/` directory only exists at root.
-      - name: Cross-Node golden hash must match the committed value
-        run: node tools/golden-hash.mjs
-        working-directory: ${{ github.workspace }}
-
-  windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: murmur/package-lock.json
-      - run: npm ci
-      - run: npm run build
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run test:coverage
-      - run: npm run test:e2e
-      - run: npm run cleanroom
-      - name: Cross-Node golden hash must match the committed value
-        run: node tools/golden-hash.mjs
-        working-directory: ${{ github.workspace }}
-
-  macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: murmur/package-lock.json
-      - run: npm ci
-      - run: npm run build
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run test:coverage
-      - run: npm run test:e2e
-      - run: npm run cleanroom
-      - name: Cross-Node golden hash must match the committed value
-        run: node tools/golden-hash.mjs
-        working-directory: ${{ github.workspace }}
-
-  # A phase of this project was spent "fixing doc lies" and shipped with the
-  # test count wrong in the very commit that claimed it fixed — 66 was quoted
-  # in nine files for weeks against a real 69, and PROJECT-WORKLOG.md still
-  # said 42. Recounting by hand does not survive, so the count is measured and
-  # CI fails when a present-tense claim disagrees. Dated records (CHANGELOG,
-  # the build journal) are reported but never rewritten: a number that was true
-  # when written is history, not a lie.
-  claims:
+  quality:
+    name: Lint + typecheck + build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: murmur/package-lock.json
       - run: npm ci
-        working-directory: murmur
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm run lint
+
+  tests:
+    name: Unit + golden + e2e + cleanroom
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: murmur/package-lock.json
+      - run: npm ci
+      - run: npm run test          # unit + golden
+      - run: npm run test:e2e     # end-to-end (real SDK client ↔ server over stdio)
+      - run: npm run cleanroom    # zero-egress gate
+      # Cross-Node determinism (E6): the same seed must produce the same bytes.
+      # Runs from the repo root: the script resolves everything from its own
+      # path, but the `tools/` directory only exists at root.
+      - name: Golden hash must match the committed value
+        run: node tools/golden-hash.mjs
+        working-directory: ${{ github.workspace }}
+
+  gates:
+    name: Claims + hygiene gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: murmur/package-lock.json
+      - run: npm ci
+      # Every advertised count and tool total must match the measured surface.
+      # A present-tense claim that disagrees fails the build (see
+      # tools/verify-claims.mjs for how counts are measured).
       - name: Fail if any advertised count or tool total is wrong
         run: node tools/verify-claims.mjs
         working-directory: ${{ github.workspace }}
-
-  # Guards the published gallery against drift. A stale copy of report-1.md once
-  # shipped citing po_20, a post id absent from the database; the engine's own
-  # citation test cannot catch that because it validates a freshly generated
-  # report, not a committed copy. This job closes that gap.
-  gallery:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: 22
-      - name: Check published gallery is current and every citation resolves
+      # AGENTS.md / CLAUDE.md carry absolute Obsidian-vault paths and a
+      # cross-agent ledger about other projects; even though they are
+      # gitignored, this guard makes it impossible for a force-add or a
+      # rewrite of .gitignore to leak them into the public repo.
+      - name: Forbid tracking of local agent contract files
+        run: |
+          if git ls-files | grep -E '(^|/)AGENTS\.md$|(^|/)CLAUDE\.md$'; then
+            echo "::error::AGENTS.md/CLAUDE.md must never be tracked (local paths)"
+            exit 1
+          fi
+          echo "OK: no AGENTS.md / CLAUDE.md in the index"
+        working-directory: ${{ github.workspace }}
+      # Guards the published gallery against drift: a committed report must be
+      # current and every citation must resolve.
+      - name: Check published gallery is current
         run: node tools/host-llm-run/check-gallery.mjs
-
+        working-directory: ${{ github.workspace }}

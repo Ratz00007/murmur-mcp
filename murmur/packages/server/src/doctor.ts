@@ -40,18 +40,26 @@ export async function runDoctor(cwd: string): Promise<DoctorReport> {
     detail: sqliteDetail,
   });
 
-  const root = findWorkspaceRoot(cwd);
-  const murmurDir = path.join(root, ".murmur");
-  let writable = false;
-  let writableDetail = murmurDir;
+  let root: string | null = null;
+  let rootError: string | null = null;
   try {
-    fs.mkdirSync(murmurDir, { recursive: true });
-    const probe = path.join(murmurDir, `.probe-${process.pid}`);
-    fs.writeFileSync(probe, "ok");
-    fs.rmSync(probe);
-    writable = true;
+    root = findWorkspaceRoot(cwd);
   } catch (e) {
-    writableDetail = `cannot write ${murmurDir}: ${e instanceof Error ? e.message : String(e)}`;
+    rootError = e instanceof Error ? e.message : String(e);
+  }
+  const murmurDir = root ? path.join(root, ".murmur") : null;
+  let writable = false;
+  let writableDetail = murmurDir ?? rootError ?? "no workspace root";
+  if (murmurDir) {
+    try {
+      fs.mkdirSync(murmurDir, { recursive: true });
+      const probe = path.join(murmurDir, `.probe-${process.pid}`);
+      fs.writeFileSync(probe, "ok");
+      fs.rmSync(probe);
+      writable = true;
+    } catch (e) {
+      writableDetail = `cannot write ${murmurDir}: ${e instanceof Error ? e.message : String(e)}`;
+    }
   }
   checks.push({
     name: "Workspace writable",
@@ -60,26 +68,30 @@ export async function runDoctor(cwd: string): Promise<DoctorReport> {
   });
 
   let worlds = 0;
-  const dbFile = path.join(murmurDir, "murmur.db");
-  if (fs.existsSync(dbFile)) {
-    try {
-      const { Storage, openDatabase } = await import("@murmur/engine");
-      const storage = new Storage(openDatabase(dbFile));
-      worlds = storage.listWorlds().length;
-      storage.close();
-    } catch {
-      worlds = -1;
+  if (murmurDir) {
+    const dbFile = path.join(murmurDir, "murmur.db");
+    if (fs.existsSync(dbFile)) {
+      try {
+        const { Storage, openDatabase } = await import("@murmur/engine");
+        const storage = new Storage(openDatabase(dbFile));
+        worlds = storage.listWorlds().length;
+        storage.close();
+      } catch {
+        worlds = -1;
+      }
     }
   }
   checks.push({
     name: "World store",
     pass: worlds >= 0,
     detail:
-      worlds > 0
-        ? `${worlds} world(s) in ${path.relative(root, dbFile)}`
+      root && worlds > 0
+        ? `${worlds} world(s) in ${path.relative(root, path.join(root, ".murmur", "murmur.db"))}`
         : worlds === 0
           ? "empty (no worlds yet — that's fine)"
-          : "database exists but could not be opened",
+          : rootError
+            ? `no workspace root: ${rootError}`
+            : "database exists but could not be opened",
   });
 
   const detected = detectClients(cwd).map((d) => ({

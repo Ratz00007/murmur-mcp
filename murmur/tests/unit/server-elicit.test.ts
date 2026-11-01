@@ -16,6 +16,7 @@ import { ServerContext } from "../../packages/server/src/session.js";
 describe("elicitation fallback", () => {
   it("returns the plain missing-persona error when elicitation is unavailable", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-elicit-"));
+    fs.mkdirSync(path.join(cwd, ".murmur"), { recursive: true });
     const ctx = new ServerContext(cwd);
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();

@@ -390,6 +390,8 @@ describe("Milestone M5 Adversarial Challenger: Executive Reporting & Financial M
 
     beforeEach(() => {
       tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-m5-challenger-"));
+      fs.mkdirSync(path.join(tmpDir, ".murmur"), { recursive: true });
+      process.env.MURMUR_WORKSPACE = tmpDir;
     });
 
     afterEach(() => {
@@ -536,8 +538,8 @@ describe("Milestone M5 Adversarial Challenger: Executive Reporting & Financial M
       expect(parsed.files).toHaveLength(2);
 
       // Verify files written on disk
-      const htmlRel = parsed.files.find((f: any) => f.path.endsWith(".html"))?.path;
-      const jsonRel = parsed.files.find((f: any) => f.path.endsWith(".json"))?.path;
+      const htmlRel = parsed.files.find((f: { path: string }) => f.path.endsWith(".html"))?.path;
+      const jsonRel = parsed.files.find((f: { path: string }) => f.path.endsWith(".json"))?.path;
 
       expect(htmlRel).toBeDefined();
       expect(jsonRel).toBeDefined();

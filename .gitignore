@@ -57,6 +57,11 @@ murmur/.git.bundle-history/
 # project content — 203 files that churn on every orchestration run.
 .agents/
 
+# Machine-local agent scratch (per-agent working dirs, never project content)
+.freebuff/
+.cloud-attachments/
+.zwork/
+
 # Machine-local agent contracts. These carry absolute paths into one machine's
 # Obsidian vault and a cross-agent ledger about OTHER projects, so committing
 # them leaks local context into a public repo.

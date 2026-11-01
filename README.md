@@ -50,25 +50,26 @@ produced it.
 One-time setup — pick either option:
 
 ```bash
-# Option A — install from npm (release artifacts ship via npm with provenance
-# once the repo is live; not published yet — use Option B until then)
+# Option A — install from source (dist is pre-built inside the bundle)
+cd murmur && npm install
+
+# Option B — install from npm (release artifacts ship via npm with provenance
+# once the repo is live; the npm name `murmur-mcp` is still unclaimed, so this
+# fails until the package is published — use Option A until then)
 npm install -g murmur-mcp
 murmur-mcp doctor                                # environment check
 npx murmur-mcp doctor                            # …or run one-off, no global install
-
-# Option B — install deps inside the bundled monorepo (dist is pre-built)
-cd murmur && npm install
 ```
 
 Then register the server with your client — e.g. Claude Code:
 
 ```bash
-# after Option A (global binary on PATH)
+# after Option B (global binary on PATH)
 claude mcp add murmur -- murmur-mcp serve
 # …or via npx, no global install
 claude mcp add murmur -- npx murmur-mcp serve
 
-# after Option B (direct path — no global install needed)
+# after Option A (direct path — no global install needed)
 claude mcp add murmur -- node /<path-to>/murmur-complete-v1.0.0/murmur/packages/server/dist/index.js serve
 ```
 
@@ -91,8 +92,8 @@ the 11 Murmur tools; the LLM you already pay for does the persona voices.
 
 ```bash
 cd murmur
-npm install            # if you skipped Option B (dev toolchain: typescript, vitest, sqlite)
-npm test               # 631 unit + golden tests (byte-identical replay, citation integrity)
+npm install            # if you skipped Option A (dev toolchain: typescript, vitest, sqlite)
+npm test               # 650 unit + golden tests (byte-identical replay, citation integrity)
 npm run test:e2e       # 190 end-to-end: 188 market-twin contracts + integration + cleanroom, real SDK client ↔ server over stdio
 npm run cleanroom      # zero-egress gate: no network APIs, no URLs, no key surfaces
 npm run build          # rebuild dist from source (all 5 packages)

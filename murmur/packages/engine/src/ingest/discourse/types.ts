@@ -13,8 +13,40 @@ export interface DiscoursePost {
   aspects?: Record<string, number>;
 }
 
+/**
+ * Every platform the normalizer accepts. The first four ship with live
+ * adapters; the rest are produced by the offline collector (tools/collector)
+ * and ingested as pre-structured threads via seed_add. Keep in sync with
+ * tests/e2e/market-twin/helpers/contracts.ts and the seed_add zod enum.
+ */
+export const DISCOURSE_PLATFORMS = [
+  "reddit",
+  "hackernews",
+  "twitter",
+  "github",
+  "lobsters",
+  "stackexchange",
+  "mastodon",
+  "bluesky",
+  "discourse",
+  "devto",
+  "rss",
+] as const;
+
+export type DiscoursePlatform = (typeof DISCOURSE_PLATFORMS)[number];
+
+/** Provenance stamped by the live collector for real-data threads. */
+export interface ThreadProvenance {
+  /** ISO-8601 time the record was retrieved. */
+  retrievedAt: string;
+  /** SHA-256 (hex) of the raw response body the record was parsed from. */
+  contentSha256: string;
+  /** Collector route id, e.g. "hn-algolia" or "github-rest". */
+  via?: string;
+}
+
 export interface DiscourseThread {
-  platform: "reddit" | "hackernews" | "twitter" | "github";
+  platform: DiscoursePlatform;
   threadId: string;
   title: string;
   author: string;
@@ -26,31 +58,42 @@ export interface DiscourseThread {
     shares?: number;
   };
   posts: DiscoursePost[];
+  provenance?: ThreadProvenance;
 }
 
+/**
+ * Reserved for interface compatibility. The discourse adapters are hermetic
+ * (offline-fixture-only) by design: they never read secrets and never touch
+ * the network, so every option here is a no-op kept only to preserve the
+ * `DiscourseAdapter` contract.
+ */
 export interface AdapterFetchOptions {
-  tier?: 1 | 2 | 3;
+  /** @deprecated No-op — adapters are offline-fixture-only. */
   fixtureFallback?: boolean;
-  timeoutMs?: number;
 }
 
 export interface DiscourseAdapter {
-  readonly platform: "reddit" | "hackernews" | "twitter" | "github";
+  readonly platform: DiscoursePlatform;
   fetchThread(threadIdOrUrl: string, options?: AdapterFetchOptions): Promise<DiscourseThread>;
   normalizeThread(rawPayload: unknown): DiscourseThread;
 }
-
-// Dynamic protocol constants prevent static cleanroom regex triggers
-export const PROTO_HTTPS = String.fromCharCode(104, 116, 116, 112, 115, 58, 47, 47);
-export const PROTO_HTTP = String.fromCharCode(104, 116, 116, 112, 58, 47, 47);
 
 export function validateDiscourseThread(obj: unknown): DiscourseThread {
   if (!obj || typeof obj !== "object") {
     throw new Error("DiscourseThread must be an object");
   }
   const t = obj as Partial<DiscourseThread>;
-  if (!["reddit", "hackernews", "twitter", "github"].includes(t.platform as string)) {
+  if (!DISCOURSE_PLATFORMS.includes(t.platform as DiscoursePlatform)) {
     throw new Error(`Invalid platform: ${t.platform}`);
+  }
+  if (t.provenance !== undefined) {
+    const p = t.provenance as Partial<ThreadProvenance> | undefined;
+    if (!p || typeof p.retrievedAt !== "string" || Number.isNaN(Date.parse(p.retrievedAt))) {
+      throw new Error("Invalid provenance.retrievedAt");
+    }
+    if (typeof p.contentSha256 !== "string" || !/^[0-9a-f]{64}$/.test(p.contentSha256)) {
+      throw new Error("Invalid provenance.contentSha256");
+    }
   }
   if (!t.threadId || typeof t.threadId !== "string") {
     throw new Error("Missing threadId");

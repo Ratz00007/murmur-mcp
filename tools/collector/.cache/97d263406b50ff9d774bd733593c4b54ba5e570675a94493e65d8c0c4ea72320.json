@@ -1,0 +1,8 @@
+{
+ "url": "https://hn.algolia.com/api/v1/items/35153996",
+ "method": "GET",
+ "status": 200,
+ "retrievedAt": "2026-11-01T05:21:49.682Z",
+ "sha256": "3b1e01b5088055adcbeb8042dab85aa1f88c91e6a61663c6ad27e55d3d958bae",
+ "body": "{\"author\":\"candiddevmike\",\"children\":[],\"created_at\":\"2023-03-14T16:23:18.000Z\",\"created_at_i\":1678810998,\"id\":35153996,\"options\":[],\"parent_id\":null,\"points\":3,\"story_id\":35153996,\"text\":\"Just received this email:<p>Docker is sunsetting Free Team organizations<p>Free Team organizations are a legacy subscription tier that no longer exists. This tier included many of the same features, rates, and functionality as a paid Docker Team subscription.<p>After reviewing the list of accounts that are members of legacy Free Team organizations, we\\u2019ve identified yours as potentially being one of them.<p>If you own a legacy Free Team organization, access to paid features \\u2014 including private repositories \\u2014 will be suspended on April 14, 2023 (11:59 pm UTC). Upgrade your subscription before April 14, 2023 to continue accessing your organization.<p>If you don\\u2019t upgrade to a paid subscription, Docker will retain your organization data for 30 days, after which it will be subject to deletion. During that time, you will maintain access to any images in your public repositories, though rate limitations will apply. At any point during the 30-day period, you can restore access to your organization account if you upgrade to a paid subscription. Visit our FAQ (https:&#x2F;&#x2F;web.docker.com&#x2F;rs&#x2F;790-SSB-375&#x2F;images&#x2F;privatereposfaq.pdf) for more information.\",\"title\":\"Docker Hub Sunsetting Free Organizations\",\"type\":\"story\",\"url\":null}\n"
+}

@@ -9,6 +9,13 @@
  * - Complete Executive Decision Report with self-contained, cleanroom-compliant HTML dashboard and inline SVG.
  */
 
+import {
+  applyCalibration,
+  DEFAULT_EXECUTIVE_PARAMS,
+  type ExecutiveCalibration,
+  type ExecutiveParams,
+} from "./calibrate/executive-calibration.js";
+
 export interface NetARRWaterfallStage {
   stage: string;
   deltaARR: number;
@@ -23,6 +30,12 @@ export interface ExecutiveARRRisk {
   p90CaseLoss: number;
   mitigatedCaseLoss: number;
   netARRWaterfall: NetARRWaterfallStage[];
+  /**
+   * Provenance of the hazard-model parameters behind this result:
+   * "hand-set (uncalibrated)" or "calibrated (fit from N observations, RMSE x)".
+   * Purely descriptive; never changes the arithmetic on its own.
+   */
+  calibrationStatus: string;
 }
 
 export interface CompetitorMigrationItem {
@@ -31,6 +44,8 @@ export interface CompetitorMigrationItem {
   migratedAccounts: number;
   migratedARR: number;
   keyDefectionDrivers: string[];
+  /** Provenance of the utility weights behind this row (see ExecutiveARRRisk). */
+  calibrationStatus: string;
 }
 
 export interface MediaHeadlineItem {
@@ -62,15 +77,28 @@ export interface ExecutiveDecisionReport {
  * @param totalARR Total active enterprise contract ARR ($)
  * @param macroOutrage Outrage index across ecosystem [0.0, 1.0]
  * @param churnedNodeFraction Fraction of community nodes transitioned to churn state [0.0, 1.0]
+ * @param options Optional calibration hook. When `options.calibration` is
+ *   absent, the exact hand-set parameters are used and every numeric output
+ *   is identical to the uncalibrated behavior. Never pass a calibration that
+ *   was not fitted from externally observed outcomes (see
+ *   calibrate/executive-calibration.ts and bench/data-outcomes/).
  */
 export function computeExecutiveARRRisk(
   totalARR: number,
   macroOutrage: number,
   churnedNodeFraction: number,
+  options?: { calibration?: ExecutiveCalibration },
 ): ExecutiveARRRisk {
   const safeTotalARR = Number.isFinite(totalARR) && totalARR > 0 ? totalARR : 0;
   const safeOutrage = Number.isFinite(macroOutrage) ? Math.max(0, Math.min(1, macroOutrage)) : 0;
   const safeChurnFraction = Number.isFinite(churnedNodeFraction) ? Math.max(0, Math.min(1, churnedNodeFraction)) : 0;
+
+  const effectiveParams: ExecutiveParams = options?.calibration
+    ? applyCalibration(DEFAULT_EXECUTIVE_PARAMS, options.calibration)
+    : DEFAULT_EXECUTIVE_PARAMS;
+  const calibrationStatus = options?.calibration
+    ? `calibrated (fit from ${options.calibration.observationCount} observations, RMSE ${options.calibration.fitError.toFixed(4)})`
+    : "hand-set (uncalibrated)";
 
   if (safeTotalARR <= 0) {
     return {
@@ -86,12 +114,16 @@ export function computeExecutiveARRRisk(
         { stage: "Pipeline Freeze / Downgrades", deltaARR: 0, balance: 0 },
         { stage: "Vaccine Terms Recovery", deltaARR: 0, balance: 0 },
       ],
+      calibrationStatus,
     };
   }
 
   // Logistic hazard model: hazard = 1 / (1 + exp(-4 * (outrage - 0.5)))
+  // (slope and midpoint are the hand-set defaults unless a calibration is passed)
   // Keep hazard finite and mathematically continuous for all inputs
-  const hazard = 1.0 / (1.0 + Math.exp(-4.0 * (safeOutrage - 0.5)));
+  const hazard =
+    1.0 /
+    (1.0 + Math.exp(-effectiveParams.hazardSlope * (safeOutrage - effectiveParams.hazardMidpoint)));
 
   // Gross ARR at risk represents the portion of the customer base exposed to defection
   const grossARRAtRisk = Math.min(safeTotalARR, Math.round(safeTotalARR * Math.min(1.0, Math.max(0.0, hazard * 0.45))));
@@ -132,6 +164,7 @@ export function computeExecutiveARRRisk(
     p90CaseLoss,
     mitigatedCaseLoss,
     netARRWaterfall,
+    calibrationStatus,
   };
 }
 
@@ -144,15 +177,25 @@ export function computeExecutiveARRRisk(
  * @param totalChurnARR Dollar volume of churned ARR to be distributed ($)
  * @param totalChurnAccounts Count of defecting customer accounts
  * @param competitors Array of candidate migration destinations
+ * @param options Optional calibration hook; without it the exact hand-set
+ *   utility weights are used and every numeric output is unchanged.
  */
 export function computeCompetitorMigration(
   totalChurnARR: number,
   totalChurnAccounts: number,
   competitors: Array<{ name: string; isOSS: boolean; featureParity: number; switchingFriction: number }>,
+  options?: { calibration?: ExecutiveCalibration },
 ): CompetitorMigrationItem[] {
   if (!competitors || competitors.length === 0) {
     return [];
   }
+
+  const effectiveParams: ExecutiveParams = options?.calibration
+    ? applyCalibration(DEFAULT_EXECUTIVE_PARAMS, options.calibration)
+    : DEFAULT_EXECUTIVE_PARAMS;
+  const calibrationStatus = options?.calibration
+    ? `calibrated (fit from ${options.calibration.observationCount} observations, RMSE ${options.calibration.fitError.toFixed(4)})`
+    : "hand-set (uncalibrated)";
 
   if (competitors.length === 1) {
     const c = competitors[0];
@@ -167,6 +210,7 @@ export function computeCompetitorMigration(
           "Zero license lock-in risk",
           "Ecosystem compatibility guarantee",
         ],
+        calibrationStatus,
       },
     ];
   }
@@ -175,7 +219,10 @@ export function computeCompetitorMigration(
   const utilities = competitors.map((c) => ({
     name: c.name,
     isOSS: c.isOSS,
-    u: 1.5 * (c.isOSS ? 1 : 0) + 2.0 * c.featureParity - 1.2 * c.switchingFriction,
+    u:
+      effectiveParams.utilityWeightIsOSS * (c.isOSS ? 1 : 0) +
+      effectiveParams.utilityWeightFeatureParity * c.featureParity -
+      effectiveParams.utilityWeightSwitchingFriction * c.switchingFriction,
   }));
 
   const maxU = Math.max(...utilities.map((u) => u.u));
@@ -194,6 +241,7 @@ export function computeCompetitorMigration(
         "Zero license lock-in risk",
         "Ecosystem compatibility guarantee",
       ],
+      calibrationStatus,
     };
   });
 }

@@ -1,5 +1,5 @@
 /**
- * Tool registry — 11 tools across 8 modules, one per pipeline concern.
+ * Tool registry — 12 tools across 9 modules, one per pipeline concern.
  *
  * The tool surface was 29 names for 11 distinct capabilities. Nearly every
  * extra name was a synonym: the same setter registered twice, the same
@@ -23,10 +23,11 @@ import { registerGraphTools, GRAPH_TOOL_NAMES } from "./graph.js";
 import { registerPersonaTools, PERSONAS_TOOL_NAMES } from "./personas.js";
 import { registerSimTools, SIM_TOOL_NAMES } from "./sim.js";
 import { registerReportTools, REPORT_TOOL_NAMES } from "./report.js";
+import { registerMacroTools, MACRO_TOOL_NAMES } from "./macro.js";
 import { registerInteractTools, INTERACT_TOOL_NAMES } from "./interact.js";
 
 /** How many tools the server must register. Asserted three ways — see above. */
-export const TOOL_COUNT = 11;
+export const TOOL_COUNT = 12;
 
 /** The exact set the server must expose, in registration order. */
 export const TOOL_NAMES = [
@@ -40,6 +41,7 @@ export const TOOL_NAMES = [
   "personas",
   "sim",
   "report",
+  "macro_sim",
   "interact",
 ] as const;
 
@@ -52,6 +54,7 @@ export const MODULE_TOOL_NAMES: Record<string, readonly string[]> = {
   personas: PERSONAS_TOOL_NAMES,
   sim: SIM_TOOL_NAMES,
   report: REPORT_TOOL_NAMES,
+  macro: MACRO_TOOL_NAMES,
   interact: INTERACT_TOOL_NAMES,
 };
 
@@ -99,6 +102,7 @@ export function registerTools(server: McpServer, ctx: ServerContext): void {
   registerPersonaTools(server, ctx);
   registerSimTools(server, ctx);
   registerReportTools(server, ctx);
+  registerMacroTools(server, ctx);
   registerInteractTools(server, ctx);
   assertToolSurface();
 }

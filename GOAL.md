@@ -9,9 +9,10 @@ engineering, protocol conformance, and launch readiness to the highest bar
 achievable today.
 
 **Status:** active — A, B, C, D(pilot), E, F complete except directory
-submission itself. 595/595 unit+golden, 190/190 e2e, cleanroom GATE GREEN,
-lint/coverage/golden-hash gated in CI, claim check GREEN at 595 tests and 11
-tools. Remaining: npm publish + directory submissions (both blocked on user:
+submission itself. 650/650 unit+golden, 193/193 e2e (last measured), cleanroom
+GATE GREEN when rebuilt, lint/coverage/golden-hash gated in CI, claim check
+GREEN at 650 tests and 12 tools. Remaining: npm publish + directory submissions
+(both blocked on user:
 `npm login` and the unclaimed `murmur-mcp` name).
 
 **Replaces:** the prior "Murmur Phase 0 + Phase 1: Ship, Prove, and De-risk"

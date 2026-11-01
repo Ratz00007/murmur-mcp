@@ -28,7 +28,8 @@ export const MacroCompartment = {
   CHURNED: 4,
 } as const;
 
-export type MacroCompartmentType = (typeof MacroCompartment)[keyof typeof MacroCompartment];
+export type MacroCompartmentType =
+  (typeof MacroCompartment)[keyof typeof MacroCompartment];
 
 export interface MacroGraphState {
   nodeCount: number;
@@ -91,15 +92,25 @@ function getScratchBuffers(nodeCount: number): {
     scratchStances = new Float32Array(nodeCount);
     scratchOutrage = new Float32Array(nodeCount);
   }
-  return { nextStances: scratchStances, nextOutrage: scratchOutrage! };
+  return {
+    nextStances: scratchStances,
+    nextOutrage: scratchOutrage ?? new Float32Array(nodeCount),
+  };
 }
 
 // ==========================================
 // 3. State Initialization & Factory
 // ==========================================
 
-export function createMacroGraphState(opts: MacroGraphInitOptions): MacroGraphState {
-  const { nodeCount, averageDegree, initialOutrageSeedRate = 0.05, kolRatio = 0.02 } = opts;
+export function createMacroGraphState(
+  opts: MacroGraphInitOptions,
+): MacroGraphState {
+  const {
+    nodeCount,
+    averageDegree,
+    initialOutrageSeedRate = 0.05,
+    kolRatio = 0.02,
+  } = opts;
   if (nodeCount <= 0) {
     throw new Error("Invalid nodeCount: must be positive");
   }
@@ -175,7 +186,16 @@ export function stepMacroGraph(
   options: MacroStepOptions = { round: 1 },
 ): MacroStepResult {
   const startTime = performance.now();
-  const { nodeCount, stances, outrage, susceptibility, kolWeight, states, rowPointers, columnIndices } = state;
+  const {
+    nodeCount,
+    stances,
+    outrage,
+    susceptibility,
+    kolWeight,
+    states,
+    rowPointers,
+    columnIndices,
+  } = state;
   const decay = options.decayFactor ?? 0.95;
   const beta = options.contagionBeta ?? 0.25;
   const churnThreshold = options.churnThreshold ?? 0.85;
@@ -183,7 +203,13 @@ export function stepMacroGraph(
   let totalStance = 0;
   let totalOutrage = 0;
   let churnCount = 0;
-  const dist = { susceptible: 0, exposed: 0, infected: 0, contagious: 0, churned: 0 };
+  const dist = {
+    susceptible: 0,
+    exposed: 0,
+    infected: 0,
+    contagious: 0,
+    churned: 0,
+  };
 
   const { nextStances, nextOutrage } = getScratchBuffers(nodeCount);
 
@@ -201,7 +227,8 @@ export function stepMacroGraph(
       neighborInfluence += outrage[neighbor] * weight;
     }
 
-    const exposure = (neighborInfluence / (neighborCount + 1)) * beta * susceptibility[i];
+    const exposure =
+      (neighborInfluence / (neighborCount + 1)) * beta * susceptibility[i];
 
     // State transition logic (SEICR)
     let s = currentState;
@@ -227,8 +254,14 @@ export function stepMacroGraph(
       nextStances[i] = -1.0;
       churnCount++;
     } else {
-      nextOutrage[i] = Math.min(1.0, Math.max(0.0, outrage[i] * decay + exposure));
-      nextStances[i] = Math.min(1.0, Math.max(-1.0, stances[i] - exposure * 0.5));
+      nextOutrage[i] = Math.min(
+        1.0,
+        Math.max(0.0, outrage[i] * decay + exposure),
+      );
+      nextStances[i] = Math.min(
+        1.0,
+        Math.max(-1.0, stances[i] - exposure * 0.5),
+      );
     }
 
     totalStance += nextStances[i];
@@ -303,28 +336,80 @@ export function serializeMacroGraph(state: MacroGraphState): Buffer {
   buf.writeInt32LE(edgeCount, offset);
   offset += 4;
 
-  buf.set(new Uint8Array(state.stances.buffer, state.stances.byteOffset, nodeF32Bytes), offset);
+  buf.set(
+    new Uint8Array(
+      state.stances.buffer,
+      state.stances.byteOffset,
+      nodeF32Bytes,
+    ),
+    offset,
+  );
   offset += nodeF32Bytes;
 
-  buf.set(new Uint8Array(state.outrage.buffer, state.outrage.byteOffset, nodeF32Bytes), offset);
+  buf.set(
+    new Uint8Array(
+      state.outrage.buffer,
+      state.outrage.byteOffset,
+      nodeF32Bytes,
+    ),
+    offset,
+  );
   offset += nodeF32Bytes;
 
-  buf.set(new Uint8Array(state.susceptibility.buffer, state.susceptibility.byteOffset, nodeF32Bytes), offset);
+  buf.set(
+    new Uint8Array(
+      state.susceptibility.buffer,
+      state.susceptibility.byteOffset,
+      nodeF32Bytes,
+    ),
+    offset,
+  );
   offset += nodeF32Bytes;
 
-  buf.set(new Uint8Array(state.kolWeight.buffer, state.kolWeight.byteOffset, nodeF32Bytes), offset);
+  buf.set(
+    new Uint8Array(
+      state.kolWeight.buffer,
+      state.kolWeight.byteOffset,
+      nodeF32Bytes,
+    ),
+    offset,
+  );
   offset += nodeF32Bytes;
 
-  buf.set(new Uint8Array(state.states.buffer, state.states.byteOffset, nodeU8Bytes), offset);
+  buf.set(
+    new Uint8Array(state.states.buffer, state.states.byteOffset, nodeU8Bytes),
+    offset,
+  );
   offset += nodeU8Bytes;
 
-  buf.set(new Uint8Array(state.rowPointers.buffer, state.rowPointers.byteOffset, rowPtrBytes), offset);
+  buf.set(
+    new Uint8Array(
+      state.rowPointers.buffer,
+      state.rowPointers.byteOffset,
+      rowPtrBytes,
+    ),
+    offset,
+  );
   offset += rowPtrBytes;
 
-  buf.set(new Uint8Array(state.columnIndices.buffer, state.columnIndices.byteOffset, edgeI32Bytes), offset);
+  buf.set(
+    new Uint8Array(
+      state.columnIndices.buffer,
+      state.columnIndices.byteOffset,
+      edgeI32Bytes,
+    ),
+    offset,
+  );
   offset += edgeI32Bytes;
 
-  buf.set(new Uint8Array(state.edgeWeights.buffer, state.edgeWeights.byteOffset, edgeF32Bytes), offset);
+  buf.set(
+    new Uint8Array(
+      state.edgeWeights.buffer,
+      state.edgeWeights.byteOffset,
+      edgeF32Bytes,
+    ),
+    offset,
+  );
   offset += edgeF32Bytes;
 
   return buf;
@@ -333,8 +418,12 @@ export function serializeMacroGraph(state: MacroGraphState): Buffer {
 /**
  * Deserializes binary Buffer back into MacroGraphState.
  */
-export function deserializeMacroGraph(buffer: Uint8Array | Buffer): MacroGraphState {
-  const buf = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+export function deserializeMacroGraph(
+  buffer: Uint8Array | Buffer,
+): MacroGraphState {
+  const buf = Buffer.isBuffer(buffer)
+    ? buffer
+    : Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   if (buf.byteLength < 12) {
     throw new Error("Truncated buffer: insufficient bytes for node/edge count");
   }
@@ -343,7 +432,9 @@ export function deserializeMacroGraph(buffer: Uint8Array | Buffer): MacroGraphSt
   const magic = buf.readUInt32LE(offset);
   offset += 4;
   if (magic !== MAGIC_HEADER) {
-    throw new Error(`Invalid macro graph buffer: magic mismatch (got ${magic.toString(16)})`);
+    throw new Error(
+      `Invalid macro graph buffer: magic mismatch (got ${magic.toString(16)})`,
+    );
   }
 
   const nodeCount = buf.readInt32LE(offset);
@@ -363,19 +454,27 @@ export function deserializeMacroGraph(buffer: Uint8Array | Buffer): MacroGraphSt
   const edgeF32Bytes = edgeCount * 4;
 
   const stances = new Float32Array(nodeCount);
-  new Uint8Array(stances.buffer).set(buf.subarray(offset, offset + nodeF32Bytes));
+  new Uint8Array(stances.buffer).set(
+    buf.subarray(offset, offset + nodeF32Bytes),
+  );
   offset += nodeF32Bytes;
 
   const outrage = new Float32Array(nodeCount);
-  new Uint8Array(outrage.buffer).set(buf.subarray(offset, offset + nodeF32Bytes));
+  new Uint8Array(outrage.buffer).set(
+    buf.subarray(offset, offset + nodeF32Bytes),
+  );
   offset += nodeF32Bytes;
 
   const susceptibility = new Float32Array(nodeCount);
-  new Uint8Array(susceptibility.buffer).set(buf.subarray(offset, offset + nodeF32Bytes));
+  new Uint8Array(susceptibility.buffer).set(
+    buf.subarray(offset, offset + nodeF32Bytes),
+  );
   offset += nodeF32Bytes;
 
   const kolWeight = new Float32Array(nodeCount);
-  new Uint8Array(kolWeight.buffer).set(buf.subarray(offset, offset + nodeF32Bytes));
+  new Uint8Array(kolWeight.buffer).set(
+    buf.subarray(offset, offset + nodeF32Bytes),
+  );
   offset += nodeF32Bytes;
 
   const states = new Uint8Array(nodeCount);
@@ -383,15 +482,21 @@ export function deserializeMacroGraph(buffer: Uint8Array | Buffer): MacroGraphSt
   offset += nodeU8Bytes;
 
   const rowPointers = new Int32Array(nodeCount + 1);
-  new Uint8Array(rowPointers.buffer).set(buf.subarray(offset, offset + rowPtrBytes));
+  new Uint8Array(rowPointers.buffer).set(
+    buf.subarray(offset, offset + rowPtrBytes),
+  );
   offset += rowPtrBytes;
 
   const columnIndices = new Int32Array(edgeCount);
-  new Uint8Array(columnIndices.buffer).set(buf.subarray(offset, offset + edgeI32Bytes));
+  new Uint8Array(columnIndices.buffer).set(
+    buf.subarray(offset, offset + edgeI32Bytes),
+  );
   offset += edgeI32Bytes;
 
   const edgeWeights = new Float32Array(edgeCount);
-  new Uint8Array(edgeWeights.buffer).set(buf.subarray(offset, offset + edgeF32Bytes));
+  new Uint8Array(edgeWeights.buffer).set(
+    buf.subarray(offset, offset + edgeF32Bytes),
+  );
   offset += edgeF32Bytes;
 
   return {
@@ -461,13 +566,21 @@ export function loadMacroSnapshot(
   worldId: string,
   round?: number,
 ): { state: MacroGraphState; snapshot: MacroSnapshotRow } | null {
-  const row = (round != null
-    ? db.prepare("SELECT * FROM macro_snapshots WHERE world_id = ? AND round = ?").get(worldId, round)
-    : db.prepare("SELECT * FROM macro_snapshots WHERE world_id = ? ORDER BY round DESC LIMIT 1").get(worldId)) as
-    | MacroSnapshotRow
-    | undefined;
+  const row = (
+    round != null
+      ? (db
+          .prepare(
+            "SELECT * FROM macro_snapshots WHERE world_id = ? AND round = ?",
+          )
+          .get(worldId, round) as MacroSnapshotRow | undefined)
+      : (db
+          .prepare(
+            "SELECT * FROM macro_snapshots WHERE world_id = ? ORDER BY round DESC LIMIT 1",
+          )
+          .get(worldId) as MacroSnapshotRow | undefined)
+  ) as MacroSnapshotRow | undefined;
 
-  if (!row || !row.graph_blob) return null;
+  if (!row?.graph_blob) return null;
 
   const state = deserializeMacroGraph(row.graph_blob);
   return { state, snapshot: row };
@@ -538,7 +651,12 @@ export function persistMacroEdgesRelational(
       const start = state.rowPointers[i];
       const end = state.rowPointers[i + 1];
       for (let e = start; e < end && edgeIdx < maxEdges; e++) {
-        insertStmt.run(worldId, i, state.columnIndices[e], state.edgeWeights[e]);
+        insertStmt.run(
+          worldId,
+          i,
+          state.columnIndices[e],
+          state.edgeWeights[e],
+        );
         edgeIdx++;
       }
     }

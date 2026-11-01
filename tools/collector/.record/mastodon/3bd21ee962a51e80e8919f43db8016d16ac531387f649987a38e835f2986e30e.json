@@ -1,0 +1,9 @@
+{
+ "url": "https://mastodon.social/api/v2/search?type=statuses&q=opensource&limit=5",
+ "method": "GET",
+ "status": 200,
+ "retrievedAt": "2026-11-01T05:46:33.577Z",
+ "sha256": "6c769b1bfc572dd460befe5cd8db98bc85d2e811de19cc385acdc3dac12296df",
+ "body": "{\"accounts\":[],\"statuses\":[],\"hashtags\":[],\"collections\":[]}",
+ "seq": 1
+}

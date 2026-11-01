@@ -4,6 +4,8 @@
  * tests/cleanroom/demo-run.mjs (via engine dist). The engine module is
  * injected, so both paths share one orchestration.
  */
+import * as fs from "node:fs";
+import * as path from "node:path";
 import {
   completeOntology,
   completePersonas,
@@ -37,6 +39,9 @@ export async function runPipeline(engine, opts = {}) {
     injectAtRound: opts.injectAtRound ?? null,
     injectText: opts.injectText ?? null,
   };
+  // Hard-fail workspace root discovery requires a .murmur/ or .git/ marker;
+  // plant .murmur so this temp cwd is a valid workspace before construction.
+  fs.mkdirSync(path.join(o.cwd, ".murmur"), { recursive: true });
   const ws = new engine.Workspace(o.cwd);
   ws.ensure();
   const storage = new engine.Storage(engine.openDatabase(ws.dbPath));

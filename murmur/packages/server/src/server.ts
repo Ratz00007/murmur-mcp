@@ -27,11 +27,12 @@ function readVersion(): string {
 export const SERVER_VERSION = readVersion();
 
 export const SERVER_INSTRUCTIONS =
-  "Murmur rehearses how a community reacts to a change with a strictly ordered 7-stage pipeline over 11 tools. " +
+  "Murmur rehearses how a community reacts to a change with a strictly ordered 7-stage pipeline over 12 tools. " +
   "Each stage is one tool with an `action` (or `target`) argument: " +
   '1) world_init → 2) seed_add({source:"files"|"url"|"text"}) then seeds_review → 3) ontology({action:"plan"}) → ontology({action:"submit"}) → ' +
   '4) graph({action:"build"}) → 5) personas({action:"plan"}) → personas({action:"submit"}) → 6) world_config → ' +
   'the simulation loop (sim({action:"next_batch"}) → sim({action:"submit"}) × N rounds, with sim({action:"inject"}) between rounds) → ' +
+  'macro_sim ({node_count, rounds, shockwave?}) runs the vectorized 100k-node macro engine — SEICR compartments, outrage index, per-round snapshots — → ' +
   '7) report({action:"plan"}) → report({action:"submit"}) → report({action:"export"}) → 8) interact({target:"persona"|"run"}). ' +
   "world_list is the only navigation tool: detail:'rows' lists worlds, detail:'open' makes one active, detail:'status' reads " +
   "the full session readout. Every tool declares an outputSchema, and its structuredContent is the same JSON as its text block. " +

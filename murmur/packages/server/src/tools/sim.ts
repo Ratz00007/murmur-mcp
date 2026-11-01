@@ -12,6 +12,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   batchBrief,
   buildSimBatch,
+  fabricHonesty,
   roundSummary,
   submitGenerations,
   timeline,
@@ -290,10 +291,21 @@ function summary(ctx: ServerContext, world?: string, round?: number) {
     throw new Error(
       `no round ${r} recorded yet (world is at round ${w.round})`,
     );
+  // When a fabric population is active the round's population framing is
+  // surrogate-derived — the honesty block rides on every aggregate readout.
+  const fab = ctx.fabric.get(w);
   return ctx.reply(
     {
       ok: true,
       stats,
+      ...(fab
+        ? {
+            fabric: {
+              active: true as const,
+              honesty: fabricHonesty(fab.model, fab.spec.count),
+            },
+          }
+        : {}),
       next:
         w.round >= w.config.rounds
           ? 'report({action:"plan"})'
@@ -307,6 +319,7 @@ function summary(ctx: ServerContext, world?: string, round?: number) {
 function timeline_(ctx: ServerContext, world?: string) {
   const w = ctx.resolveWorld(world);
   const rows = timeline(ctx.storage, w);
+  const fab = ctx.fabric.get(w);
   return ctx.reply(
     {
       ok: true,
@@ -314,6 +327,14 @@ function timeline_(ctx: ServerContext, world?: string) {
       of: w.config.rounds,
       timeline: rows,
       engagementPeaks: engagementPeaks(rows),
+      ...(fab
+        ? {
+            fabric: {
+              active: true as const,
+              honesty: fabricHonesty(fab.model, fab.spec.count),
+            },
+          }
+        : {}),
       next:
         w.round >= w.config.rounds
           ? 'report({action:"plan"})'

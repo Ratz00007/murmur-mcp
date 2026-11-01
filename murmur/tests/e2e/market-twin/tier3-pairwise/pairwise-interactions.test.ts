@@ -4,7 +4,6 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  calculateKOLWeight,
   computeCompetitorMigration,
   computeExecutiveARRRisk,
   computeOutrageMultiplier,
@@ -18,16 +17,12 @@ import {
 } from "../helpers/reference-engine.js";
 import {
   validateDiscourseThread,
-  validateExecutiveDecisionReport,
   validateHistoricalBacklashCase,
   validateMinimaxDebateResult,
 } from "../helpers/contracts.js";
-import {
-  REDDIT_DEVOPS_THREAD,
-  UNITY_2023_CASE,
-} from "../helpers/fixtures.js";
+import { REDDIT_DEVOPS_THREAD, UNITY_2023_CASE } from "../helpers/fixtures.js";
 import { createTestWorkspace, initDirectWorld } from "../helpers/harness.js";
-import { entityMentions, scoreSentiment } from "@murmur/engine";
+import { scoreSentiment } from "@murmur/engine";
 
 describe("Tier 3 — Pairwise Combinatorial Testing", () => {
   // Pair 1: F4 (Discourse Ingestion) + F5 (Historical Corpus)
@@ -37,8 +32,10 @@ describe("Tier 3 — Pairwise Combinatorial Testing", () => {
 
     // Correlate discourse text with historical legal/economic objection categories
     const discourseText = thread.posts.map((p) => p.text).join(" ");
-    const matchesLegal = corpusCase.objections.some((o) =>
-      discourseText.toLowerCase().includes("legal") || discourseText.toLowerCase().includes("terms"),
+    const matchesLegal = corpusCase.objections.some(
+      (_o) =>
+        discourseText.toLowerCase().includes("legal") ||
+        discourseText.toLowerCase().includes("terms"),
     );
     expect(matchesLegal).toBe(true);
   });
@@ -46,20 +43,35 @@ describe("Tier 3 — Pairwise Combinatorial Testing", () => {
   // Pair 2: F5 (Historical Corpus) + F11 (Minimax War Room)
   it("P02: Feeds historical corpus objections into Minimax debate extraction", () => {
     const corpusCase = validateHistoricalBacklashCase(UNITY_2023_CASE);
-    const debate = executeMinimaxDebate(corpusCase.title, corpusCase.policySummary);
+    const debate = executeMinimaxDebate(
+      corpusCase.title,
+      corpusCase.policySummary,
+    );
     const validatedDebate = validateMinimaxDebateResult(debate);
 
-    expect(validatedDebate.killingObjections.length).toBeGreaterThanOrEqual(corpusCase.objections.length);
-    expect(validatedDebate.adjudicatorVerdict.recommendation).toBe("revise_terms");
+    expect(validatedDebate.killingObjections.length).toBeGreaterThanOrEqual(
+      corpusCase.objections.length,
+    );
+    expect(validatedDebate.adjudicatorVerdict.recommendation).toBe(
+      "revise_terms",
+    );
   });
 
   // Pair 3: F7 (Macro Graph Dynamics) + F9 (Outrage Multiplier & The Ratio)
   it("P03: Applies Outrage Multiplier and The Ratio inside Macro Graph dynamics propagation", () => {
-    const state = createMacroGraphState({ nodeCount: 2000, averageDegree: 6, initialOutrageSeedRate: 0.1 });
+    const state = createMacroGraphState({
+      nodeCount: 2000,
+      averageDegree: 6,
+      initialOutrageSeedRate: 0.1,
+    });
     const r1 = stepMacroGraph(state, { round: 1 });
 
     const outrageMultiplier = computeOutrageMultiplier(r1.outrageIndex);
-    const ratioData = computeTheRatio(Math.round(r1.outrageIndex * 500), 100, 50);
+    const ratioData = computeTheRatio(
+      Math.round(r1.outrageIndex * 500),
+      100,
+      50,
+    );
 
     expect(outrageMultiplier).toBeGreaterThan(1.0);
     expect(ratioData.controversyMultiplier).toBeGreaterThan(1.0);
@@ -86,11 +98,19 @@ describe("Tier 3 — Pairwise Combinatorial Testing", () => {
 
   // Pair 5: F7 (Macro Graph Dynamics) + F12 (Executive ARR Risk)
   it("P05: Bridges Macro Graph simulated churn count into Executive ARR Risk loss modeling", () => {
-    const state = createMacroGraphState({ nodeCount: 10_000, averageDegree: 8, initialOutrageSeedRate: 0.15 });
+    const state = createMacroGraphState({
+      nodeCount: 10_000,
+      averageDegree: 8,
+      initialOutrageSeedRate: 0.15,
+    });
     const r1 = stepMacroGraph(state, { round: 1, churnThreshold: 0.7 });
 
     const churnFraction = r1.churnCount / state.nodeCount;
-    const arrRisk = computeExecutiveARRRisk(60_000_000, r1.outrageIndex, churnFraction);
+    const arrRisk = computeExecutiveARRRisk(
+      60_000_000,
+      r1.outrageIndex,
+      churnFraction,
+    );
 
     expect(arrRisk.expectedChurnLossARR).toBeGreaterThan(0);
     expect(arrRisk.grossARRAtRisk).toBeLessThanOrEqual(60_000_000);
@@ -102,8 +122,12 @@ describe("Tier 3 — Pairwise Combinatorial Testing", () => {
     const debate = executeMinimaxDebate("Runtime Fee", "Charge per install");
     const rewrites = generateVaccineRewrites("PlatformVendor", 30_000_000);
 
-    const killingObjectionTitles = debate.killingObjections.map((o) => o.title.toLowerCase());
-    const allNeutralized = rewrites.flatMap((r) => r.neutralizedObjections.map((o) => o.toLowerCase()));
+    const _killingObjectionTitles = debate.killingObjections.map((o) =>
+      o.title.toLowerCase(),
+    );
+    const allNeutralized = rewrites.flatMap((r) =>
+      r.neutralizedObjections.map((o) => o.toLowerCase()),
+    );
 
     // Verify retroactive liability objection is addressed by Grandfathering Shield
     expect(allNeutralized.some((n) => n.includes("retroactive"))).toBe(true);
@@ -114,8 +138,18 @@ describe("Tier 3 — Pairwise Combinatorial Testing", () => {
   it("P07: Allocates Expected Churn ARR across Multinomial Logit Competitor destinations", () => {
     const arrRisk = computeExecutiveARRRisk(40_000_000, 0.75, 0.18);
     const competitors = [
-      { name: "Godot Engine", isOSS: true, featureParity: 0.85, switchingFriction: 0.3 },
-      { name: "Unreal Engine", isOSS: false, featureParity: 0.95, switchingFriction: 0.6 },
+      {
+        name: "Godot Engine",
+        isOSS: true,
+        featureParity: 0.85,
+        switchingFriction: 0.3,
+      },
+      {
+        name: "Unreal Engine",
+        isOSS: false,
+        featureParity: 0.95,
+        switchingFriction: 0.6,
+      },
     ];
 
     const migration = computeCompetitorMigration(
@@ -131,7 +165,11 @@ describe("Tier 3 — Pairwise Combinatorial Testing", () => {
   // Pair 8: F13 (Competitor Migration) + F14 (Press Headline Predictor)
   it("P08: Elevates Press Headline sensationalism when competitor migration accelerates", () => {
     const highOutrage = 0.85;
-    const headlines = generateMediaHeadlines("VendorX", "licensing pivot", highOutrage);
+    const headlines = generateMediaHeadlines(
+      "VendorX",
+      "licensing pivot",
+      highOutrage,
+    );
 
     const techHeadline = headlines.find((h) => h.tier === "tech_press")!;
     expect(techHeadline.sensationalismScore).toBeGreaterThanOrEqual(8.0);
@@ -159,7 +197,8 @@ describe("Tier 3 — Pairwise Combinatorial Testing", () => {
 
   // Pair 10: F2 (Aspect Sentiment) + F3 (Cascade Dynamics)
   it("P10: Drives negative aspect sentiment into active cascade engagement without lurker suppression", () => {
-    const text = "The mandatory install tax is predatory, disastrous, and completely unworkable.";
+    const text =
+      "The mandatory install tax is predatory, disastrous, and completely unworkable.";
     const sentiment = scoreSentiment(text);
     expect(sentiment.score).toBeLessThan(-0.3);
 
@@ -174,7 +213,10 @@ describe("Tier 3 — Pairwise Combinatorial Testing", () => {
     const { storage } = initDirectWorld(ws.cwd, "win-macro-workspace");
     ws.storage = storage;
 
-    const state = createMacroGraphState({ nodeCount: 10_000, averageDegree: 8 });
+    const state = createMacroGraphState({
+      nodeCount: 10_000,
+      averageDegree: 8,
+    });
     const stepRes = stepMacroGraph(state, { round: 1 });
     expect(stepRes.round).toBe(1);
 
@@ -185,11 +227,16 @@ describe("Tier 3 — Pairwise Combinatorial Testing", () => {
   // Pair 12: F6 (Seed Ingestion) + F4 (Discourse Ingestion)
   it("P12: Stores normalized discourse threads as world seeds with calculated digests", async () => {
     const ws = createTestWorkspace();
-    const { storage, world } = initDirectWorld(ws.cwd, "discourse-seed-workspace");
+    const { storage, world } = initDirectWorld(
+      ws.cwd,
+      "discourse-seed-workspace",
+    );
     ws.storage = storage;
 
     const thread = validateDiscourseThread(REDDIT_DEVOPS_THREAD);
-    const content = thread.posts.map((p) => `${p.author}: ${p.text}`).join("\n");
+    const content = thread.posts
+      .map((p) => `${p.author}: ${p.text}`)
+      .join("\n");
 
     const { seed } = storage.addSeed(world.id, {
       kind: "text",
@@ -209,7 +256,10 @@ describe("Tier 3 — Pairwise Combinatorial Testing", () => {
   // Pair 13: F6 (Seed Ingestion) + F5 (Historical Corpus)
   it("P13: Ingests historical corpus cases as seeds and verifies seed review queries", async () => {
     const ws = createTestWorkspace();
-    const { storage, world } = initDirectWorld(ws.cwd, "corpus-seed-query-world");
+    const { storage, world } = initDirectWorld(
+      ws.cwd,
+      "corpus-seed-query-world",
+    );
     ws.storage = storage;
 
     storage.addSeed(world.id, {
@@ -230,7 +280,11 @@ describe("Tier 3 — Pairwise Combinatorial Testing", () => {
 
   // Pair 14: F10 (KOL Centrality) + F7 (Macro Graph Dynamics)
   it("P14: Seeds initial macro graph outrage specifically at high-KOL nodes", () => {
-    const state = createMacroGraphState({ nodeCount: 5000, averageDegree: 8, kolRatio: 0.05 });
+    const state = createMacroGraphState({
+      nodeCount: 5000,
+      averageDegree: 8,
+      kolRatio: 0.05,
+    });
     let kolCount = 0;
 
     for (let i = 0; i < state.nodeCount; i++) {
@@ -247,9 +301,12 @@ describe("Tier 3 — Pairwise Combinatorial Testing", () => {
     const headlines = generateMediaHeadlines("Vendor", "pricing shock", 0.9);
     const rewrites = generateVaccineRewrites("Vendor", 50_000_000);
 
-    const minHeadlineSentiment = Math.min(...headlines.map((h) => h.sentimentScore));
+    const minHeadlineSentiment = Math.min(
+      ...headlines.map((h) => h.sentimentScore),
+    );
     const avgSentimentRecovery =
-      rewrites.reduce((sum, r) => sum + r.projectedSentimentRecovery, 0) / rewrites.length;
+      rewrites.reduce((sum, r) => sum + r.projectedSentimentRecovery, 0) /
+      rewrites.length;
 
     expect(minHeadlineSentiment).toBeLessThan(-0.5);
     expect(avgSentimentRecovery).toBeGreaterThan(0.6);
@@ -278,8 +335,9 @@ describe("Tier 3 — Pairwise Combinatorial Testing", () => {
 
   // Pair 18: F2 (Aspect Sentiment) + F11 (Minimax War Room)
   it("P18: Supplies aspect-based entity critique as evidence in Prosecution Indictment", () => {
-    const entityText = "PostgreSQL community rejects commercial runtime charges.";
-    const sentiment = scoreSentiment(entityText);
+    const entityText =
+      "PostgreSQL community rejects commercial runtime charges.";
+    const _sentiment = scoreSentiment(entityText);
 
     const debate = executeMinimaxDebate("Runtime Charge", entityText);
     const prosecutionTurn = debate.turns.find((t) => t.role === "prosecution");

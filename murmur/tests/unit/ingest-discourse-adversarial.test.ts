@@ -27,6 +27,7 @@ describe("Empirical Challenger: Discourse Ingestion Adversarial Stress Suite", (
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-adv-test-"));
+    fs.mkdirSync(path.join(tmpDir, ".murmur"), { recursive: true });
     ctx = new ServerContext(tmpDir);
   });
 
@@ -54,7 +55,10 @@ describe("Empirical Challenger: Discourse Ingestion Adversarial Stress Suite", (
         expect(validated.threadId.length).toBeGreaterThan(0);
         expect(validated.title.length).toBeGreaterThan(0);
         expect(validated.author.length).toBeGreaterThan(0);
-        expect(validated.url).toMatch(/^https?:\/\//);
+        expect(validated.url.length).toBeGreaterThan(0);
+        // Offline fixtures carry scheme-less canonical references (host + path);
+        // nothing in the engine ever fetches them.
+        expect(validated.url).toMatch(/^[a-z0-9.-]+\//i);
         expect(Number.isFinite(Date.parse(validated.timestamp))).toBe(true);
         expect(validated.metrics.upvotes).toBeGreaterThanOrEqual(0);
         expect(validated.metrics.comments).toBeGreaterThanOrEqual(0);
@@ -90,14 +94,14 @@ describe("Empirical Challenger: Discourse Ingestion Adversarial Stress Suite", (
         }
       });
 
-      it(`hermetically fetches Tier 1 thread without network for ${name}`, async () => {
-        const res = await adapter.fetchThread("any_id_or_url", { tier: 1 });
+      it(`hermetically fetches the offline fixture without network for ${name}`, async () => {
+        const res = await adapter.fetchThread("any_id_or_url");
         const validated = validateDiscourseThread(res);
         expect(validated.platform).toBe(fixture.platform);
         expect(validated.posts.length).toBeGreaterThan(0);
       });
 
-      it(`falls back to offline fixture when fixtureFallback option is set for ${name}`, async () => {
+      it(`returns the offline fixture when fixtureFallback option is set for ${name}`, async () => {
         const res = await adapter.fetchThread("any_id_or_url", { fixtureFallback: true });
         const validated = validateDiscourseThread(res);
         expect(validated.platform).toBe(fixture.platform);
@@ -106,9 +110,11 @@ describe("Empirical Challenger: Discourse Ingestion Adversarial Stress Suite", (
   });
 
   // -------------------------------------------------------------------------
-  // 2. Adversarial Network Fallbacks (404, 500, 429, Offline, Invalid JSON, Timeout)
+  // 2. Hermeticity: the adapters never touch the network. The former
+  //    tier-2/tier-3 live paths are gone; the old code would have invoked
+  //    globalThis.fetch here, so counting fetch calls is the regression probe.
   // -------------------------------------------------------------------------
-  describe("2. Adversarial Network Fallback Mechanisms", () => {
+  describe("2. Hermetic: fetch is never called", () => {
     const adapters = [
       new RedditAdapter(),
       new HackerNewsAdapter(),
@@ -116,100 +122,52 @@ describe("Empirical Challenger: Discourse Ingestion Adversarial Stress Suite", (
       new GitHubAdapter(),
     ];
 
-    const failureScenarios = [
-      {
-        name: "Network completely offline (TypeError: fetch failed)",
-        mock: () => Promise.reject(new TypeError("fetch failed")),
-      },
-      {
-        name: "DNS Resolution failure (getaddrinfo ENOTFOUND)",
-        mock: () => Promise.reject(new Error("getaddrinfo ENOTFOUND")),
-      },
-      {
-        name: "HTTP 404 Not Found",
-        mock: () => Promise.resolve({ ok: false, status: 404, json: async () => ({ error: "Not Found" }) }),
-      },
-      {
-        name: "HTTP 500 Internal Server Error",
-        mock: () => Promise.resolve({ ok: false, status: 500, json: async () => ({ error: "Server Error" }) }),
-      },
-      {
-        name: "HTTP 429 Too Many Requests (Rate Limit)",
-        mock: () => Promise.resolve({ ok: false, status: 429, json: async () => ({ error: "Rate limit exceeded" }) }),
-      },
-      {
-        name: "HTTP 200 with HTML error page (SyntaxError on JSON parse)",
-        mock: () => Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () => Promise.reject(new SyntaxError("Unexpected token < in JSON at position 0")),
-        }),
-      },
-      {
-        name: "HTTP 200 returning null JSON payload",
-        mock: () => Promise.resolve({ ok: true, status: 200, json: async () => null }),
-      },
-      {
-        name: "HTTP 200 returning empty object {}",
-        mock: () => Promise.resolve({ ok: true, status: 200, json: async () => ({}) }),
-      },
-      {
-        name: "HTTP 200 returning empty array []",
-        mock: () => Promise.resolve({ ok: true, status: 200, json: async () => [] }),
-      },
-      {
-        name: "HTTP 200 returning API error response { error: 'invalid_token' }",
-        mock: () => Promise.resolve({ ok: true, status: 200, json: async () => ({ error: "invalid_token" }) }),
-      },
-      {
-        name: "AbortController AbortError (Timeout)",
-        mock: () => {
-          const err = new Error("This operation was aborted");
-          err.name = "AbortError";
-          return Promise.reject(err);
-        },
-      },
-    ];
-
-    for (const scenario of failureScenarios) {
-      for (const adapter of adapters) {
-        it(`${adapter.platform}: degrades gracefully under ${scenario.name}`, async () => {
-          const fetchKey = String.fromCharCode(102, 101, 116, 99, 104);
-          const origFetch = (globalThis as any)[fetchKey];
-          (globalThis as any)[fetchKey] = scenario.mock;
-
-          try {
-            // Test Tier 2 (zero-auth public network request)
-            const threadTier2 = await adapter.fetchThread("test_target_id", { tier: 2, timeoutMs: 50 });
-            const v2 = validateDiscourseThread(threadTier2);
-            expect(v2.platform).toBe(adapter.platform);
-            expect(v2.posts.length).toBeGreaterThan(0);
-
-            // Test Tier 3 (authenticated network request)
-            const threadTier3 = await adapter.fetchThread("test_target_id", { tier: 3, timeoutMs: 50 });
-            const v3 = validateDiscourseThread(threadTier3);
-            expect(v3.platform).toBe(adapter.platform);
-            expect(v3.posts.length).toBeGreaterThan(0);
-          } finally {
-            (globalThis as any)[fetchKey] = origFetch;
-          }
-        });
-      }
-    }
-
-    it("falls back gracefully when globalThis.fetch is undefined", async () => {
-      const fetchKey = String.fromCharCode(102, 101, 116, 99, 104);
-      const origFetch = (globalThis as any)[fetchKey];
-      delete (globalThis as any)[fetchKey];
+    it("returns valid fixtures and never calls globalThis.fetch, even under former tier-2/tier-3 options", async () => {
+      let fetchCalls = 0;
+      const origFetch = globalThis.fetch;
+      (globalThis as any).fetch = (..._args: unknown[]) => {
+        fetchCalls += 1;
+        throw new TypeError("network disabled: fetch must never be called");
+      };
 
       try {
         for (const adapter of adapters) {
-          const thread = await adapter.fetchThread("test_target_id", { tier: 2 });
+          // Former tier-2/3 paths selected live network; options are ignored.
+          const t2 = await adapter.fetchThread("test_target_id", {
+            tier: 2,
+            timeoutMs: 50,
+          } as never);
+          const v2 = validateDiscourseThread(t2);
+          expect(v2.platform).toBe(adapter.platform);
+          expect(v2.posts.length).toBeGreaterThan(0);
+
+          const t3 = await adapter.fetchThread("test_target_id", {
+            tier: 3,
+            timeoutMs: 50,
+          } as never);
+          const v3 = validateDiscourseThread(t3);
+          expect(v3.platform).toBe(adapter.platform);
+          expect(v3.posts.length).toBeGreaterThan(0);
+        }
+        expect(fetchCalls).toBe(0);
+      } finally {
+        (globalThis as any).fetch = origFetch;
+      }
+    });
+
+    it("returns valid fixtures when globalThis.fetch is undefined", async () => {
+      const origFetch = globalThis.fetch;
+      delete (globalThis as any).fetch;
+
+      try {
+        for (const adapter of adapters) {
+          const thread = await adapter.fetchThread("test_target_id");
           const v = validateDiscourseThread(thread);
           expect(v.platform).toBe(adapter.platform);
+          expect(v.posts.length).toBeGreaterThan(0);
         }
       } finally {
-        (globalThis as any)[fetchKey] = origFetch;
+        (globalThis as any).fetch = origFetch;
       }
     });
   });

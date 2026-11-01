@@ -4,21 +4,43 @@
  * `plan`/`submit` are the two phases of the same protocol as everywhere else.
  * `inspect`/`edit` act on one member of that population, reading exactly the
  * fields `edit` can change — the same subject seen from two sides.
+ *
+ * Persona Fabric (Phase B) rides the same tool: `fabricate` mints a
+ * deterministic typed-array surrogate population (up to 1,000,000 personas,
+ * zero LLM calls), `materialize` lazily interviews one surrogate persona on
+ * one claim, and `remember` appends to a persona's memory log. Fabric state
+ * (spec + fitted model + memory) persists in the world directory; the
+ * population itself replays from the seed and is never stored. Every
+ * fabric-derived reply carries the honesty block — personaCount, surrogate
+ * holdout metrics and the disclaimer — and uncalibrated claims are labeled
+ * UNCALIBRATED.
  */
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   applyPersonas,
+  archetypeSharesByName,
+  appendMemory,
   buildPersonasTask,
+  fabricHonesty,
+  fabricate,
+  getMemory,
+  hashHex,
+  lazyPersona,
+  personaIdOf,
+  resolvePersonaIndex,
+  traitMeans,
   CONFIG_LIMITS,
   personaCard,
   personaPatch,
   type Entity,
+  type FabricSpec,
   type Persona,
 } from "@murmur/engine";
 import { coerceJson, type ServerContext } from "../session.js";
 import { PERSONAS_OUTPUT } from "./outputs.js";
 import { registerTaskTool } from "./tasks.js";
+import type { FabricWorldState } from "./fabric-state.js";
 
 export const PERSONAS_TOOL_NAMES = ["personas"] as const;
 
@@ -96,10 +118,22 @@ export function registerPersonaTools(
       "derived from the ontology, plus a stance hint per entity); complete it and return it with action:'submit'. " +
       "action:'inspect' audits one persona — full record, the compact card that fits in a digest, communities, follows and " +
       "recent posts — recommended before a run to catch low-fidelity personas. action:'edit' surgically fixes one " +
-      "persona: only the fields you pass change.",
+      "persona: only the fields you pass change. Persona Fabric: action:'fabricate' mints a deterministic surrogate " +
+      "population (count 1-1,000,000, archetypeWeights, seed; zero LLM calls, replayable) and stores it for the world; " +
+      "action:'materialize' interviews one surrogate persona ('#i') on one claim deterministically; " +
+      "action:'remember' appends to a persona's memory log. Fabric outputs always print the honesty block " +
+      "(personaCount + surrogate metrics + disclaimer) and claims without a fitted model are UNCALIBRATED.",
     inputSchema: {
       action: z
-        .enum(["plan", "submit", "inspect", "edit"])
+        .enum([
+          "plan",
+          "submit",
+          "inspect",
+          "edit",
+          "fabricate",
+          "materialize",
+          "remember",
+        ])
         .describe("What to do with the population"),
       world: z
         .string()
@@ -108,10 +142,12 @@ export function registerPersonaTools(
       count: z
         .number()
         .int()
-        .min(8)
-        .max(128)
+        .min(1)
+        .max(1_000_000)
         .optional()
-        .describe("Population size (default 24, range 8-128) — action:'plan'"),
+        .describe(
+          "Population size — action:'plan' (8-128, default 24) or action:'fabricate' (1-1,000,000 surrogate personas)",
+        ),
       hint: z
         .string()
         .max(300)
@@ -165,12 +201,66 @@ export function registerPersonaTools(
         .describe(
           "Partial persona: {name?, handle?, archetype?, bio?, traits?, stances?: {EntityName: -1..1}, platform?, activity?} — action:'edit' only",
         ),
+      archetypeWeights: z
+        .union([
+          z.record(z.number()).describe(
+            "Fabric archetype mix, e.g. {pragmatic_smb: 2, oss_maintainer: 1} — keys are archetype names",
+          ),
+          z
+            .string()
+            .describe("The same weights as a JSON string (parsed server-side)"),
+        ])
+        .optional()
+        .describe(
+          "Archetype weights for action:'fabricate' (default: uniform over the 8 fabric archetypes)",
+        ),
+      seed: z
+        .string()
+        .max(120)
+        .optional()
+        .describe(
+          "Fabric seed — same seed replays the population byte-identically (default: derived from the world seed)",
+        ),
+      personaId: z
+        .string()
+        .max(40)
+        .optional()
+        .describe(
+          "Fabric persona index, '#i' or i — action:'materialize' / 'remember'",
+        ),
+      claimId: z
+        .string()
+        .max(160)
+        .optional()
+        .describe(
+          "Claim id the persona is interviewed on — action:'materialize'",
+        ),
+      claimText: z
+        .string()
+        .max(600)
+        .optional()
+        .describe(
+          "Claim text (used when no claimId exists; hashed into a stable id) — action:'materialize'",
+        ),
+      text: z
+        .string()
+        .min(1)
+        .max(2000)
+        .optional()
+        .describe(
+          "What the persona said / was told, stored verbatim — action:'remember'",
+        ),
     },
     outputSchema: PERSONAS_OUTPUT,
     run: async (args) => {
       try {
         const w = ctx.resolveWorld(args.world);
         if (args.action === "plan") {
+          if (args.count !== undefined && (args.count < 8 || args.count > 128)) {
+            throw new Error(
+              `action:'plan' needs count in 8..128 (got ${args.count}) — populations up to 1,000,000 belong to action:'fabricate'`,
+            );
+          }
           const task = buildPersonasTask(ctx.storage, w, {
             count: args.count,
             hint: args.hint,
@@ -194,7 +284,10 @@ export function registerPersonaTools(
         }
         if (args.action === "submit") return submit(ctx, args);
         if (args.action === "inspect") return inspect(ctx, w, args.persona);
-        return edit(ctx, w, args);
+        if (args.action === "edit") return edit(ctx, w, args);
+        if (args.action === "fabricate") return fabricate_(ctx, w, args);
+        if (args.action === "materialize") return materialize_(ctx, w, args);
+        return remember_(ctx, w, args);
       } catch (e) {
         return ctx.fail(e);
       }
@@ -315,6 +408,165 @@ function edit(
       persona: out.persona ? inspectLite(out.persona) : null,
       ...(out.rejected.length ? { rejected: out.rejected } : {}),
       next: 'personas({action:"inspect", persona}) to verify, or world_config',
+    },
+    w,
+    PERSONAS_OUTPUT,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Persona Fabric (Phase B) — deterministic surrogate populations.
+// ---------------------------------------------------------------------------
+
+/** The fabric state a fabric action needs, or a teaching error. */
+function requireFabric(
+  ctx: ServerContext,
+  w: ReturnType<ServerContext["resolveWorld"]>,
+): FabricWorldState {
+  const state = ctx.fabric.get(w);
+  if (!state) {
+    throw new Error(
+      `no fabric population active for world ${w.slug} — call personas({action:'fabricate', count, seed}) first`,
+    );
+  }
+  return state;
+}
+
+function fabricate_(
+  ctx: ServerContext,
+  w: ReturnType<ServerContext["resolveWorld"]>,
+  args: { count?: number; archetypeWeights?: unknown; seed?: string },
+) {
+  if (!args.count)
+    throw new Error("action:'fabricate' needs count (1-1,000,000)");
+  let weights: Record<string, number> | undefined;
+  if (args.archetypeWeights !== undefined) {
+    const parsed = coerceJson(args.archetypeWeights);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error(
+        "action:'fabricate' needs archetypeWeights as an object of {archetypeName: weight}",
+      );
+    }
+    weights = parsed as Record<string, number>;
+  }
+  const seed = args.seed?.trim() || `${w.seed}:fabric`;
+  const existing = ctx.fabric.get(w);
+  // Per-persona seeding keeps persona #i identical for the same seed even
+  // when count changes, so same-seed refabrication can keep persona memory;
+  // a different seed addresses different personas and the log starts fresh.
+  // The fitted model is trait-space and survives either way.
+  const keepMemory = !!existing && existing.spec.seed === seed;
+  const spec: FabricSpec = {
+    count: args.count,
+    seed,
+    ...(weights ? { archetypeWeights: weights } : {}),
+  };
+  const population = fabricate(spec);
+  const state: FabricWorldState = {
+    worldId: w.id,
+    spec,
+    model: existing?.model ?? null,
+    memory: keepMemory && existing ? existing.memory : [],
+    population,
+  };
+  ctx.fabric.save(w, state);
+  ctx.audit(w, {
+    op: "personas_fabricate",
+    count: population.count,
+    seed,
+    modelAttached: !!state.model,
+  });
+  return ctx.reply(
+    {
+      ok: true,
+      fabric: {
+        population: population.count,
+        seed,
+        archetypeShares: archetypeSharesByName(population),
+        traitMeans: traitMeans(population),
+        modelAttached: !!state.model,
+        memoryEntries: state.memory.length,
+        honesty: fabricHonesty(state.model, population.count),
+      },
+      ...(state.model
+        ? {}
+        : {
+            note: "no surrogate model fitted for this world — materialize views are UNCALIBRATED until one is attached",
+          }),
+      next: 'personas({action:"materialize", personaId, claimId}) to interview individual surrogate personas',
+    },
+    w,
+    PERSONAS_OUTPUT,
+  );
+}
+
+function materialize_(
+  ctx: ServerContext,
+  w: ReturnType<ServerContext["resolveWorld"]>,
+  args: { personaId?: string; claimId?: string; claimText?: string },
+) {
+  const state = requireFabric(ctx, w);
+  if (!args.personaId)
+    throw new Error("action:'materialize' needs personaId ('#i')");
+  const claimId =
+    args.claimId?.trim() ||
+    (args.claimText?.trim()
+      ? `text:${hashHex(args.claimText.trim().toLowerCase())}`
+      : undefined);
+  if (!claimId)
+    throw new Error("action:'materialize' needs claimId or claimText");
+  const population = ctx.fabric.population(state);
+  const view = lazyPersona(
+    population,
+    state.model,
+    args.personaId,
+    claimId,
+    state.memory,
+  );
+  ctx.audit(w, {
+    op: "persona_materialize",
+    personaId: view.personaId,
+    claimId,
+    calibration: view.calibration,
+  });
+  return ctx.reply(
+    {
+      ok: true,
+      personaView: view,
+      uncalibrated: view.calibration === "uncalibrated",
+      next:
+        view.calibration === "uncalibrated"
+          ? "fit a surrogate for this claim (engine fit()) or treat this view as UNCALIBRATED"
+          : 'personas({action:"remember", personaId, text}) to log what this persona said',
+    },
+    w,
+    PERSONAS_OUTPUT,
+  );
+}
+
+function remember_(
+  ctx: ServerContext,
+  w: ReturnType<ServerContext["resolveWorld"]>,
+  args: { personaId?: string; text?: string },
+) {
+  const state = requireFabric(ctx, w);
+  if (!args.personaId)
+    throw new Error("action:'remember' needs personaId ('#i')");
+  if (!args.text) throw new Error("action:'remember' needs text (what the persona said)");
+  const population = ctx.fabric.population(state);
+  // Validate against the population so memory keys are real personas.
+  const index = resolvePersonaIndex(population, args.personaId);
+  const id = personaIdOf(index);
+  state.memory = appendMemory(state.memory, id, args.text);
+  ctx.fabric.save(w, state);
+  ctx.audit(w, { op: "persona_remember", personaId: id });
+  return ctx.reply(
+    {
+      ok: true,
+      personaId: id,
+      remembered: getMemory(state.memory, id).length,
+      honesty: fabricHonesty(state.model, population.count),
+      next: 'personas({action:"materialize", personaId, claimId}) — the view now references this memory deterministically',
     },
     w,
     PERSONAS_OUTPUT,

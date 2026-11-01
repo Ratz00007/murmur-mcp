@@ -48,6 +48,20 @@ export function submitGenerations(
   const handles = new Map(personas.map((p) => [p.handle.toLowerCase(), p]));
   const byId = new Map(personas.map((p) => [p.id, p]));
 
+  // Follow adjacency built ONCE per submit call, then reused by every action,
+  // the organic engagement pass and the multi-hop cascade — instead of
+  // re-listing all personas per post. `personas` comes from listPersonas
+  // (ORDER BY id), and the cascade sorts its frontier before processing, so
+  // the chunk is deterministic.
+  const followersOf = new Map<string, Persona[]>();
+  for (const p of personas) {
+    for (const f of p.follows) {
+      const arr = followersOf.get(f);
+      if (arr) arr.push(p);
+      else followersOf.set(f, [p]);
+    }
+  }
+
   const activated: Persona[] = task.items.map((i) => byId.get(String(i.id).replace(/^persona-/, ""))).filter((p): p is Persona => !!p);
   const activatedIds = new Set(activated.map((p) => p.id));
   const itemPersona = new Map<string, Persona>(activated.map((p) => [p.id, p]));
@@ -94,10 +108,10 @@ export function submitGenerations(
   // ---- Apply valid generations deterministically -------------------------
   const appliedPersonas = new Set([...alreadyApplied]);
   const lurkers: string[] = [];
-  // Per-world count so post ids are deterministic for this world alone and
-  // never depend on how many posts other worlds happen to hold.
-  let postIdBase = storage.countPosts(world.id) + 1;
-  const mintId = () => `po_${postIdBase++}`;
+  // Per-world counter-backed post mint so ids are deterministic for this world
+  // alone and never depend on how many posts other worlds happen to hold, and
+  // so bulk rounds stay O(1) per mint instead of O(N) count scans.
+  const mintId = () => storage.mintPostId(world.id);
   const newPosts: Post[] = [];
 
   for (const { persona, actions } of valid) {
@@ -113,7 +127,7 @@ export function submitGenerations(
       }
     }
     for (const action of actions) {
-      applyAction(storage, world, persona, action, targetRound, entities, mintId, newPosts);
+      applyAction(storage, world, persona, action, targetRound, entities, mintId, newPosts, followersOf);
     }
     appliedPersonas.add(persona.id);
   }
@@ -134,7 +148,7 @@ export function submitGenerations(
     // organic engagement + platform mechanics on this round's generated posts.
     // The tally is intentionally discarded: the call's effects (metric bumps,
     // repost rows, the organic event) are what the round needs, not the count.
-    organicEngagement(storage, world, targetRound, newPosts, personas, entities, mintId);
+    organicEngagement(storage, world, targetRound, newPosts, personas, entities, mintId, followersOf);
     const newViral = checkVirality(storage, world, targetRound, newPosts, personas.length);
     // memory compaction for everyone who acted this round
     for (const pid of appliedPersonas) {
@@ -302,10 +316,11 @@ function applyAction(
   round: number,
   entities: Entity[],
   mintId: () => string,
-  newPosts: Post[]
+  newPosts: Post[],
+  followersOf: ReadonlyMap<string, Persona[]>
 ): void {
   const plat = persona.platform;
-  const authorFollowers = (id: string) => storage.listPersonas(world.id).filter((p) => p.follows.includes(id)).length;
+  const authorFollowers = (id: string) => (followersOf.get(id) ?? []).length;
 
   const makePost = (over: Partial<Post> & { platform: "twitter" | "reddit"; kind: Post["kind"]; body: string }): Post => {
     const text = over.title ? `${over.title} ${over.body}` : over.body;
@@ -349,11 +364,18 @@ function applyAction(
     storage.updatePostMetrics(world.id, p.id, p.metrics);
   };
 
+  const getParent = (postId: string) => {
+    const p = storage.getPost(world.id, postId);
+    if (!p)
+      throw new Error(`sim: parent post ${postId} not found in world ${world.id}`);
+    return p;
+  };
+
   switch (action.type) {
     case "post": {
       const target = "platform" in action && action.platform ? action.platform : plat === "both" ? "twitter" : (plat as "twitter" | "reddit");
       if (target === "reddit") {
-        makePost({ platform: "reddit", kind: "post", title: action.title!, body: action.body, communityId: persona.communityIds[0] ?? null });
+        makePost({ platform: "reddit", kind: "post", title: action.title ?? "", body: action.body, communityId: persona.communityIds[0] ?? null });
       } else {
         makePost({ platform: "twitter", kind: "post", body: action.body });
       }
@@ -361,12 +383,12 @@ function applyAction(
     }
     case "reply":
     case "quote": {
-      const parent = storage.getPost(world.id, action.parent)!;
+      const parent = getParent(action.parent);
       makePost({ platform: "twitter", kind: action.type, parentId: parent.id, body: action.body });
       break;
     }
     case "repost": {
-      const parent = storage.getPost(world.id, action.parent)!;
+      const parent = getParent(action.parent);
       bump(parent.id, "reposts");
       const note = "note" in action && typeof action.note === "string" ? action.note.trim() : "";
       if (note) {
@@ -379,19 +401,19 @@ function applyAction(
     }
     case "like": {
       bump(action.parent, "likes");
-      const parent = storage.getPost(world.id, action.parent)!;
+      const parent = getParent(action.parent);
       appendEpisodic(storage, world, persona.id, round, `Liked ${parent.id}: "${truncate(parent.body, 100)}"`, 0.2);
       break;
     }
     case "comment": {
-      const parent = storage.getPost(world.id, action.parent)!;
+      const parent = getParent(action.parent);
       makePost({ platform: "reddit", kind: "comment", parentId: parent.id, communityId: parent.communityId, body: action.body });
       break;
     }
     case "upvote":
     case "downvote": {
       bump(action.parent, action.type === "upvote" ? "upvotes" : "downvotes");
-      const parent = storage.getPost(world.id, action.parent)!;
+      const parent = getParent(action.parent);
       appendEpisodic(storage, world, persona.id, round, `${action.type === "upvote" ? "Upvoted" : "Downvoted"} ${parent.id}: "${truncate(parent.body, 100)}"`, 0.2);
       break;
     }
@@ -417,13 +439,15 @@ function organicEngagement(
   newPosts: Post[],
   personas: Persona[],
   _entities: Entity[],
-  mintId: () => string
+  mintId: () => string,
+  followersOf: ReadonlyMap<string, Persona[]>
 ): { likes: number; reposts: number; upvotes: number; downvotes: number } {
   const rng = streamRng(world.seed, `organic:${round}`);
   const cfg = world.config.engagement;
   const tally = { likes: 0, reposts: 0, upvotes: 0, downvotes: 0 };
   const audit: Record<string, unknown>[] = [];
   let cascaded = 0; // viewers engaged by the multi-hop cascade (below)
+  const followersOfId = (id: string): Persona[] => followersOf.get(id) ?? [];
 
   for (const post of newPosts) {
     if (post.kind === "repost") continue; // re-shares don't compound
@@ -526,7 +550,6 @@ function organicEngagement(
       const cas = { ...DEFAULT_CONFIG.cascade, ...(world.config.cascade ?? {}) };
       const seen = new Set<string>(eligible.map((p) => p.id));
       seen.add(post.personaId);
-      const followersOfId = (id: string): Persona[] => personas.filter((p) => p.follows.includes(id));
       // seed the frontier at followers-of-followers (distance ≥ 2; distance 1
       // was the direct pass above)
       let frontier = new Map<string, Persona>();

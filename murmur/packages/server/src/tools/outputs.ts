@@ -18,7 +18,7 @@
  *    `ok` and `next` are the invariant that survives every path.
  */
 import { z } from "zod";
-import { ENTITY_TYPES } from "@murmur/engine";
+import { ENTITY_TYPES, SURROGATE_DISCLAIMER } from "@murmur/engine";
 
 /** Fields every structured reply carries, including the oversize spill receipt. */
 const ENVELOPE = {
@@ -441,6 +441,39 @@ export const GRAPH_OUTPUT = toolOutput({
     .describe("Edges in the written diagram (action: 'export')"),
 });
 
+/**
+ * The honesty block every fabric-derived output must carry (METHODOLOGY.md):
+ * personaCount next to the surrogate's holdout metrics next to the disclaimer.
+ */
+export const FABRIC_HONESTY = z
+  .object({
+    personaCount: z
+      .number()
+      .int()
+      .describe("How many surrogate personas the derived numbers describe"),
+    surrogate: z
+      .object({
+        holdoutAccuracy: z
+          .number()
+          .describe("Holdout accuracy of the fitted surrogate (0 when none)"),
+        labeledCount: z
+          .number()
+          .int()
+          .describe("Labeled examples the surrogate was fit on (0 when none)"),
+        effectiveSampleSize: z
+          .number()
+          .int()
+          .describe("Same as labeledCount — every label is a real example"),
+      })
+      .describe("Surrogate quality figures — a model with 0 labels is UNCALIBRATED"),
+    disclaimer: z
+      .literal(SURROGATE_DISCLAIMER)
+      .describe("Print next to every fabric-derived number"),
+  })
+  .describe(
+    "Honesty block: the numbers above are a compressed model of labeled opinions, not data about real people",
+  );
+
 export const PERSONAS_OUTPUT = toolOutput({
   taskId: z.string().optional().describe("Task id (action: 'plan')"),
   how: z.string().optional(),
@@ -488,6 +521,71 @@ export const PERSONAS_OUTPUT = toolOutput({
     .optional(),
   rejected,
   hint: z.string().optional(),
+  note: z.string().optional(),
+  fabric: z
+    .object({
+      population: z.number().describe("Fabricated surrogate persona count"),
+      seed: z.string().describe("Fabric seed — same seed replays byte-identically"),
+      archetypeShares: z
+        .record(z.number())
+        .describe("Share of each fabric archetype in the population"),
+      traitMeans: z.record(z.number()).describe("Population mean per trait"),
+      modelAttached: z
+        .boolean()
+        .describe("True when a fitted surrogate model is active for this world"),
+      memoryEntries: z
+        .number()
+        .optional()
+        .describe("Persona memory entries carried over (same-seed refabrication)"),
+      honesty: FABRIC_HONESTY,
+    })
+    .optional()
+    .describe("Active fabric population summary (action: 'fabricate')"),
+  personaView: z
+    .object({
+      personaId: z.string().describe("Canonical id ('#i')"),
+      archetype: z.string(),
+      archetypeDescription: z.string(),
+      claimId: z.string().nullable(),
+      traits: z.record(z.number()).describe("This persona's trait values"),
+      stance: z
+        .number()
+        .describe("Signed stance in [-1, 1] toward the claim (0 when uncalibrated)"),
+      intensity: z.number().describe("|stance| in [0, 1]"),
+      topObjectionId: z.string().nullable(),
+      migrationChoiceId: z.string().nullable(),
+      calibration: z
+        .enum(["calibrated", "uncalibrated"])
+        .describe("'uncalibrated' views have no fitted surrogate head — label them UNCALIBRATED"),
+      rationale: z
+        .string()
+        .describe("Deterministic template rationale (archetype + dominant traits + model weights) — no LLM"),
+      memory: z
+        .array(
+          z.object({
+            seq: z.number(),
+            personaId: z.string(),
+            text: z.string(),
+          }),
+        )
+        .describe("Prior persona-memory entries referenced by this view"),
+      honesty: FABRIC_HONESTY,
+    })
+    .optional()
+    .describe("The materialized surrogate persona (action: 'materialize')"),
+  personaId: z
+    .string()
+    .optional()
+    .describe("Canonical persona id the memory was written for (action: 'remember')"),
+  remembered: z
+    .number()
+    .optional()
+    .describe("Memory entries now held for the persona (action: 'remember')"),
+  uncalibrated: z
+    .boolean()
+    .optional()
+    .describe("True when the claim has no fitted surrogate support (action: 'materialize')"),
+  honesty: FABRIC_HONESTY.optional(),
 });
 
 export const SIM_OUTPUT = toolOutput({
@@ -559,6 +657,15 @@ export const SIM_OUTPUT = toolOutput({
     .array(z.number())
     .optional()
     .describe("Rounds whose engagement exceeded mean + 2 sigma"),
+  fabric: z
+    .object({
+      active: z.literal(true),
+      honesty: FABRIC_HONESTY,
+    })
+    .optional()
+    .describe(
+      "Present when a persona-fabric population is active for this world — its aggregates are surrogate-derived",
+    ),
   rejected,
 });
 
@@ -581,6 +688,37 @@ export const REPORT_OUTPUT = toolOutput({
     .describe("Path of the self-contained HTML dashboard"),
   hint: z.string().optional(),
   rejected,
+});
+
+export const MACRO_SIM_OUTPUT = toolOutput({
+  world: z
+    .string()
+    .optional()
+    .describe("World id the simulation ran against"),
+  nodeCount: z.number().optional().describe("Population size simulated"),
+  averageDegree: z.number().optional().describe("Directed edges per node"),
+  rounds: z.number().optional().describe("Rounds completed"),
+  summaries: z
+    .array(
+      z.object({
+        round: z.number(),
+        nodeCount: z.number(),
+        edgeCount: z.number(),
+        distribution: z.object({
+          susceptible: z.number(),
+          exposed: z.number(),
+          infected: z.number(),
+          contagious: z.number(),
+          churned: z.number(),
+        }),
+        meanStance: z.number(),
+        outrageIndex: z.number(),
+        contagion: z.number().describe("Nodes in the contagious compartment"),
+        durationMs: z.number(),
+      }),
+    )
+    .optional()
+    .describe("One compact row per completed round"),
 });
 
 export const INTERACT_OUTPUT = toolOutput({
@@ -662,5 +800,6 @@ export const TOOL_OUTPUTS = {
   personas: PERSONAS_OUTPUT,
   sim: SIM_OUTPUT,
   report: REPORT_OUTPUT,
+  macro_sim: MACRO_SIM_OUTPUT,
   interact: INTERACT_OUTPUT,
 } as const;

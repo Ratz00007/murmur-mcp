@@ -247,10 +247,18 @@ export function buildFeed(
         p.personaId !== persona.id &&
         (persona.follows.includes(p.personaId) || viral.has(p.id)),
     );
+    // Batch-load children ONCE for all twitter candidates (one query instead
+    // of one per candidate) and group by parent id; per-candidate lookup is
+    // then a Map get. Order within each group matches childrenOf (id-ordered),
+    // so ranking output is byte-identical.
+    const childrenByParent = storage.childrenOfMany(
+      world.id,
+      candidates.map((p) => p.id),
+    );
     const ranked = candidates
       .map((p) => {
         const base = twitterScore(p, persona, targetRound, viral, entities);
-        const children = storage.childrenOf(world.id, p.id);
+        const children = childrenByParent.get(p.id) ?? [];
         const replies = children.filter(
           (c) => c.kind === "reply" || c.kind === "comment",
         ).length;
@@ -281,6 +289,10 @@ export function buildFeed(
         persona.communityIds.includes(p.communityId ?? "") &&
         p.personaId !== persona.id,
     );
+    const childrenByParent = storage.childrenOfMany(
+      world.id,
+      candidates.map((p) => p.id),
+    );
     const ranked = candidates
       .map((p) => {
         const base = redditScore(
@@ -288,7 +300,7 @@ export function buildFeed(
           targetRound,
           config.platforms.reddit.gravity,
         );
-        const children = storage.childrenOf(world.id, p.id);
+        const children = childrenByParent.get(p.id) ?? [];
         const replies = children.length;
         const ratio = computeTheRatio(
           replies,
@@ -309,8 +321,7 @@ export function buildFeed(
     for (const { p } of ranked.slice(0, perPlatform)) {
       items.push(toDigestItem(p, handles, targetRound));
       // thread preview: top comments of the hottest threads
-      const kids = storage
-        .childrenOf(world.id, p.id)
+      const kids = (childrenByParent.get(p.id) ?? [])
         .sort(
           (a, b) =>
             b.metrics.upvotes -

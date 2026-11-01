@@ -81,7 +81,7 @@ const declaredCount = countMatch ? Number(countMatch[1]) : null;
  * silent.
  */
 let actualTools = 0;
-for (const f of ["world", "seeds", "ontology", "personas", "sim", "graph", "interact", "report"]) {
+for (const f of ["world", "seeds", "ontology", "personas", "sim", "graph", "interact", "report", "macro"]) {
   const src = readFileSync(join(MURMUR, "packages", "server", "src", "tools", `${f}.ts`), "utf8");
   const m = src.match(/export const \w+_TOOL_NAMES = \[([\s\S]*?)\] as const/);
   if (!m) throw new Error(`no TOOL_NAMES declaration found in tools/${f}.ts`);
@@ -103,8 +103,8 @@ if (declaredCount !== null && declaredCount !== actualTools) {
   problems.push(`TOOL_COUNT says ${declaredCount} but ${actualTools} tools are registered`);
 }
 
-if (registerCalls !== 8) {
-  problems.push(`expected 8 tool modules registered, found ${registerCalls}`);
+if (registerCalls !== 9) {
+  problems.push(`expected 9 tool modules registered, found ${registerCalls}`);
 }
 
 

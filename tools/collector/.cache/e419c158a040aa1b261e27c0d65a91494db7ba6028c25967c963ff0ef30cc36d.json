@@ -1,0 +1,8 @@
+{
+ "url": "https://hn.algolia.com/api/v1/items/123",
+ "method": "GET",
+ "status": 200,
+ "retrievedAt": "2026-11-01T05:08:43.942Z",
+ "sha256": "1ff44d152f102e0951e621f3e0e78db4425571b00496d9f9466ee2a9f3e90644",
+ "body": "{\"id\":123,\"title\":\"Docker Hub free team\",\"author\":\"tester\",\"points\":42,\"created_at\":\"2024-05-01T10:00:00Z\",\"text\":\"<p>Story body</p>\",\"children\":[{\"id\":456,\"author\":\"c1\",\"text\":\"First &amp; reply\",\"points\":5,\"created_at\":\"2024-05-01T11:00:00Z\",\"children\":[]}]}"
+}

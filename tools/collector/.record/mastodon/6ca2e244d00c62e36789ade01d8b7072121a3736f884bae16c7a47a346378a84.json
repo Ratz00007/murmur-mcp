@@ -1,0 +1,9 @@
+{
+ "url": "https://mastodon.social/api/v1/statuses/117539458519968847/context",
+ "method": "GET",
+ "status": 200,
+ "retrievedAt": "2026-11-01T05:46:34.464Z",
+ "sha256": "9f63c6e481d078468cc8e85b74a1e7105959e1ba3f2008a0fe2ce9378de0be9d",
+ "body": "{\"ancestors\":[],\"descendants\":[]}",
+ "seq": 7
+}

@@ -15,7 +15,17 @@ import * as path from "node:path";
 
 export function findWorkspaceRoot(startDir: string): string {
   const override = process.env.MURMUR_WORKSPACE;
-  if (override) return path.resolve(override);
+  if (override !== undefined) {
+    if (typeof override !== "string" || override.trim() === "") {
+      throw new Error("MURMUR_WORKSPACE must be a non-empty string path");
+    }
+    if (!path.isAbsolute(override)) {
+      throw new Error(
+        `MURMUR_WORKSPACE must be an absolute path: '${override}'`,
+      );
+    }
+    return path.resolve(override);
+  }
   let dir = path.resolve(startDir);
   for (;;) {
     if (
@@ -24,7 +34,10 @@ export function findWorkspaceRoot(startDir: string): string {
     )
       return dir;
     const parent = path.dirname(dir);
-    if (parent === dir) return path.resolve(startDir);
+    if (parent === dir)
+      throw new Error(
+        `no workspace root found from '${startDir}': walk up to the filesystem root found no .murmur/ or .git/ marker; run inside a workspace or set MURMUR_WORKSPACE to an absolute path`,
+      );
     dir = parent;
   }
 }
@@ -86,6 +99,14 @@ export class Workspace {
   /** Dossier versions live beside the reports, not in the reports table. */
   dossierPath(slug: string, version: number): string {
     return path.join(this.murmurDir, "reports", slug, `dossier-${version}.md`);
+  }
+
+  /**
+   * Persona Fabric state (Phase B): spec + fitted surrogate model + persona
+   * memory. The population is never here — it replays from the spec's seed.
+   */
+  fabricPath(slug: string): string {
+    return path.join(this.worldDir(slug), "fabric.json");
   }
 
   dossierJsonPath(slug: string, version: number): string {

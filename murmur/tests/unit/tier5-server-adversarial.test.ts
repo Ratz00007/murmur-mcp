@@ -29,6 +29,8 @@ interface McpHarness {
 
 async function createMcpHarness(): Promise<McpHarness> {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-tier5-"));
+  fs.mkdirSync(path.join(cwd, ".murmur"), { recursive: true });
+  process.env.MURMUR_WORKSPACE = cwd;
   const ctx = new ServerContext(cwd);
   const [clientTransport, serverTransport] =
     InMemoryTransport.createLinkedPair();
@@ -48,7 +50,7 @@ async function createMcpHarness(): Promise<McpHarness> {
   };
 }
 
-async function callTool<T = any>(
+async function callTool<T = unknown>(
   client: Client,
   args: { name: string; arguments?: Record<string, unknown> },
 ): Promise<T> {
@@ -65,18 +67,18 @@ describe("Tier 5: Cleanroom & Tool Surface Invariants", () => {
     expect(report.pass).toBe(true);
   }, 180_000);
 
-  it("verifies tool surface invariant: exactly 11 declared tools without drift or duplicate", () => {
-    expect(TOOL_COUNT).toBe(11);
-    expect(TOOL_NAMES).toHaveLength(11);
-    expect(new Set(TOOL_NAMES).size).toBe(11);
+  it("verifies tool surface invariant: exactly 12 declared tools without drift or duplicate", () => {
+    expect(TOOL_COUNT).toBe(12);
+    expect(TOOL_NAMES).toHaveLength(12);
+    expect(new Set(TOOL_NAMES).size).toBe(12);
     expect(() => assertToolSurface()).not.toThrow();
   });
 
-  it("ensures live in-memory server exposes all 11 tools with valid input and output schemas", async () => {
+  it("ensures live in-memory server exposes all 12 tools with valid input and output schemas", async () => {
     const harness = await createMcpHarness();
     try {
       const list = await harness.client.listTools();
-      expect(list.tools).toHaveLength(11);
+      expect(list.tools).toHaveLength(12);
       const toolNames = list.tools.map((t) => t.name).sort();
       expect(toolNames).toEqual([...TOOL_NAMES].sort());
 
@@ -225,7 +227,7 @@ describe("Tier 5: Tools 1, 2, 3 (world_init, world_list, world_config)", () => {
       });
 
       // Valid tuning
-      const resValid = await callTool<{ structuredContent: { ok: boolean; rounds: number; config: any } }>(
+      const resValid = await callTool<{ structuredContent: { ok: boolean; rounds: number; config: unknown } }>(
         harness.client,
         {
           name: "world_config",
@@ -447,7 +449,7 @@ describe("Tier 5: Tools 6, 7 (ontology & graph)", () => {
       });
 
       // 1. Plan phase returns extraction task
-      const planRes = await callTool<{ structuredContent: { ok: boolean; taskId: string; task: any } }>(
+      const planRes = await callTool<{ structuredContent: { ok: boolean; taskId: string; task: unknown } }>(
         harness.client,
         {
           name: "ontology",
@@ -767,7 +769,7 @@ describe("Tier 5: Tools 8, 9 (personas & sim)", () => {
       });
 
       // 1. sim next_batch
-      const batchRes = await callTool<{ structuredContent: { ok: boolean; taskId: string; round: number; personas: number; task: any } }>(
+      const batchRes = await callTool<{ structuredContent: { ok: boolean; taskId: string; round: number; personas: number; task: unknown } }>(
         harness.client,
         {
           name: "sim",
@@ -821,7 +823,7 @@ describe("Tier 5: Tools 8, 9 (personas & sim)", () => {
       expect(injectRes.structuredContent.eventId).toBeDefined();
 
       // 4. sim summary
-      const summaryRes = await callTool<{ structuredContent: { ok: boolean; stats: any } }>(
+      const summaryRes = await callTool<{ structuredContent: { ok: boolean; stats: { round: number } } }>(
         harness.client,
         {
           name: "sim",
@@ -997,7 +999,7 @@ describe("Tier 5: Tools 10, 11 (report & interact)", () => {
       const targetPid = perSubmit.structuredContent.personaIds[0];
 
       // 1. interact({target: 'persona'}) without answer returns grounded pack
-      const packRes = await callTool<{ structuredContent: { ok: boolean; pack: { question: string; persona: any } } }>(
+      const packRes = await callTool<{ structuredContent: { ok: boolean; pack: { question: string; persona: unknown } } }>(
         harness.client,
         {
           name: "interact",

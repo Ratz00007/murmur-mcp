@@ -14,6 +14,7 @@ import {
 } from "@murmur/engine";
 import type { ZodTypeAny } from "zod";
 import { log } from "./logging.js";
+import { FabricState } from "./tools/fabric-state.js";
 
 export type SamplingFn = (
   prompt: string,
@@ -35,6 +36,8 @@ export type ElicitFn = (
 export class ServerContext {
   readonly workspace: Workspace;
   readonly storage: Storage;
+  /** Active persona-fabric populations, keyed by world id (Phase B). */
+  readonly fabric: FabricState;
   activeWorldId: string | null = null;
   sampling: SamplingFn | null = null;
   elicit: ElicitFn | null = null;
@@ -43,6 +46,7 @@ export class ServerContext {
     this.workspace = new Workspace(cwd);
     this.workspace.ensure();
     this.storage = new Storage(openDatabase(this.workspace.dbPath));
+    this.fabric = new FabricState(this.workspace);
     const latest = this.storage.latestWorld();
     this.activeWorldId = latest?.id ?? null;
     log.info(

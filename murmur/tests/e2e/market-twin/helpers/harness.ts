@@ -35,6 +35,9 @@ export function createTestWorkspace(): TestWorkspace {
   const uniqueId = `murmur-mt-e2e-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   const cwd = path.join(os.tmpdir(), uniqueId);
   fs.mkdirSync(cwd, { recursive: true });
+  // Hard-fail workspace root discovery requires a .murmur/ or .git/ marker;
+  // plant .murmur so the spawned server resolves this temp cwd as a workspace.
+  fs.mkdirSync(path.join(cwd, ".murmur"), { recursive: true });
 
   let closed = false;
   const ws: TestWorkspace = {

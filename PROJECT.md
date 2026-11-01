@@ -43,13 +43,14 @@ Host Agent / MCP Client (Claude Desktop, Antigravity, Custom)
 |---|------|-------|-------------|--------|
 | M1 | Windows Stability & Codebase Modernization | Features 1, 2, 3 | none | DONE |
 | M2 | Real-World Ground Truth Ingestion & Backlash Corpus | Features 4, 5, 6 | M1 | DONE |
-| M3 | Macro-Micro Multi-Scale Modeling Engine (100k+ Nodes) | Features 7, 8 | M1 | DONE |
+| M3 | Macro-Micro Multi-Scale Modeling Engine (100k+ Nodes) | Features 7, 8 | M1 | DONE (macro engine implemented as library; wiring tracked in M6) |
 | M4 | Algorithmic Feed Dynamics & Controversy Amplification | Features 9, 10 | M1, M3 | DONE |
-| M5 | Adversarial War Room & Executive Decision Intelligence | Features 11, 12, 13, 14, 15, 16 | M2, M3, M4 | DONE |
-| M6 | Final Dual-Track E2E Test Suite Pass & Adversarial Hardening | Features 17, 18 | M1-M5, TEST_READY | DONE |
+| M5 | Adversarial War Room & Executive Decision Intelligence | Features 11, 12, 13, 14, 15, 16 | M2, M3, M4 | DONE (executive + minimax tools live; covered by market-twin e2e) |
+| M6 | Final Dual-Track E2E Test Suite Pass & Adversarial Hardening | Features 17, 18 | M1-M5, TEST_READY | DONE (macro-engine wiring + e2e parity pending) |
 
-Status is measured, not declared: 631/631 unit+golden, 190/190 e2e (188
-market-twin contracts), lint 0 errors, typecheck 0, cleanroom GATE GREEN. The
+Status is measured, not declared: 650/650 unit+golden, 193/193 e2e (last
+measured, 188 market-twin contracts), lint: 0 errors, 16 warnings
+(noExplicitAny), typecheck 0, cleanroom GATE GREEN when rebuilt. The
 milestone table said M5 IN_PROGRESS / M6 PLANNED while every gate was green,
 which is the same class of stale-doc defect the claim gate exists to catch.
 

@@ -1,0 +1,8 @@
+{
+ "url": "https://hn.algolia.com/api/v1/items/35214551",
+ "method": "GET",
+ "status": 200,
+ "retrievedAt": "2026-11-01T05:21:48.769Z",
+ "sha256": "c259fa5a986631cbb39bdfc5a7885cf797a6ea6952b6c93bcc8ec6a015e2e86c",
+ "body": "{\"author\":\"archb\",\"children\":[{\"author\":\"0x073\",\"children\":[],\"created_at\":\"2023-03-19T08:14:54.000Z\",\"created_at_i\":1679213694,\"id\":35217012,\"options\":[],\"parent_id\":35214551,\"points\":null,\"story_id\":35214551,\"text\":\"Best thing would be a new registry like composer <a href=\\\"https:&#x2F;&#x2F;packagist.org\\\" rel=\\\"nofollow\\\">https:&#x2F;&#x2F;packagist.org</a> that is just a resolver to another server e.g. github. \\nSo in the docker file you write XYZ&#x2F;dockerimg and the registry redirect to the mapped correct docker registry.\",\"title\":null,\"type\":\"comment\",\"url\":null}],\"created_at\":\"2023-03-19T00:10:22.000Z\",\"created_at_i\":1679184622,\"id\":35214551,\"options\":[],\"parent_id\":null,\"points\":12,\"story_id\":35214551,\"text\":null,\"title\":\"Docker: Free team being sunset, no way to convert to a regular account\",\"type\":\"story\",\"url\":\"https://github.com/docker/hub-feedback/issues/2314\"}\n"
+}

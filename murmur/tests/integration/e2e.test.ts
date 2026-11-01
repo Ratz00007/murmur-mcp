@@ -22,7 +22,7 @@ const SERVER = path.resolve(here, "..", "..", "packages", "server", "dist", "ind
 const EXPECTED_TOOLS = new Set([
   "world_init", "world_list", "world_config",
   "seed_add", "seeds_review",
-  "ontology", "graph", "personas", "sim", "report", "interact",
+  "ontology", "graph", "personas", "sim", "report", "interact", "macro_sim",
 ]);
 
 async function spawnClient(cwd: string): Promise<{ client: Client; close: () => Promise<void> }> {
@@ -49,6 +49,7 @@ function est(text: string): number {
 describe("MCP server end-to-end", () => {
   it("exposes the full tool/prompt contract and runs the pipeline to a report", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-e2e-"));
+    fs.mkdirSync(path.join(cwd, ".murmur"));
     const { client, close } = await spawnClient(cwd);
     const maxSeen = { tokens: 0 };
     let outside = "";

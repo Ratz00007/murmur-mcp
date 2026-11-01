@@ -2,10 +2,17 @@
  * Tier 1 — Feature 7: Vectorized Macro Graph Dynamics (100k+ Nodes) (R2)
  * Validates CSR TypedArray graph buffers, 100k+ node performance (<200ms),
  * 0 LLM token consumption, SEICR state transitions, and MacroStepResult contracts.
+ *
+ * IMPORTS THE PRODUCTION ENGINE (packages/engine/src/dynamics/macro-graph.js),
+ * not the reference-engine mirror. Parity with the reference is asserted
+ * separately in f07b-differential-parity.test.ts.
  */
 import { describe, expect, it } from "vitest";
 import { validateMacroGraphState } from "../helpers/contracts.js";
-import { createMacroGraphState, stepMacroGraph } from "../helpers/reference-engine.js";
+import {
+  createMacroGraphState,
+  stepMacroGraph,
+} from "../../../../packages/engine/src/dynamics/macro-graph.js";
 
 describe("Tier 1 - F07: Vectorized Macro Graph Dynamics", () => {
   it("initializes valid MacroGraphState with flat TypedArray CSR buffers", () => {

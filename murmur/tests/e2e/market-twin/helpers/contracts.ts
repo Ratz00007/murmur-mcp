@@ -14,7 +14,18 @@ export interface DiscoursePost {
 }
 
 export interface DiscourseThread {
-  platform: "reddit" | "hackernews" | "twitter" | "github";
+  platform:
+    | "reddit"
+    | "hackernews"
+    | "twitter"
+    | "github"
+    | "lobsters"
+    | "stackexchange"
+    | "mastodon"
+    | "bluesky"
+    | "discourse"
+    | "devto"
+    | "rss";
   threadId: string;
   title: string;
   author: string;
@@ -26,6 +37,11 @@ export interface DiscourseThread {
     shares?: number;
   };
   posts: DiscoursePost[];
+  provenance?: {
+    retrievedAt: string;
+    contentSha256: string;
+    via?: string;
+  };
 }
 
 export interface HistoricalBacklashCase {
@@ -158,8 +174,31 @@ export interface ExecutiveDecisionReport {
 export function validateDiscourseThread(obj: unknown): DiscourseThread {
   if (!obj || typeof obj !== "object") throw new Error("DiscourseThread must be an object");
   const t = obj as Partial<DiscourseThread>;
-  if (!["reddit", "hackernews", "twitter", "github"].includes(t.platform as string)) {
+  if (
+    ![
+      "reddit",
+      "hackernews",
+      "twitter",
+      "github",
+      "lobsters",
+      "stackexchange",
+      "mastodon",
+      "bluesky",
+      "discourse",
+      "devto",
+      "rss",
+    ].includes(t.platform as string)
+  ) {
     throw new Error(`Invalid platform: ${t.platform}`);
+  }
+  if (t.provenance !== undefined) {
+    const p = t.provenance as { retrievedAt?: unknown; contentSha256?: unknown } | undefined;
+    if (!p || typeof p.retrievedAt !== "string" || Number.isNaN(Date.parse(p.retrievedAt))) {
+      throw new Error("Invalid provenance.retrievedAt");
+    }
+    if (typeof p.contentSha256 !== "string" || !/^[0-9a-f]{64}$/.test(p.contentSha256)) {
+      throw new Error("Invalid provenance.contentSha256");
+    }
   }
   if (!t.threadId || typeof t.threadId !== "string") throw new Error("Missing threadId");
   if (!t.title || typeof t.title !== "string") throw new Error("Missing title");

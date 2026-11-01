@@ -1,6 +1,6 @@
 /** SQLite schema — exactly the ten tables from the PRD data model, plus a migrations meta table. */
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export const MIGRATIONS: { version: number; sql: string }[] = [
   {
@@ -412,6 +412,26 @@ CREATE TABLE macro_snapshots (
   graph_blob BLOB,
   created_at TEXT NOT NULL,
   PRIMARY KEY (world_id, round)
+);
+`,
+  },
+  {
+    // Migration 5: (a) posts parent index — the feed hot loop groups replies
+    // by parent_id per round; without this index every buildFeed children
+    // lookup is a full table scan. (b) id_counters — per-world table counters
+    // that make id minting O(1) instead of O(n) (SELECT MAX over the table per
+    // row). Counters are seeded lazily from MAX(id)+1 on first use, so minted
+    // ids stay byte-identical to the historical MAX-based derivation on every
+    // uninterrupted insert sequence (which is the golden replay path).
+    version: 5,
+    sql: `
+CREATE INDEX IF NOT EXISTS idx_posts_parent ON posts(world_id, parent_id);
+
+CREATE TABLE IF NOT EXISTS id_counters (
+  world_id TEXT NOT NULL REFERENCES worlds(id),
+  table_name TEXT NOT NULL,
+  next_id INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (world_id, table_name)
 );
 `,
   },

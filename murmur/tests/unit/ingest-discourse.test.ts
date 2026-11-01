@@ -21,7 +21,7 @@ describe("Discourse Ingestion Adapters (F04)", () => {
   describe("RedditAdapter", () => {
     it("returns offline fixture under Tier 1 without network", async () => {
       const adapter = new RedditAdapter();
-      const thread = await adapter.fetchThread("reddit_devops_licensing_pivot", { tier: 1 });
+      const thread = await adapter.fetchThread("reddit_devops_licensing_pivot");
       expect(thread.platform).toBe("reddit");
       expect(thread.metrics.upvotes).toBeGreaterThan(1000);
       expect(thread.posts.length).toBeGreaterThanOrEqual(3);
@@ -102,7 +102,7 @@ describe("Discourse Ingestion Adapters (F04)", () => {
   describe("HackerNewsAdapter", () => {
     it("returns offline fixture under Tier 1 without network", async () => {
       const adapter = new HackerNewsAdapter();
-      const thread = await adapter.fetchThread("39785412", { tier: 1 });
+      const thread = await adapter.fetchThread("39785412");
       expect(thread.platform).toBe("hackernews");
       expect(thread.metrics.comments).toBe(842);
       expect(thread.url).toContain("news.ycombinator.com");
@@ -152,7 +152,7 @@ describe("Discourse Ingestion Adapters (F04)", () => {
   describe("TwitterAdapter", () => {
     it("returns offline fixture under Tier 1 with severe ratio metrics", async () => {
       const adapter = new TwitterAdapter();
-      const thread = await adapter.fetchThread("1701625487", { tier: 1 });
+      const thread = await adapter.fetchThread("1701625487");
       expect(thread.platform).toBe("twitter");
       expect(thread.metrics.comments).toBeGreaterThan(thread.metrics.upvotes); // Ratio
       expect(thread.posts.some((p) => p.author === "gamedev_kol")).toBe(true);
@@ -182,7 +182,7 @@ describe("Discourse Ingestion Adapters (F04)", () => {
   describe("GitHubAdapter", () => {
     it("returns offline fixture under Tier 1 without network", async () => {
       const adapter = new GitHubAdapter();
-      const thread = await adapter.fetchThread("4821", { tier: 1 });
+      const thread = await adapter.fetchThread("4821");
       expect(thread.platform).toBe("github");
       expect(thread.url).toContain("github.com/docker");
       expect(thread.posts[0].text).toContain("namespace");
@@ -218,9 +218,13 @@ describe("Discourse Ingestion Adapters (F04)", () => {
       expect(getDiscourseAdapter("github")).toBeInstanceOf(GitHubAdapter);
     });
 
-    it("throws on unsupported platforms", () => {
-      expect(() => getDiscourseAdapter("mastodon" as unknown as "reddit")).toThrow(
-        "Unsupported discourse platform",
+    it("throws on platforms without live adapters", () => {
+      // 'mastodon' is a known collector platform but has no live adapter —
+      // its threads arrive as pre-structured objects via seed_add.
+      expect(() => getDiscourseAdapter("mastodon")).toThrow("No live adapter for platform 'mastodon'");
+      // Truly unknown platforms must also be rejected.
+      expect(() => getDiscourseAdapter("myspace" as unknown as "reddit")).toThrow(
+        "No live adapter for platform 'myspace'",
       );
     });
   });
@@ -298,6 +302,7 @@ describe("Discourse Ingestion Adapters (F04)", () => {
     it("ingests platform discourse thread via MCP server", async () => {
       const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
       const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-discourse-test-"));
+      fs.mkdirSync(path.join(tmpDir, ".murmur"), { recursive: true });
       const ctx = new ServerContext(tmpDir);
       const server = buildServer(ctx);
       await server.connect(serverTransport);
@@ -348,6 +353,7 @@ describe("Discourse Ingestion Adapters (F04)", () => {
     it("ingests custom structured discourse thread payload", async () => {
       const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
       const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-discourse-custom-"));
+      fs.mkdirSync(path.join(tmpDir, ".murmur"), { recursive: true });
       const ctx = new ServerContext(tmpDir);
       const server = buildServer(ctx);
       await server.connect(serverTransport);
@@ -402,6 +408,7 @@ describe("Discourse Ingestion Adapters (F04)", () => {
     it("rejects discourse seed missing platform or thread data", async () => {
       const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
       const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "murmur-discourse-err-"));
+      fs.mkdirSync(path.join(tmpDir, ".murmur"), { recursive: true });
       const ctx = new ServerContext(tmpDir);
       const server = buildServer(ctx);
       await server.connect(serverTransport);

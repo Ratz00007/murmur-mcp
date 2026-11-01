@@ -2,21 +2,31 @@
 /**
  * tests/cleanroom/gate.mjs — the release gate (PRD 9.3).
  *
- *   1. No-egress audit: the bundled server AND its sourcemap contain no network
- *      APIs, no URLs and no process/eval escape hatches.
- *   2. No-key audit: no API-key/token surface anywhere in the shipped code.
- *   3. Supply-chain audit: runtime dependencies are exactly the three declared
+ *   1. No-egress audit: the bundled server AND its sourcemap, plus the whole
+ *      engine source tree (packages/engine/src), contain no network APIs, no
+ *      URLs and no process/eval escape hatches.
+ *   2. No-obfuscation audit: no `String.fromCharCode(<literal codes>)` calls
+ *      and no string join-assembly that assembles network/token fragments
+ *      ('fetch', 'https', 'Bearer', 'Authorization', 'api.', '.com') anywhere
+ *      in the scanned surfaces.
+ *   3. No-key audit: no API-key/token surface anywhere in the shipped code.
+ *   4. Dynamic no-egress probe: the built engine's four discourse adapters are
+ *      executed with `globalThis.fetch` stubbed to throw and count calls; the
+ *      probe fails if any adapter invokes fetch (even to fall back).
+ *   5. Supply-chain audit: runtime dependencies are exactly the three declared
  *      roots, and the full transitive closure matches the allowlist resolved
  *      from package-lock.json — unknown or missing packages fail the gate.
- *   4. Pack audit: `npm pack --dry-run` may ship only files the gate audited
+ *   6. Pack audit: `npm pack --dry-run` may ship only files the gate audited
  *      (bundle + sourcemap) or expected doc files.
- *   5. Time-to-first-world: a full headless pipeline (seeds → report) completes
+ *   7. Time-to-first-world: a full headless pipeline (seeds → report) completes
  *      in under the 2-minute envelope.
- *   6. Workspace isolation: everything the run created lives under .murmur/.
+ *   8. Workspace isolation: everything the run created lives under .murmur/.
  *
- * Scope note: the isolation walk covers the pipeline's temp cwd only, and this
- * gate never executes the MCP server itself — `npm run test:e2e` covers the
- * running server separately. The gate summary states what was and wasn't proven.
+ * Scope note: the isolation walk covers the pipeline's temp cwd only. The gate
+ * executes the engine's discourse adapters directly under a fetch stub
+ * (check 4) but never starts the MCP server itself — `npm run test:e2e`
+ * covers the running server separately. The gate summary states what was and
+ * wasn't proven.
  *
  * Exit code 0 = gate green. Run via `npm run cleanroom`.
  */
@@ -63,6 +73,116 @@ const ESCAPE_PATTERNS = [
   /import\s*\(\s*(['"`])(?!(?:@modelcontextprotocol\/sdk|better-sqlite3|zod)\1)/,
   /import\s*\(\s*[A-Za-z_$]/,
 ];
+// Obfuscation audit: the old adapters hid live network/token construction from
+// the static scan with `String.fromCharCode(<literal code points>)` and with
+// `"a"+"b"` / `["a","b"].join("")` fragment assembly. Any such literal-code
+// call, or join-assembly whose combined content spells a network/token fragment,
+// fails the gate. (Dynamic `String.fromCharCode(expr)` over real bytes — e.g.
+// PDF text decoding — is not this pattern and is not flagged.)
+const OBFUSCATED_FRAGMENTS = [
+  "fetch",
+  "https",
+  "bearer",
+  "authorization",
+  "api.",
+  ".com",
+];
+const FROM_CHAR_CODE_LITERAL_RE =
+  /String\.fromCharCode\s*\(\s*\d+(?:\s*,\s*\d+)+\s*\)/g;
+const CONCAT_ASSEMBLY_RE = /["']([^"']*)["']\s*\+\s*["']([^"']*)["']/g;
+const ARRAY_JOIN_ASSEMBLY_RE =
+  /\[\s*((?:["'][^"']*["']\s*,\s*)+["'][^"']*["'])\s*\]\s*\.\s*join\s*\(/g;
+
+function findObfuscation(surface) {
+  const hits = [];
+  let m;
+  FROM_CHAR_CODE_LITERAL_RE.lastIndex = 0;
+  m = FROM_CHAR_CODE_LITERAL_RE.exec(surface.code);
+  while (m) {
+    hits.push(`fromCharCode-literal ${m[0]}`);
+    m = FROM_CHAR_CODE_LITERAL_RE.exec(surface.code);
+  }
+  CONCAT_ASSEMBLY_RE.lastIndex = 0;
+  m = CONCAT_ASSEMBLY_RE.exec(surface.code);
+  while (m) {
+    const joined = (m[1] + m[2]).toLowerCase();
+    if (OBFUSCATED_FRAGMENTS.some((f) => joined.includes(f))) {
+      hits.push(`concat "${m[1]}"+"${m[2]}"`);
+    }
+    m = CONCAT_ASSEMBLY_RE.exec(surface.code);
+  }
+  ARRAY_JOIN_ASSEMBLY_RE.lastIndex = 0;
+  m = ARRAY_JOIN_ASSEMBLY_RE.exec(surface.code);
+  while (m) {
+    const inner = m[1].toLowerCase();
+    if (OBFUSCATED_FRAGMENTS.some((f) => inner.includes(f))) {
+      hits.push(`array-join [${m[1]}]`);
+    }
+    m = ARRAY_JOIN_ASSEMBLY_RE.exec(surface.code);
+  }
+  return hits;
+}
+
+function collectEngineSourceSurfaces(root) {
+  const dir = path.join(root, "packages", "engine", "src");
+  const out = [];
+  const walk = (d) => {
+    for (const entry of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, entry.name);
+      if (entry.isDirectory()) walk(p);
+      else if (entry.name.endsWith(".ts"))
+        out.push({
+          name: `engine/src/${path.relative(dir, p).split(path.sep).join("/")}`,
+          code: fs.readFileSync(p, "utf8"),
+        });
+    }
+  };
+  walk(dir);
+  return out;
+}
+
+/**
+ * Dynamic no-egress probe: spawn a subprocess that stubs `globalThis.fetch`
+ * to record every call and throw, imports the BUILT engine, and exercises each
+ * discourse adapter's fetchThread with the former tier-2/tier-3 option shapes.
+ * The probe passes only if fetch is never invoked. On the old live-network code
+ * this fails (fetch gets called before any fallback); on the hermetic adapters
+ * it returns fixtures without ever touching fetch.
+ */
+async function runEgressProbe(root) {
+  const engineDist = path.join(root, "packages", "engine", "dist", "index.js");
+  if (!fs.existsSync(engineDist)) {
+    return {
+      pass: false,
+      detail: "missing packages/engine/dist/index.js — run npm run build first",
+    };
+  }
+  const script = `
+    let calls = 0;
+    globalThis.fetch = (...a) => { calls += 1; throw new TypeError('network blocked by cleanroom probe'); };
+    const e = await import(${JSON.stringify(url.pathToFileURL(engineDist).href)});
+    const adapters = [new e.RedditAdapter(), new e.HackerNewsAdapter(), new e.TwitterAdapter(), new e.GitHubAdapter()];
+    for (const a of adapters) {
+      await a.fetchThread('probe_thread', { tier: 2, timeoutMs: 50 });
+      await a.fetchThread('probe_thread', { tier: 3, timeoutMs: 50 });
+    }
+    if (calls !== 0) { console.error('EGRESS: fetch called ' + calls + ' time(s)'); process.exit(2); }
+    console.log('OK fetch-calls=0 for reddit/hn/twitter/github adapters under tier-2/3 options');
+  `;
+  try {
+    const { execFileSync } = await import("node:child_process");
+    const out = execFileSync(process.execPath, ["--input-type=module", "-e", script], {
+      encoding: "utf8",
+      timeout: 60_000,
+    });
+    return { pass: true, detail: out.trim() };
+  } catch (e) {
+    return {
+      pass: false,
+      detail: `egress probe failed: ${e?.stderr?.toString?.() ?? e?.message ?? e}`,
+    };
+  }
+}
 // allowlist, not a denylist: the exact prod-dependency closure of the three
 // declared roots, resolved from package-lock.json by walking its
 // node_modules/<name> entries following "dependencies". Regenerate whenever the
@@ -217,11 +337,13 @@ export async function runGate(root = repoRoot) {
   const surfaces = [
     { name: "dist/index.js", code: fs.readFileSync(dist, "utf8") },
     { name: "dist/index.js.map", code: fs.readFileSync(distMap, "utf8") },
+    ...collectEngineSourceSurfaces(root),
   ];
-  const scan = (patterns) => {
+  const distSurfaces = surfaces.slice(0, 2);
+  const scan = (patterns, scopeSurfaces = surfaces) => {
     const hits = [];
     for (const re of patterns) {
-      for (const s of surfaces) {
+      for (const s of scopeSurfaces) {
         const m = s.code.match(re);
         if (m) {
           hits.push(`${s.name}:${String(m[0])}`);
@@ -234,14 +356,28 @@ export async function runGate(root = repoRoot) {
 
   const netHits = scan(NETWORK_PATTERNS);
   check(
-    "no network APIs in shipped code",
+    "no network APIs in shipped code or engine source",
     netHits.length === 0,
     netHits.length
       ? `found: ${[...new Set(netHits)].join(", ")}`
-      : "no http/https/net/dns/tls/fetch/WebSocket/URL tokens in the bundle or its sourcemap",
+      : "no http/https/net/dns/tls/fetch/WebSocket/URL tokens in the server bundle, its sourcemap, or the engine source tree",
   );
 
-  const escapeHits = scan(ESCAPE_PATTERNS);
+  const obfuscationHits = [];
+  for (const s of surfaces) {
+    for (const hit of findObfuscation(s)) {
+      obfuscationHits.push(`${s.name}: ${hit}`);
+    }
+  }
+  check(
+    "no obfuscated network/token assembly",
+    obfuscationHits.length === 0,
+    obfuscationHits.length
+      ? `found: ${[...new Set(obfuscationHits)].join("; ")}`
+      : "no String.fromCharCode(<literal codes>) calls and no join-assembly of fetch/https/Bearer/Authorization/api./.com fragments in the bundle, sourcemap, or engine source",
+  );
+
+  const escapeHits = scan(ESCAPE_PATTERNS, distSurfaces);
   check(
     "no process/eval escape hatches",
     escapeHits.length === 0,
@@ -250,7 +386,7 @@ export async function runGate(root = repoRoot) {
       : "no child_process/spawn/exec/require/eval/dlopen/worker_threads/dynamic-import escape hatches in the bundle or its sourcemap",
   );
 
-  const keyHits = scan(KEY_PATTERNS);
+  const keyHits = scan(KEY_PATTERNS, distSurfaces);
   check(
     "no API-key surface",
     keyHits.length === 0,
@@ -258,6 +394,9 @@ export async function runGate(root = repoRoot) {
       ? `found: ${[...new Set(keyHits)].join(", ")}`
       : "no key/token fields anywhere in the bundle or its sourcemap",
   );
+
+  const probe = await runEgressProbe(root);
+  check("no runtime egress: engine adapters never call fetch", probe.pass, probe.detail);
 
   // ---- 3: dependency closure vs the lockfile allowlist ---------------------
   const serverPkg = JSON.parse(
@@ -456,10 +595,10 @@ if (
         `\nOverall: ${r.pass ? "GATE GREEN — releasable" : "GATE RED — release blocked"}\n`,
       );
       process.stdout.write(
-        "Proven: shipped bundle and sourcemap free of network/exec/key tokens; dependency surface exactly the reviewed lockfile allowlist; npm pack ships only audited files; the headless pipeline (engine only, not the server) is fast and kept every file inside .murmur/ within its temp cwd.\n",
+        "Proven: server bundle, its sourcemap, and the engine source tree are free of network/exec/key tokens and of obfuscated network/token assembly; dependency surface exactly the reviewed lockfile allowlist; npm pack ships only audited files; the built engine's discourse adapters were executed with fetch stubbed to throw and made zero fetch calls (no runtime egress on those paths); the headless pipeline (engine only, not the server) is fast and kept every file inside .murmur/ within its temp cwd.\n",
       );
       process.stdout.write(
-        "Not proven here: isolation beyond the pipeline's temp cwd, and the MCP server is never executed — `npm run test:e2e` covers the running server separately.\n\n",
+        "Not proven here: isolation beyond the pipeline's temp cwd, and the MCP server itself is never executed — `npm run test:e2e` covers the running server separately. The runtime no-egress probe covers the engine's four discourse adapters, not the whole server process.\n\n",
       );
       process.exit(r.pass ? 0 : 1);
     })

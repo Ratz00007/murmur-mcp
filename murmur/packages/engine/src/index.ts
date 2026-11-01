@@ -224,3 +224,8 @@ export {
   generateVaccineRewrites,
   buildCompleteExecutiveReport,
 } from "./report-executive.js";
+
+// Persona Fabric (Phase B): deterministic surrogate populations + models.
+// Zero LLM calls at evaluation time; every derived output carries the
+// honesty block — see docs/fabric.md.
+export * from "./fabric/index.js";

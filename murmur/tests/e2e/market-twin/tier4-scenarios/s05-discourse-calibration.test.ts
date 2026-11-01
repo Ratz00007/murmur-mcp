@@ -61,14 +61,21 @@ describe("Tier 4 - Scenario 5: Cross-Platform Discourse Ingestion Calibration", 
     const hnText = hnThread.posts.map((p) => p.text).join(" ");
 
     const redditMentions = entityMentions(redditText, targetEntities);
-    const hnMentions = entityMentions(hnText, targetEntities);
+    const _hnMentions = entityMentions(hnText, targetEntities);
 
-    expect(redditMentions.some((m) => m.entityId === "e_opentofu" || m.entityId === "e_valkey")).toBe(true);
+    expect(
+      redditMentions.some(
+        (m) => m.entityId === "e_opentofu" || m.entityId === "e_valkey",
+      ),
+    ).toBe(true);
     expect(scoreSentiment(hnText).hits).toBeGreaterThan(0);
 
     // 3. World Seed Ingestion in Isolated Workspace
     const ws = createTestWorkspace();
-    const { storage, world } = initDirectWorld(ws.cwd, "discourse-calibration-world");
+    const { storage, world } = initDirectWorld(
+      ws.cwd,
+      "discourse-calibration-world",
+    );
     ws.storage = storage;
 
     const redditDigest = makeDigest(redditText);
@@ -97,7 +104,9 @@ describe("Tier 4 - Scenario 5: Cross-Platform Discourse Ingestion Calibration", 
     const storedSeeds = storage.listSeeds(world.id);
     expect(storedSeeds.length).toBe(2);
     expect(storedSeeds.some((s) => s.ref.includes("reddit.com"))).toBe(true);
-    expect(storedSeeds.some((s) => s.ref.includes("news.ycombinator.com"))).toBe(true);
+    expect(
+      storedSeeds.some((s) => s.ref.includes("news.ycombinator.com")),
+    ).toBe(true);
 
     storage.close();
     await ws.close();

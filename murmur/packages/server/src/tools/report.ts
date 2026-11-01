@@ -260,6 +260,27 @@ export function registerReportTools(
         )
         .optional()
         .describe("Competitor candidate alternatives for migration analysis (mode:'executive')"),
+      macro_outrage: z
+        .number()
+        .min(0)
+        .max(1)
+        .optional()
+        .describe(
+          "Override the macro outrage index [0,1] for executive risk (mode:'executive') — replaces the post-count heuristic",
+        ),
+      macro_sim: z
+        .object({
+          outrageIndex: z.number().optional(),
+          nodeCount: z.number().optional(),
+          stateDistribution: z
+            .object({ churned: z.number().optional() })
+            .optional(),
+        })
+        .passthrough()
+        .optional()
+        .describe(
+          "The macro_sim output summary — its outrageIndex and churned/nodeCount feed executive risk when provided",
+        ),
     },
     outputSchema: REPORT_OUTPUT,
     run: async (args) => {
@@ -564,6 +585,33 @@ function exportReport(
   );
 }
 
+/**
+ * Resolve executive-mode macro inputs. Both are optional and backward
+ * compatible: when neither is provided the callers fall back to the
+ * post-count heuristic exactly as before.
+ */
+function executiveMacroInputs(args: {
+  macro_outrage?: number;
+  macro_sim?: {
+    outrageIndex?: number;
+    nodeCount?: number;
+    stateDistribution?: { churned?: number };
+  };
+}): { outrage?: number; churnFraction?: number } {
+  const out: { outrage?: number; churnFraction?: number } = {};
+  const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+  if (typeof args.macro_outrage === "number") out.outrage = clamp01(args.macro_outrage);
+  const sim = args.macro_sim;
+  if (sim && typeof sim === "object") {
+    if (typeof sim.outrageIndex === "number") out.outrage = clamp01(sim.outrageIndex);
+    const churned = sim.stateDistribution?.churned;
+    if (typeof sim.nodeCount === "number" && typeof churned === "number" && sim.nodeCount > 0) {
+      out.churnFraction = clamp01(churned / sim.nodeCount);
+    }
+  }
+  return out;
+}
+
 function planExecutive(
   ctx: ServerContext,
   args: {
@@ -576,6 +624,12 @@ function planExecutive(
       featureParity: number;
       switchingFriction: number;
     }>;
+    macro_outrage?: number;
+    macro_sim?: {
+      outrageIndex?: number;
+      nodeCount?: number;
+      stateDistribution?: { churned?: number };
+    };
   },
 ) {
   const w = ctx.resolveWorld(args.world);
@@ -587,8 +641,9 @@ function planExecutive(
     { name: "Proprietary Incumbent", isOSS: false, featureParity: 0.95, switchingFriction: 0.6 },
   ];
   const postCount = ctx.storage.countPosts(w.id);
-  const outrage = postCount > 10 ? 0.75 : 0.68;
-  const churnFraction = postCount > 10 ? 0.18 : 0.14;
+  const macroInputs = executiveMacroInputs(args);
+  const outrage = macroInputs.outrage ?? (postCount > 10 ? 0.75 : 0.68);
+  const churnFraction = macroInputs.churnFraction ?? (postCount > 10 ? 0.18 : 0.14);
 
   const executiveReport = buildCompleteExecutiveReport({
     vendor: w.name,
@@ -654,6 +709,12 @@ function exportExecutive(
       featureParity: number;
       switchingFriction: number;
     }>;
+    macro_outrage?: number;
+    macro_sim?: {
+      outrageIndex?: number;
+      nodeCount?: number;
+      stateDistribution?: { churned?: number };
+    };
   },
 ) {
   const w = ctx.resolveWorld(args.world);
@@ -665,8 +726,9 @@ function exportExecutive(
     { name: "Proprietary Incumbent", isOSS: false, featureParity: 0.95, switchingFriction: 0.6 },
   ];
   const postCount = ctx.storage.countPosts(w.id);
-  const outrage = postCount > 10 ? 0.76 : 0.70;
-  const churnFraction = postCount > 10 ? 0.18 : 0.15;
+  const macroInputs = executiveMacroInputs(args);
+  const outrage = macroInputs.outrage ?? (postCount > 10 ? 0.76 : 0.70);
+  const churnFraction = macroInputs.churnFraction ?? (postCount > 10 ? 0.18 : 0.15);
 
   const report = buildCompleteExecutiveReport({
     vendor: w.name,
