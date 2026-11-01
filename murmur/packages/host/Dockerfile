@@ -16,9 +16,12 @@ COPY packages/adapters/ packages/adapters/
 COPY packages/templates/ packages/templates/
 COPY packages/server/ packages/server/
 COPY packages/host/ packages/host/
-# Sources must be present before `npm ci`: the root "prepare" hook runs the
-# full monorepo build, and it would fail on missing tsconfigs otherwise.
-RUN npm ci
+# --ignore-scripts skips the root "prepare" hook (which would otherwise run a
+# full monorepo build during install, before we want it). Native modules are
+# rebuilt explicitly below so better-sqlite3/esbuild work regardless.
+RUN npm ci --ignore-scripts
+RUN npm rebuild better-sqlite3
+RUN node node_modules/esbuild/install.js
 RUN npm run build:libs && npm run build -w murmur-mcp-host
 
 FROM node:22-slim
