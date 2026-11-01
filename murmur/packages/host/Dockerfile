@@ -10,19 +10,15 @@
 FROM node:22-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
-COPY packages/engine/package.json packages/engine/
-COPY packages/prompts/package.json packages/prompts/
-COPY packages/adapters/package.json packages/adapters/
-COPY packages/templates/package.json packages/templates/
-COPY packages/server/package.json packages/server/
-COPY packages/host/package.json packages/host/
-RUN npm ci
 COPY packages/engine/ packages/engine/
 COPY packages/prompts/ packages/prompts/
 COPY packages/adapters/ packages/adapters/
 COPY packages/templates/ packages/templates/
 COPY packages/server/ packages/server/
 COPY packages/host/ packages/host/
+# Sources must be present before `npm ci`: the root "prepare" hook runs the
+# full monorepo build, and it would fail on missing tsconfigs otherwise.
+RUN npm ci
 RUN npm run build:libs && npm run build -w murmur-mcp-host
 
 FROM node:22-slim
