@@ -13,7 +13,8 @@
     "packages/prompts",
     "packages/adapters",
     "packages/templates",
-    "packages/server"
+    "packages/server",
+    "packages/host"
   ],
   "scripts": {
     "prepare": "npm run build",

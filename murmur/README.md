@@ -69,7 +69,7 @@ Every snippet is also printed by `npx murmur-mcp doctor` (which also checks Node
 
 That prompt is a playbook: your agent drives all 12 tools in order, shows you digests for approval, writes the report, and every receipt tells it the next step.
 
-> **What a run actually costs.** Zero keys, but not zero time: a default 8-round world puts the order of *hundreds* of generations in front of your host model, so wall time is set by the model and the batch size, not by Murmur. Nothing has been published end-to-end with a real LLM yet — the 650-test suite (golden byte-identical replays plus the cleanroom release gate) runs against mock generations, and `npm run demo` exercises the full pipeline headless. Treat your first real run as a rehearsal, and start with fewer rounds.
+> **What a run actually costs.** Zero keys, but not zero time: a default 8-round world puts the order of *hundreds* of generations in front of your host model, so wall time is set by the model and the batch size, not by Murmur. Nothing has been published end-to-end with a real LLM yet — the 651-test suite (golden byte-identical replays plus the cleanroom release gate) runs against mock generations, and `npm run demo` exercises the full pipeline headless. Treat your first real run as a rehearsal, and start with fewer rounds.
 
 Mid-run experimentation:
 
@@ -160,7 +160,7 @@ tests/
 examples/      a ready-to-run demo scenario + paste-ready prompts
 ```
 
-Develop: `npm install && npm run build && npm test` (650 tests) · `npm run test:e2e` · `npm run cleanroom` · `npm run demo` (headless full pipeline, no LLM needed).
+Develop: `npm install && npm run build && npm test` (651 tests) · `npm run test:e2e` · `npm run cleanroom` · `npm run demo` (headless full pipeline, no LLM needed).
 
 ## License & provenance
 

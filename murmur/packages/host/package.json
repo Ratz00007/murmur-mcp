@@ -1,0 +1,26 @@
+{
+  "name": "murmur-mcp-host",
+  "version": "1.0.0",
+  "description": "Hosted HTTP deployment of the Murmur MCP server — per-user workspaces, bearer-token auth.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "better-sqlite3": "^12.2.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@murmur/engine": "1.0.0",
+    "@types/better-sqlite3": "^7.6.12",
+    "tsup": "^8.0.0",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=22.0.0 <27"
+  }
+}

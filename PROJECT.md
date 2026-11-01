@@ -48,7 +48,7 @@ Host Agent / MCP Client (Claude Desktop, Antigravity, Custom)
 | M5 | Adversarial War Room & Executive Decision Intelligence | Features 11, 12, 13, 14, 15, 16 | M2, M3, M4 | DONE (executive + minimax tools live; covered by market-twin e2e) |
 | M6 | Final Dual-Track E2E Test Suite Pass & Adversarial Hardening | Features 17, 18 | M1-M5, TEST_READY | DONE (macro-engine wiring + e2e parity pending) |
 
-Status is measured, not declared: 650/650 unit+golden, 193/193 e2e (last
+Status is measured, not declared: 651/651 unit+golden, 193/193 e2e (last
 measured, 188 market-twin contracts), lint: 0 errors, 16 warnings
 (noExplicitAny), typecheck 0, cleanroom GATE GREEN when rebuilt. The
 milestone table said M5 IN_PROGRESS / M6 PLANNED while every gate was green,
