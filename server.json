@@ -4,7 +4,6 @@
   "title": "Murmur",
   "description": "Deterministic crowd simulation: personas, feeds and analyst reports for pricing and launch.",
   "version": "1.0.0",
-  "notPublished": true,
   "repository": {
     "url": "https://github.com/Ratz00007/murmur-mcp",
     "source": "github",
