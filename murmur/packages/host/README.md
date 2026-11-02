@@ -6,6 +6,14 @@ isolation. This is the *explicit network surface* of Murmur; it is a separate
 package from the hermetic stdio server (`packages/server`), which ships with
 zero network code and passes the cleanroom gate.
 
+## Live deployment (Render)
+
+**https://murmur-mcp.onrender.com/mcp** — deployed from this monorepo's
+`packages/host/Dockerfile` (Node 22, streamable-HTTP, bearer-token auth,
+per-user workspaces). Verified live: `/health` → `{"ok":true,...}`, 401
+without/bad token, MCP initialize 200, 12 tools listed. Render free tier
+spins the instance down after inactivity (~50s cold start on first request).
+
 ## Environment
 
 | Var | Required | Description |

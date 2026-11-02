@@ -12,7 +12,11 @@ achievable today.
 submission itself. 650/650 unit+golden, 193/193 e2e (last measured), cleanroom
 GATE GREEN when rebuilt, lint/coverage/golden-hash gated in CI, claim check
 GREEN at 650 tests and 12 tools. `murmur-mcp@1.0.0` is published on the npm
-registry and listed in the MCP Registry (`io.github.Ratz00007/murmur-mcp`).
+registry, listed in the MCP Registry (`io.github.Ratz00007/murmur-mcp`), and
+deployed as a hosted HTTP MCP server at https://murmur-mcp.onrender.com/mcp
+(Render free tier, bearer-token auth, per-user workspaces). Remaining for the
+"official connector" goal: a paid Claude plan to submit to the Anthropic
+Connectors Directory (claude.ai/directory/manage).
 
 **Replaces:** the prior "Murmur Phase 0 + Phase 1: Ship, Prove, and De-risk"
 goal. Two of its claims are **disproved by direct inspection** and are corrected
