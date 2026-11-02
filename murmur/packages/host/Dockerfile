@@ -14,6 +14,10 @@
 
 FROM node:22-slim AS build
 WORKDIR /app
+# Node's slim image lacks a native toolchain; better-sqlite3's rebuild falls
+# back to node-gyp compilation when no prebuilt binary matches, so install one.
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 COPY packages/engine/ packages/engine/
 COPY packages/prompts/ packages/prompts/
