@@ -1,0 +1,30 @@
+{
+  "name": "murmur",
+  "version": "1.0.0",
+  "description": "Murmur rehearses how a community reacts to a pricing or launch change and returns a ranked objection dossier — before you ship.",
+  "author": {
+    "name": "Murmur (Ratz00007)",
+    "email": "ratinsharma545@gmail.com",
+    "url": "https://github.com/Ratz00007/murmur-mcp"
+  },
+  "homepage": "https://github.com/Ratz00007/murmur-mcp",
+  "repository": "https://github.com/Ratz00007/murmur-mcp",
+  "license": "Apache-2.0",
+  "interface": {
+    "displayName": "Murmur",
+    "developerName": "Murmur",
+    "shortDescription": "Rehearse community reaction to pricing/launch changes — ranked objections before you ship",
+    "longDescription": "Murmur seats a simulated community around your change (pricing page, policy memo, launch brief) and returns a ranked objection dossier: each objection at its strongest, tied to the simulated post behind it, with a counter-case and a test plan for real humans. Deterministic engine runs on your own infrastructure; no third-party API keys.",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write", "Interactive"],
+    "brandColor": "#6C5CE7",
+    "websiteURL": "https://github.com/Ratz00007/murmur-mcp",
+    "privacyPolicyURL": "https://github.com/Ratz00007/murmur-mcp",
+    "termsOfServiceURL": "https://github.com/Ratz00007/murmur-mcp",
+    "defaultPrompt": [
+      "How will developers react to our new pricing? Use Murmur to simulate reactions and rank the objections."
+    ]
+  },
+  "keywords": ["simulation", "social-simulation", "pricing", "launch", "market-research", "objections", "product-management"],
+  "mcpServers": "./.mcp.json"
+}
